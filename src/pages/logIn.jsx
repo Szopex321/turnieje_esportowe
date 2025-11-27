@@ -1,17 +1,42 @@
 import React, { useState } from 'react';
 import styles from '../styles/pages/auth.module.css';
-import { Link } from 'react-router-dom';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const LogIn = () => {
     const navigate = useNavigate();
-    const [email, setEmail] = useState('');
+    const [login, setLogin] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState(''); // Stan do wyświetlania błędów
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Tutaj będzie logika łączenia z backendem C#
-        console.log("Logowanie:", email, password);
+        setError(''); // Reset błędów przed nową próbą
+
+        try {
+            const response = await fetch('/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                // WAŻNE: To pozwala przeglądarce przyjąć i wysyłać ciastka HttpOnly
+                credentials: 'include', 
+                body: JSON.stringify({ 
+                    username: login,
+                    PasswordHash: password 
+                }),
+            });
+
+            if (response.ok) {
+                console.log("Zalogowano pomyślnie");
+                navigate('/');
+            } else {
+                const data = await response.json().catch(() => ({}));
+                setError(data.message || 'Błąd logowania. Sprawdź dane.');
+            }
+        } catch (err) {
+            console.error("Błąd połączenia:", err);
+            setError('Wystąpił błąd połączenia z serwerem.');
+        }
     };
 
     return (
@@ -20,16 +45,18 @@ const LogIn = () => {
                 <h2 className={styles.title}>Welcome Back</h2>
                 <p className={styles.subtitle}>Log in to manage your tournaments</p>
 
+                {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     
                     <div className={styles.inputGroup}>
-                        <label className={styles.label}>Email Address</label>
+                        <label className={styles.label}>Login</label>
                         <input 
-                            type="email" 
+                            type="text" 
                             className={styles.input} 
-                            placeholder="name@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="GamerTag123"
+                            value={login}
+                            onChange={(e) => setLogin(e.target.value)}
                             required
                         />
                     </div>
@@ -46,7 +73,8 @@ const LogIn = () => {
                         />
                     </div>
 
-                    <button type="submit" className={styles.submitButton} onClick={() => navigate('/')}>
+                    {/* Usunięto onClick, submit obsługuje formularz */}
+                    <button type="submit" className={styles.submitButton}>
                         Log In
                     </button>
                 </form>

@@ -1,3 +1,5 @@
+/* src/styles/pages/auth.module.css */
+
 /* Główny kontener na cały ekran - centruje kartę */
 .pageContainer {
     min-height: 100vh; 
@@ -22,7 +24,6 @@
     flex-direction: column;
     gap: 20px;
 }
-
 
 .title {
     color: #ffffff;
@@ -107,4 +108,33 @@
 
 .link:hover {
     text-decoration: underline;
+}
+
+.avatarContainer {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.avatarImage {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #333;
+}
+
+.formRow {
+    display: flex;
+    gap: 10px;
+}
+
+.halfWidth {
+    flex: 1;
+}
+
+.formContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
