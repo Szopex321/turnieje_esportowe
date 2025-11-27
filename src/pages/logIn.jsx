@@ -13,16 +13,15 @@ const LogIn = () => {
         setError(''); // Reset błędów przed nową próbą
 
         try {
-            const response = await fetch('/api/users', {
+            const response = await fetch('/api/Auth/login', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                // WAŻNE: To pozwala przeglądarce przyjąć i wysyłać ciastka HttpOnly
                 credentials: 'include', 
                 body: JSON.stringify({ 
                     username: login,
-                    PasswordHash: password 
+                    Password: password 
                 }),
             });
 
@@ -73,7 +72,6 @@ const LogIn = () => {
                         />
                     </div>
 
-                    {/* Usunięto onClick, submit obsługuje formularz */}
                     <button type="submit" className={styles.submitButton}>
                         Log In
                     </button>

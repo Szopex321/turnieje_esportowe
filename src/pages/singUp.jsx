@@ -9,7 +9,7 @@ const SignUp = () => {
     const [formData, setFormData] = useState({
         username: '',
         email: '',
-        PasswordHash: '',
+        Password: '',
         confirmPassword: '',
         firstName: '',
         lastName: ''
@@ -58,13 +58,13 @@ const SignUp = () => {
             const payload = {
                 username: formData.username,
                 email: formData.email,
-                PasswordHash: formData.password,
+                Password: formData.password,
                 firstName: formData.firstName,
                 lastName: formData.lastName,
                 avatar: avatarBase64
             };
 
-            const response = await fetch('/api/users', { 
+            const response = await fetch('/api/Auth/register', { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -114,12 +114,9 @@ const SignUp = () => {
 
                 {error && <div style={{ color: 'red', marginBottom: '15px', textAlign: 'center' }}>{error}</div>}
 
-                {/* Formularz z klasą CSS */}
                 <form onSubmit={handleSubmit} className={styles.formContainer}>
                     
-                    {/* Wiersz z Imieniem i Nazwiskiem */}
                     <div className={styles.formRow}>
-                        {/* Dodajemy klasę halfWidth, żeby inputy dzieliły miejsce po połowie */}
                         <div className={`${styles.inputGroup} ${styles.halfWidth}`}>
                             <label className={styles.label}>First Name</label>
                             <input 
