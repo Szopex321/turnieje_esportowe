@@ -18,19 +18,31 @@ const LogIn = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'include', 
-                body: JSON.stringify({ 
+                credentials: 'include',
+                body: JSON.stringify({
                     username: login,
-                    Password: password 
+                    Password: password
                 }),
             });
 
+            // Fragment pliku LogIn.jsx wewnątrz if (response.ok)
+
             if (response.ok) {
-                console.log("Zalogowano pomyślnie");
-                navigate('/');
-            } else {
-                const data = await response.json().catch(() => ({}));
-                setError(data.message || 'Błąd logowania. Sprawdź dane.');
+                // 1. Pobierz dane, które zwrócił backend
+                const responseData = await response.json().catch(() => ({}));
+
+                // 2. Stwórz obiekt użytkownika (użyj danych z backendu lub loginu z formularza)
+                const userToSave = {
+                    username: responseData.username || login, // Jeśli backend nie zwraca username, używamy tego co wpisał user
+                    avatar: responseData.avatar || '',        // Avatar z backendu (jeśli jest)
+                    isLoggedIn: true
+                };
+
+                // 3. ZAPISZ DO LOCAL STORAGE
+                localStorage.setItem('currentUser', JSON.stringify(userToSave));
+
+                console.log("Zalogowano i zapisano dane lokalnie");
+                navigate('/'); // Przekierowanie
             }
         } catch (err) {
             console.error("Błąd połączenia:", err);
@@ -47,12 +59,12 @@ const LogIn = () => {
                 {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    
+
                     <div className={styles.inputGroup}>
                         <label className={styles.label}>Login</label>
-                        <input 
-                            type="text" 
-                            className={styles.input} 
+                        <input
+                            type="text"
+                            className={styles.input}
                             placeholder="GamerTag123"
                             value={login}
                             onChange={(e) => setLogin(e.target.value)}
@@ -62,9 +74,9 @@ const LogIn = () => {
 
                     <div className={styles.inputGroup}>
                         <label className={styles.label}>Password</label>
-                        <input 
-                            type="password" 
-                            className={styles.input} 
+                        <input
+                            type="password"
+                            className={styles.input}
                             placeholder="••••••••"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
@@ -78,7 +90,7 @@ const LogIn = () => {
                 </form>
 
                 <p className={styles.footerText}>
-                    Don't have an account? 
+                    Don't have an account?
                     <Link to="/signup" className={styles.link}>Sign up</Link>
                 </p>
             </div>
