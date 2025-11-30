@@ -3,6 +3,8 @@ import TournamentList from "./components/TournamentList";
 import MainPage from './pages/mainPage';
 import LogIn from './pages/logIn.jsx';
 import SignUp from './pages/singUp.jsx';
+
+import UserProfile from './pages/userProfile';
 import { Routes, Route } from 'react-router-dom';
 
 function App() {
@@ -20,6 +22,12 @@ function App() {
         
         {/* Rejestracja (localhost:3000/signup) */}
         <Route path="/signup" element={<SignUp />} />
+
+
+
+
+        {/* NOWA TRASA */}
+        <Route path="/profile" element={<UserProfile />} />
         
       </Routes>
     </>
