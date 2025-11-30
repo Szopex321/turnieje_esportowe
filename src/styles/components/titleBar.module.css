@@ -1,19 +1,34 @@
+/* src/styles/components/titleBar.module.css */
+
+/* Główny pasek nawigacji */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 15px 30px;
+
+    height: 80px; /* Stała wysokość */
+    box-sizing: border-box;
 }
 
+/* LEWA STRONA - Logo i Tytuł */
 .titleSection {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 20px;
 }
 
-.logo{
-    width: 70px;
-    height: 70px;
+.logo {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logoImage {
+    width: 100%;
+    height: 100%;
     object-fit: contain;
 }
 
@@ -21,25 +36,113 @@
     margin: 0;
     font-size: 22px;
     color: #ffffff;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
+/* PRAWA STRONA - Kontener ogólny */
 .headerRight {
     display: flex;
     align-items: center;
-    gap: 15px;
 }
+
+/* --- ZALOGOWANY UŻYTKOWNIK --- */
+
+.userInfoContainer {
+    display: flex;
+    align-items: center;
+    gap: 25px; /* Odstęp między profilem a przyciskiem wylogowania */
+}
+
+/* Sekcja klikalna (Nick + Avatar) */
+.userProfile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Efekt najechania myszką na profil */
+.userProfile:hover {
+    background-color: rgba(255, 255, 255, 0.05); /* Lekkie podświetlenie */
+    opacity: 0.9;
+}
+
+.welcomeText {
+    font-size: 15px;
+    color: #cbd5e0; /* Jasnoszary */
+    text-align: right;
+}
+
+.welcomeText strong {
+    color: #facc15; /* Złoty akcent dla nicku */
+    display: block; /* Nick w nowej linii lub obok - tu obok */
+    font-weight: 600;
+}
+
+.userAvatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #facc15; /* Złota ramka wokół zdjęcia */
+}
+
+/* Przycisk Wylogowania */
+.logoutButton {
+    background-color: transparent !important;
+    border: 1px solid #ef4444 !important; /* Czerwona ramka */
+    color: #ef4444 !important;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.logoutButton:hover {
+    background-color: #ef4444 !important;
+    color: white !important;
+}
+
+/* --- GOŚĆ (Przyciski Log In / Sign Up) --- */
 
 .authButtons {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
-.logInButton, .signUpButton {
-    padding: 8px 12px;
-    border: none;
+.logInButton {
+    background-color: transparent;
+    color: #ffffff;
+    border: 1px solid #555;
+    padding: 10px 20px;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s ease;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.logInButton:hover {
+    border-color: #facc15;
+    color: #facc15;
+}
+
+.signUpButton {
+    background-color: #facc15;
+    color: #000000;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    transition: background-color 0.2s;
+}
+
+.signUpButton:hover {
+    background-color: #eab308; /* Ciemniejszy złoty */
 }
