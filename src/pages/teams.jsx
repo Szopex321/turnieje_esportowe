@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
-import styles from "../styles/pages/teamsPage.module.css";
+import styles from "../styles/pages/TeamsPage.module.css";
 import AddTeamModal from "../components/AddTeamModal";
 
 function TeamsPage() {
