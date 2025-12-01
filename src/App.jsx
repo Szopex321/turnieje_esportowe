@@ -16,6 +16,9 @@ function App() {
 
         <Route path="/signup" element={<SignUp />} />
 
+        {/* NOWA TRASA */}
+        {/* <Route path="/profile" element={<UserProfile />} /> */}
+
         <Route path="/teams" element={<TeamsPage />} />
       </Routes>
     </>
