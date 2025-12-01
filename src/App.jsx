@@ -4,7 +4,7 @@ import MainPage from "./pages/mainPage";
 import LogIn from "./pages/logIn.jsx";
 import SignUp from "./pages/singUp.jsx";
 import { Routes, Route } from "react-router-dom";
-import TeamsPage from "./pages/teams.jsx";
+import TeamsPage from "./pages/TeamsPage.jsx";
 
 function App() {
   return (
