@@ -13,7 +13,7 @@ const LogIn = () => {
     setError(""); // Reset błędów przed nową próbą
 
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch("/api/Auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
