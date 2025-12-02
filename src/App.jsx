@@ -19,7 +19,7 @@ function App() {
 
         <Route path="/teams" element={<TeamsPage />} />
 
-        <Route path="/profile" element={<UserProfile/>} />
+        <Route path="/profile" element={<UserProfile />} />
       </Routes>
     </>
   );
