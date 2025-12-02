@@ -15,25 +15,43 @@ function TitleBar() {
 
     // 1. Przy załadowaniu strony sprawdzamy localStorage (Optimistic UI)
     useEffect(() => {
+    // Wyciągnąłem logikę sprawdzania do osobnej funkcji, żeby jej użyć dwa razy
+    const checkAuth = () => {
         const savedUserJSON = localStorage.getItem('currentUser');
-
         if (savedUserJSON) {
             try {
                 const user = JSON.parse(savedUserJSON);
-                
-                // Jeśli w localStorage są dane i flaga isLoggedIn jest true
                 if (user && user.isLoggedIn) {
                     setIsLoggedIn(true);
                     setUsername(user.username);
                     setAvatar(user.avatar);
                 }
             } catch (e) {
-                // Jeśli dane są uszkodzone, czyścimy je
-                console.error("Błąd odczytu danych użytkownika", e);
+                console.error("Błąd danych", e);
                 localStorage.removeItem('currentUser');
             }
+        } else {
+            // Ważne: Jeśli nie ma usera, czyścimy stan (na wypadek wylogowania)
+            setIsLoggedIn(false);
+            setUsername("");
+            setAvatar(null);
         }
-    }, []);
+    };
+
+    // 1. Sprawdź przy pierwszym załadowaniu
+    checkAuth();
+
+    // 2. Nasłuchuj na sygnał z LogIn.jsx (lub z innej karty przeglądarki)
+    window.addEventListener('storage', checkAuth);
+    // Opcjonalnie nasłuchuj też własnego zdarzenia, jeśli użyłeś "authChange"
+    window.addEventListener('authChange', checkAuth); 
+
+    // 3. Sprzątanie po wyjściu z komponentu
+    return () => {
+        window.removeEventListener('storage', checkAuth);
+        window.removeEventListener('authChange', checkAuth);
+    };
+}, []);
 
     // 2. Funkcja przenosząca na profil
     const goToProfile = () => {
