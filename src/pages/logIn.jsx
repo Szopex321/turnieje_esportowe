@@ -6,11 +6,11 @@ const LogIn = () => {
   const navigate = useNavigate();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // Stan do wyświetlania błędów
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Reset błędów przed nową próbą
+    setError("");
 
     try {
       const response = await fetch("/api/Auth/login", {
@@ -18,15 +18,33 @@ const LogIn = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+        credentials: "include", // Ważne dla ciasteczek HttpOnly
         body: JSON.stringify({
           username: login,
-          Password: password,
+          Password: password, // Upewnij się, że backend oczekuje dużej litery 'P'
         }),
       });
 
       if (response.ok) {
-        console.log("Zalogowano pomyślnie");
+        // 1. Pobieramy dane użytkownika z odpowiedzi backendu
+        const responseData = await response.json().catch(() => ({}));
+
+        // 2. Tworzymy obiekt do zapisania w przeglądarce
+        const userToSave = {
+          username: responseData.username || login, // Jeśli backend nie zwróci nicku, użyj tego z inputa
+          avatar: responseData.avatar || "",
+          role: responseData.role || "user", // Zapisujemy rolę (dla panelu Admina)
+          isLoggedIn: true,
+        };
+
+        // 3. Zapisujemy w localStorage
+        localStorage.setItem("currentUser", JSON.stringify(userToSave));
+
+        // 4. KLUCZOWY MOMENT (ROZWIĄZANIE 1):
+        // Wysyłamy sygnał do TitleBar, żeby się odświeżył bez przeładowania strony
+        window.dispatchEvent(new Event("storage"));
+
+        console.log("Zalogowano pomyślnie i wysłano sygnał odświeżenia");
         navigate("/");
       } else {
         const data = await response.json().catch(() => ({}));
@@ -45,7 +63,11 @@ const LogIn = () => {
         <p className={styles.subtitle}>Log in to manage your tournaments</p>
 
         {error && (
-          <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+          <div
+            style={{ color: "red", marginBottom: "10px", textAlign: "center" }}
+          >
+            {error}
+          </div>
         )}
 
         <form
