@@ -2,32 +2,63 @@ import React, { useState } from 'react';
 import styles from '../styles/pages/auth.module.css';
 import { Link, useNavigate } from 'react-router-dom';
 
-const LogIn = () => {
-    const navigate = useNavigate();
-    const [login, setLogin] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+const LogIn = ({ loadUser }) => {
+  const navigate = useNavigate();
+  const [login, setLogin] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
 
-        try {
-            const response = await fetch('/api/Auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include', // Ważne dla ciasteczek HttpOnly
-                body: JSON.stringify({ 
-                    username: login,
-                    Password: password // Upewnij się, że backend oczekuje dużej litery 'P'
-                }),
-            });
+    try {
+      const response = await fetch("/api/Auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Ważne dla ciasteczek HttpOnly
+        body: JSON.stringify({
+          username: login,
+          Password: password, // Upewnij się, że backend oczekuje dużej litery 'P'
+        }),
+      });
 
-            if (response.ok) {
-                // 1. Pobieramy dane użytkownika z odpowiedzi backendu
-                const responseData = await response.json().catch(() => ({}));
+      if (response.ok) {
+        const responseData = await response.json().catch(() => ({}));
+
+        if (responseData.token) {
+          localStorage.setItem("jwt_token", responseData.token);
+          console.log("Token JWT zapisany.");
+        }
+
+        const userToSave = {
+          username: responseData.username || login,
+          avatar: responseData.avatar || "",
+          role: responseData.role || "user",
+          isLoggedIn: true,
+        };
+
+        localStorage.setItem("currentUser", JSON.stringify(userToSave));
+
+        if (loadUser) {
+          await loadUser();
+        } else {
+          window.dispatchEvent(new Event("storage"));
+        }
+
+        console.log("Zalogowano pomyślnie.");
+        navigate("/");
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || "Błąd logowania. Sprawdź dane.");
+      }
+    } catch (err) {
+      console.error("Błąd połączenia:", err);
+      setError("Wystąpił błąd połączenia z serwerem.");
+    }
+  };
 
                 // 2. Tworzymy obiekt do zapisania w przeglądarce
                 const userToSave = {
@@ -37,8 +68,13 @@ const LogIn = () => {
                     isLoggedIn: true
                 };
 
-                // 3. Zapisujemy w localStorage
-                localStorage.setItem('currentUser', JSON.stringify(userToSave));
+        {error && (
+          <div
+            style={{ color: "red", marginBottom: "10px", textAlign: "center" }}
+          >
+            {error}
+          </div>
+        )}
 
                 // 4. KLUCZOWY MOMENT (ROZWIĄZANIE 1):
                 // Wysyłamy sygnał do TitleBar, żeby się odświeżył bez przeładowania strony
