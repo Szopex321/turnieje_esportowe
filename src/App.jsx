@@ -4,7 +4,6 @@ import MainPage from "./pages/mainPage";
 import LogIn from "./pages/logIn.jsx";
 import SignUp from "./pages/singUp.jsx";
 import UserProfile from "./pages/userProfile.jsx";
-import { Routes, Route } from "react-router-dom";
 import TeamsPage from "./pages/TeamsPage.jsx";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
