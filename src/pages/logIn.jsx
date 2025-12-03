@@ -18,10 +18,10 @@ const LogIn = ({ loadUser }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+        credentials: "include", // Ważne dla ciasteczek HttpOnly
         body: JSON.stringify({
           username: login,
-          Password: password,
+          Password: password, // Upewnij się, że backend oczekuje dużej litery 'P'
         }),
       });
 

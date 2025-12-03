@@ -48,12 +48,14 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
       );
       setSelectedPlayers(newSelection);
     } else {
+      // Dodanie gracza
       if (selectedPlayers.length < MAX_PLAYERS) {
         const newPlayer = {
           userId: userToToggle.userId,
           username: userToToggle.username,
           avatarUrl: userToToggle.avatarUrl,
         };
+        // Pierwszy dodany gracz staje się automatycznie kapitanem (poprzez kolejność w tablicy)
         setSelectedPlayers((prev) => [...prev, newPlayer]);
       } else {
         setErrorMessage(
@@ -77,6 +79,8 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
       return;
     }
 
+    // Wysłanie danych. Kapitan jest zawsze na indeksie 0,
+    // co było ustalone w komponencie TeamsPage.jsx przy obsłudze onSave.
     onSave({
       name,
       description,
