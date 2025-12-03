@@ -3,9 +3,11 @@ import styles from "../styles/components/addTeamModal.module.css";
 
 const MAX_PLAYERS = 5;
 
-const UserListItem = ({ user, isSelected, onToggle }) => (
+const UserListItem = ({ user, isSelected, isCaptain, onToggle }) => (
   <div
-    className={`${styles.userListItem} ${isSelected ? styles.selected : ""}`}
+    className={`${styles.userListItem} ${isSelected ? styles.selected : ""} ${
+      isCaptain ? styles.captain : ""
+    }`}
     onClick={(e) => {
       e.stopPropagation();
       onToggle(user);
@@ -21,6 +23,7 @@ const UserListItem = ({ user, isSelected, onToggle }) => (
       }}
     />
     {user.username}
+    {isCaptain && <span className={styles.captainLabel}>👑 KAPITAN</span>}
   </div>
 );
 
@@ -40,16 +43,19 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
     );
 
     if (isCurrentlySelected) {
-      setSelectedPlayers((prev) =>
-        prev.filter((p) => p.userId !== userToToggle.userId)
+      const newSelection = selectedPlayers.filter(
+        (p) => p.userId !== userToToggle.userId
       );
+      setSelectedPlayers(newSelection);
     } else {
+      // Dodanie gracza
       if (selectedPlayers.length < MAX_PLAYERS) {
         const newPlayer = {
           userId: userToToggle.userId,
           username: userToToggle.username,
           avatarUrl: userToToggle.avatarUrl,
         };
+        // Pierwszy dodany gracz staje się automatycznie kapitanem (poprzez kolejność w tablicy)
         setSelectedPlayers((prev) => [...prev, newPlayer]);
       } else {
         setErrorMessage(
@@ -73,12 +79,17 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
       return;
     }
 
+    // Wysłanie danych. Kapitan jest zawsze na indeksie 0,
+    // co było ustalone w komponencie TeamsPage.jsx przy obsłudze onSave.
     onSave({
       name,
       description,
       players: selectedPlayers,
     });
   };
+
+  const captainId =
+    selectedPlayers.length > 0 ? selectedPlayers[0].userId : null;
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
@@ -128,6 +139,7 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
                     isSelected={selectedPlayers.some(
                       (p) => p.userId === user.userId
                     )}
+                    isCaptain={user.userId === captainId}
                     onToggle={handleTogglePlayer}
                   />
                 ))
@@ -136,7 +148,8 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
               )}
             </div>
             <small>
-              Kliknij, aby wybrać/odznaczyć gracza. Limit: {MAX_PLAYERS} osób.
+              Kliknij, aby wybrać/odznaczyć gracza. Pierwszy wybrany gracz to
+              automatycznie **Kapitan**. Limit: {MAX_PLAYERS} osób.
             </small>
           </div>
 
