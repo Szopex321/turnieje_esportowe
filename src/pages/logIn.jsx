@@ -2,15 +2,15 @@ import React, { useState } from "react";
 import styles from "../styles/pages/auth.module.css";
 import { Link, useNavigate } from "react-router-dom";
 
-const LogIn = () => {
+const LogIn = ({ loadUser }) => {
   const navigate = useNavigate();
   const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(""); // Stan do wyświetlania błędów
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Reset błędów przed nową próbą
+    setError("");
 
     try {
       const response = await fetch("/api/Auth/login", {
@@ -26,7 +26,29 @@ const LogIn = () => {
       });
 
       if (response.ok) {
-        console.log("Zalogowano pomyślnie");
+        const responseData = await response.json().catch(() => ({}));
+
+        if (responseData.token) {
+          localStorage.setItem("jwt_token", responseData.token);
+          console.log("Token JWT zapisany.");
+        }
+
+        const userToSave = {
+          username: responseData.username || login,
+          avatar: responseData.avatar || "",
+          role: responseData.role || "user",
+          isLoggedIn: true,
+        };
+
+        localStorage.setItem("currentUser", JSON.stringify(userToSave));
+
+        if (loadUser) {
+          await loadUser();
+        } else {
+          window.dispatchEvent(new Event("storage"));
+        }
+
+        console.log("Zalogowano pomyślnie.");
         navigate("/");
       } else {
         const data = await response.json().catch(() => ({}));
@@ -45,7 +67,11 @@ const LogIn = () => {
         <p className={styles.subtitle}>Log in to manage your tournaments</p>
 
         {error && (
-          <div style={{ color: "red", marginBottom: "10px" }}>{error}</div>
+          <div
+            style={{ color: "red", marginBottom: "10px", textAlign: "center" }}
+          >
+            {error}
+          </div>
         )}
 
         <form

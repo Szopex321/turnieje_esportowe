@@ -58,10 +58,9 @@
   font-size: 0.8em;
 }
 
-/* Wprowadzone zmiany: Kontener listy z suwakiem */
 .userListContainer {
-  max-height: 200px; /* Ustalona maksymalna wysokość dla suwaka */
-  overflow-y: auto; /* Aktywacja przewijania w pionie */
+  max-height: 200px;
+  overflow-y: auto;
   border: 1px solid #444;
   border-radius: 5px;
   padding: 5px;
@@ -69,7 +68,6 @@
   background-color: #1a1a1a;
 }
 
-/* Wprowadzone zmiany: Styl dla pojedynczego elementu listy */
 .userListItem {
   display: flex;
   align-items: center;
@@ -84,14 +82,12 @@
   background-color: #333;
 }
 
-/* Wprowadzone zmiany: Styl dla zaznaczonego użytkownika */
 .userListItem.selected {
   background-color: #ffd700;
   color: black;
   font-weight: bold;
 }
 
-/* Wprowadzone zmiany: Zmniejszenie rozmiaru avatarów */
 .userAvatar {
   width: 24px;
   height: 24px;
@@ -144,4 +140,31 @@
   border-radius: 4px;
   border: 1px solid #ff4d4d;
   display: block;
+}
+.userListItem.captain {
+  /* Podświetlenie całego wiersza */
+  border: 2px solid #ffd700; /* Złota ramka */
+  background-color: #383015; /* Lekko żółtawe tło */
+  position: relative;
+  font-weight: bold;
+}
+
+.userListItem.captain:hover {
+  background-color: #4b4121; /* Ciemniejszy hover */
+}
+
+/* Wyróżnienie etykiety 'KAPITAN' (span z klasą .captainLabel) */
+.captainLabel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: #ffd700;
+  color: #1a1a1a;
+  padding: 2px 8px;
+  border-top-right-radius: 4px;
+  border-bottom-left-radius: 4px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
