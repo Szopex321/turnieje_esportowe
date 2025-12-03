@@ -2,8 +2,7 @@
 
 /* Główny layout strony (taki sam jak na MainPage) */
 .pageWrapper {
-    min-height: 100vh;
-    background-color: #121212; /* Bardzo ciemne tło całej strony */
+    min-height: 100vh;/* Bardzo ciemne tło całej strony */
     display: flex;
     flex-direction: column;
 }
