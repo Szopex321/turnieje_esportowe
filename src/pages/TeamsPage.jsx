@@ -4,160 +4,92 @@ import TitleBar from "../components/titleBar";
 import styles from "../styles/pages/TeamsPage.module.css";
 import AddTeamModal from "../components/AddTeamModal";
 
-const API_BASE_URL = "https://projektturniej.onrender.com/api";
-
 function TeamsPage() {
-  const [teams, setTeams] = useState([]);
+  const initialTeams = [
+    {
+      name: "Ferrus Knights",
+      description: "Drużna aspirujących graczcy.",
+      logo: "https://placehold.co/150/000000/FFD700?text=FK",
+      players: [
+        { userId: 1, username: "Admin" },
+        { userId: 2, username: "Player2" },
+        { userId: 3, username: "Player3" },
+      ],
+    },
+    {
+      name: "E-nsane JSK",
+      description: "Nie wiem co tu robię, ale jest fajnie!",
+      logo: "https://placehold.co/150/ffffff/5e17eb?text=JSK",
+      players: [
+        { userId: 4, username: "Player4" },
+        { userId: 5, username: "Player5" },
+        { userId: 6, username: "Player6" },
+        { userId: 7, username: "Player7" },
+        { userId: 8, username: "Player8" },
+      ],
+    },
+    {
+      name: "HUWDU",
+      description: "Najlepsza drużyna pod słońcem.",
+      logo: "https://placehold.co/150/330033/FF00FF?text=H",
+      players: [
+        { userId: 9, username: "Player9" },
+        { userId: 10, username: "Player10" },
+      ],
+    },
+  ];
+
+  const [teams, setTeams] = useState(initialTeams);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/users`);
-      if (!response.ok) throw new Error("Network response was not ok");
-
-      const data = await response.json();
-      const simplifiedUsers = data.map((user) => ({
-        userId: user.userId,
-        username: user.username,
-        avatarUrl: user.avatarUrl,
-      }));
-
-      setAvailableUsers(simplifiedUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-    }
-  };
-
-  const fetchAllTeams = async () => {
-    try {
-      const teamsResponse = await fetch(`${API_BASE_URL}/teams`);
-      if (!teamsResponse.ok)
-        throw new Error("Błąd podczas pobierania wszystkich drużyn");
-
-      const allTeamsData = await teamsResponse.json();
-
-      const mappedTeams = allTeamsData.map((team) => {
-        const allPlayers = [];
-
-        if (team.captain) {
-          allPlayers.push({
-            userId: team.captain.userId,
-            username: team.captain.username,
-            avatarUrl: team.captain.avatarUrl,
-            isCaptain: true,
-          });
-        }
-
-        if (Array.isArray(team.members)) {
-          allPlayers.push(
-            ...team.members.map((member) => ({
-              userId: member.userId,
-              username: member.username,
-              avatarUrl: member.avatarUrl,
-              isCaptain: false,
-            }))
-          );
-        }
-
-        return {
-          id: team.teamId,
-          name: team.teamName,
-          description: team.description,
-          logo:
-            team.logoUrl ||
-            `https://placehold.co/150/999999/FFFFFF?text=${team.teamName
-              .substring(0, 2)
-              .toUpperCase()}`,
-          players: allPlayers,
-        };
-      });
-
-      setTeams(mappedTeams);
-    } catch (error) {
-      console.error("Błąd podczas pobierania drużyn:", error);
-      setTeams([]);
-    }
-  };
 
   useEffect(() => {
-    fetchUsers();
-    fetchAllTeams();
-  }, []);
-
-  const handleOpenAddTeamModal = () => {
-    const token = localStorage.getItem("jwt_token");
-
-    if (!token) {
-      alert(
-        "⚠️ Nie możesz utworzyć drużyny bez zalogowania. Zaloguj się, aby kontynuować."
-      );
-      return;
-    }
-
-    setIsModalOpen(true);
-  };
-
-  const handleAddTeam = (newTeamData) => {
-    const MOCK_TOURNAMENT_ID = 1;
-
-    const newTeam = {
-      teamName: newTeamData.name,
-      description: newTeamData.description,
-      captainId: newTeamData.players[0]?.userId,
-      memberIds: newTeamData.players
-        .map((p) => p.userId)
-        .filter((id, index) => index !== 0),
-      tournamentId: MOCK_TOURNAMENT_ID,
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch(
+          "https://projektturniej.onrender.com/api/users"
+        );
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
+        const simplifiedUsers = data.map((user) => ({
+          userId: user.userId,
+          username: user.username,
+          avatarUrl: user.avatarUrl,
+        }));
+        setAvailableUsers(simplifiedUsers);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
     };
 
-    const token = localStorage.getItem("jwt_token");
+    fetchUsers();
+  }, []);
 
-    fetch(`${API_BASE_URL}/teams`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(newTeam),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error(
-              "401 Unauthorized: Brak uprawnień lub wygasła sesja. Zaloguj się ponownie."
-            );
-          }
+  const handleAddTeam = (newTeamData) => {
+    const defaultColor = "999999";
 
-          let errorText = `Błąd (${response.status}): Serwer nie zwrócił treści błędu.`;
-          const contentType = response.headers.get("content-type");
+    const newTeam = {
+      name: newTeamData.name,
+      description: newTeamData.description,
+      logo: `https://placehold.co/150/${defaultColor}/FFFFFF?text=${newTeamData.name
+        .substring(0, 2)
+        .toUpperCase()}`,
+      players: newTeamData.players,
+    };
 
-          if (contentType?.includes("application/json")) {
-            try {
-              const errorData = await response.json();
-              errorText = errorData.message || JSON.stringify(errorData);
-            } catch (e) {
-              errorText = `Błąd (${response.status}): Błąd parsowania odpowiedzi serwera.`;
-            }
-          }
-          throw new Error(errorText);
-        }
-        return response.json();
-      })
-      .then(() => {
-        setIsModalOpen(false);
-        fetchAllTeams();
-      })
-      .catch((error) => {
-        console.error("Błąd dodawania drużyny:", error.message);
-        alert(`Błąd dodawania drużyny: ${error.message}`);
-      });
+    setTeams((prevTeams) => [...prevTeams, newTeam]);
+    setIsModalOpen(false);
   };
 
-  const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleRemoveLastTeam = () => {
+    if (teams.length > 0) {
+      setTeams((prevTeams) => prevTeams.slice(0, -1));
+    } else {
+      alert("Brak drużyn do usunięcia!");
+    }
+  };
 
   return (
     <>
@@ -168,32 +100,33 @@ function TeamsPage() {
           <div className={styles.header}>
             <h1>🏆 TEAMS 🏆</h1>
             <div className={styles.headerActions}>
-              <input
-                type="text"
-                placeholder="Szukaj drużyn..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.searchInput}
-              />
               <button
                 className={styles.addButton}
                 type="button"
-                onClick={handleOpenAddTeamModal}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsModalOpen(true);
+                }}
               >
                 ➕ Add Team
+              </button>
+              <button
+                className={styles.removeHeaderButton}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveLastTeam();
+                }}
+                title="Remove Last Team"
+              >
+                ➖ Remove Last
               </button>
             </div>
           </div>
 
           <div className={styles.teamGrid}>
-            {filteredTeams.length === 0 && searchTerm === "" && (
-              <p>Brak drużyn do wyświetlenia.</p>
-            )}
-            {filteredTeams.length === 0 && searchTerm !== "" && (
-              <p>Brak drużyn pasujących do "{searchTerm}".</p>
-            )}
-
-            {filteredTeams.map((team, index) => (
+            {teams.map((team, index) => (
               <div key={index} className={styles.cardWrapper}>
                 <div className={styles.teamCard}>
                   <div className={styles.cardBackground}></div>
