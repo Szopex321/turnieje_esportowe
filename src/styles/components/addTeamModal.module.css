@@ -58,10 +58,9 @@
   font-size: 0.8em;
 }
 
-/* Wprowadzone zmiany: Kontener listy z suwakiem */
 .userListContainer {
-  max-height: 200px; /* Ustalona maksymalna wysokość dla suwaka */
-  overflow-y: auto; /* Aktywacja przewijania w pionie */
+  max-height: 200px;
+  overflow-y: auto;
   border: 1px solid #444;
   border-radius: 5px;
   padding: 5px;
@@ -69,7 +68,6 @@
   background-color: #1a1a1a;
 }
 
-/* Wprowadzone zmiany: Styl dla pojedynczego elementu listy */
 .userListItem {
   display: flex;
   align-items: center;
@@ -84,14 +82,12 @@
   background-color: #333;
 }
 
-/* Wprowadzone zmiany: Styl dla zaznaczonego użytkownika */
 .userListItem.selected {
   background-color: #ffd700;
   color: black;
   font-weight: bold;
 }
 
-/* Wprowadzone zmiany: Zmniejszenie rozmiaru avatarów */
 .userAvatar {
   width: 24px;
   height: 24px;
@@ -144,4 +140,50 @@
   border-radius: 4px;
   border: 1px solid #ff4d4d;
   display: block;
+}
+.captain {
+  background-color: #3a2c0c !important;
+  border-left: 3px solid #ffd700;
+}
+
+.captain.selected {
+  background-color: #ffd700 !important;
+  color: #000 !important;
+}
+
+.captainBadge {
+  color: #ffd700;
+  font-weight: bold;
+  margin-left: 5px;
+  font-size: 0.9em;
+}
+
+.disabled {
+  opacity: 0.8;
+  cursor: not-allowed !important;
+  background-color: #2a2a2a !important;
+}
+
+.disabled:hover {
+  background-color: #2a2a2a !important;
+}
+
+.userName {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.captainInfo {
+  background-color: #3a2c0c;
+  border: 1px solid #ffd700;
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 10px;
+  font-size: 0.9em;
+}
+
+.captainInfo strong {
+  color: #ffd700;
 }
