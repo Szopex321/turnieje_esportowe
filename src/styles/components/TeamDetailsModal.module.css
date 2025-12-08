@@ -1,0 +1,327 @@
+/* styles/components/TeamDetailsModal.module.css */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background: #1e1e1e;
+  padding: 30px;
+  border-radius: 10px;
+  max-width: 450px;
+  width: 90%;
+  border: 1px solid #333;
+  color: #f0f0f0;
+  text-align: center;
+}
+
+.errorText {
+  color: #ff4d4f !important;
+  background-color: #381010;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  border: 1px solid #c0392b;
+  font-weight: bold;
+}
+
+.teamLogo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-bottom: 15px;
+  border: 4px solid #ffd700;
+}
+
+h2 {
+  color: #ffd700;
+  margin-bottom: 5px;
+  font-size: 1.8em;
+  text-transform: uppercase;
+}
+
+.description {
+  font-style: italic;
+  color: #aaaaaa;
+  margin-bottom: 20px;
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background-color: #333;
+  margin: 20px 0;
+}
+
+.section h3 {
+  color: #f0f0f0;
+  margin-bottom: 15px;
+  font-size: 1.2em;
+  font-weight: 500;
+}
+
+.pendingHeader {
+  color: #f39c12;
+}
+
+.playersList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 10px;
+  background: #282828;
+  border-radius: 6px;
+  text-align: left;
+}
+
+.playerItem {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 8px 10px;
+  border-bottom: 1px dotted #444;
+}
+
+.playerItem:last-child {
+  border-bottom: none;
+}
+
+.playerAvatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #555;
+}
+
+.playerName {
+  flex-grow: 1;
+  font-weight: 400;
+  color: #f0f0f0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.captainTag {
+  background: #e74c3c;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.pendingTag {
+  background: #f39c12;
+  color: #1e1e1e;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.8em;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.kickButton {
+  background-color: #c0392b;
+  color: white;
+  padding: 3px 8px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8em;
+  font-weight: bold;
+  transition: background-color 0.2s;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.kickButton:hover {
+  background-color: #e74c3c;
+}
+
+.actions {
+  margin-top: 25px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.joinButton,
+.closeButton,
+.manageButton,
+.disbandButton,
+.leaveButton {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.joinButton,
+.manageButton,
+.disbandButton,
+.leaveButton {
+  flex: 1 1 45%;
+  min-width: 120px;
+}
+
+.joinButton {
+  background-color: #3498db;
+  color: white;
+}
+
+.joinButton:hover {
+  background-color: #2980b9;
+  transform: translateY(-1px);
+}
+
+.inviteButton {
+  background-color: #f39c12;
+  color: #1e1e1e;
+}
+
+.inviteButton:hover {
+  background-color: #e67e22;
+  transform: translateY(-1px);
+}
+
+.disbandButton {
+  background-color: #c0392b;
+  color: white;
+}
+
+.disbandButton:hover {
+  background-color: #e74c3c;
+}
+
+.disbandButton:disabled {
+  background-color: #444;
+  color: #777;
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.disbandButton:disabled:hover {
+  background-color: #444;
+}
+
+.leaveButton {
+  background-color: #7f8c8d;
+  color: white;
+}
+
+.leaveButton:hover {
+  background-color: #95a5a6;
+}
+
+.closeButton {
+  background-color: #444;
+  color: white;
+  margin-left: auto;
+  flex-basis: 100px;
+  flex-grow: 0;
+}
+
+.closeButton:hover {
+  background-color: #555;
+}
+
+.infoText {
+  color: #f39c12;
+  background: #282828;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  flex-grow: 1;
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .modalContent {
+    padding: 20px;
+  }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .joinButton,
+  .manageButton,
+  .disbandButton,
+  .leaveButton,
+  .closeButton {
+    width: 100%;
+    flex-basis: auto;
+  }
+}
+.avatarSelectionContent {
+  max-width: 600px; /* Większy rozmiar dla siatki awatarów */
+}
+
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 15px;
+  padding: 20px 10px;
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: #282828;
+  border-radius: 6px;
+}
+
+.teamAvatar {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: border-color 0.2s, transform 0.1s;
+}
+
+.teamAvatar:hover {
+  border-color: #3498db;
+  transform: scale(1.05);
+}
+
+.selectedAvatar {
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.avatarGridItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.removeAvatar {
+  background-color: #c0392b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2em;
+  color: white;
+}
