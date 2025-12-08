@@ -1,12 +1,25 @@
+/* src/styles/pages/TeamsPage.module.css */
+
+/* ZDEFINIOWANIE ZMIENNYCH */
+:root {
+  --card-dark: #1f1f1f;
+  --text-light: #f0f0f0;
+  --border-dark: #2a2a2a;
+  --team-color: var(--accent-gold); /* Domyślny kolor */
+}
+
 .mainContent {
   display: flex;
   min-height: 100vh;
   color: white;
+  background-color: var(--bg-dark);
 }
 
 .container {
   flex: 1;
-  padding: 40px;
+  padding: 20px 40px 40px 40px;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
 .header {
@@ -14,11 +27,17 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--border-dark);
 }
 
 .header h1 {
   color: #fff;
   font-family: "Arial", sans-serif;
+  font-size: 2.5em;
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin: 0;
 }
 
 .headerActions {
@@ -28,18 +47,19 @@
 
 .addButton {
   padding: 10px 20px;
-  background-color: #ffd700;
-  color: black;
+  background-color: var(--accent-gold);
+  color: var(--bg-dark);
   font-weight: bold;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: background-color 0.3s, transform 0.2s;
 }
 
 .addButton:hover {
   background-color: #e6c200;
+  transform: translateY(-1px);
 }
 
 .removeHeaderButton {
@@ -69,8 +89,8 @@
   padding: 5px;
   z-index: 10;
   opacity: 0.7;
-  transition: opacity 0.2s;
   color: white;
+  transition: opacity 0.2s;
 }
 
 .removeButton:hover {
@@ -79,38 +99,49 @@
 }
 
 .teamGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 40px;
   justify-content: flex-start;
 }
 
 .cardWrapper {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  transition: transform 0.3s ease;
+  position: relative;
+  display: block;
+  width: 220px;
+  height: 300px;
+  cursor: pointer;
+  overflow: visible;
+  border-radius: 12px;
+  transition: transform 0.3s, box-shadow 0.3s;
+  background-color: #111;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 }
 
 .cardWrapper:hover {
   transform: translateY(-5px);
+  /* ⚠️ ZEWNĘTRZNY GLOW: DYNAMICZNY KOLOR */
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6),
+    0 0 15px var(--team-color, var(--accent-gold));
 }
 
 .teamCard {
   position: relative;
-  width: 220px;
-  height: 300px;
-  background: #111;
+  width: 100%;
+  height: 100%;
   border: 2px solid #333;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
+/* ⚠️ WEWNĘTRZNY GLOW KARTY: DYNAMICZNY KOLOR */
 .teamCard::after {
   content: "";
   position: absolute;
@@ -118,11 +149,12 @@
   left: 10px;
   right: 10px;
   bottom: 10px;
-  border: 1px solid #ffd700;
+  border: 1px solid transparent;
   border-radius: 8px;
   pointer-events: none;
   z-index: 2;
-  box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.1);
+  /* Teraz używa dynamicznego koloru zamiast stałego złotego */
+  box-shadow: inset 0 0 10px var(--team-color, var(--accent-gold));
 }
 
 .cardBackground {
@@ -144,7 +176,7 @@
 
 .cardContent {
   position: relative;
-  z-index: 2;
+  z-index: 3;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -158,8 +190,9 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  border: 4px solid #ffd700;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+  border: 4px solid transparent;
+  /* ⚠️ GLOW LOGO: DYNAMICZNY KOLOR */
+  box-shadow: 0 0 15px var(--team-color, var(--accent-gold));
   overflow: hidden;
   background: black;
   margin-bottom: 15px;
@@ -197,28 +230,37 @@
   word-wrap: break-word;
   word-break: break-word;
   overflow-wrap: break-word;
+  padding: 0 10px;
 }
 
 .playersSidebar {
+  position: absolute;
+  top: 0px;
+  right: -30px;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding-top: 10px;
-  max-width: 80px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 8px;
+  padding: 8px 0;
+  max-width: none;
+  z-index: 5;
 }
 
+/* ⚠️ AWATARY: DYNAMICZNY KOLOR (każdy avatar dziedziczy kolor swojej drużyny) */
 .playerAvatar {
   width: 24px;
   height: 24px;
   border-radius: 50%;
   overflow: hidden;
-  transition: transform 0.2s, border-color 0.2s;
-  border: 2px solid transparent;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  background-color: #333333;
+  /* Używa dynamicznego koloru drużyny zamiast stałego złotego */
+  border: 2px solid var(--team-color, var(--accent-gold));
+  box-shadow: 0 0 7px var(--team-color, rgba(255, 215, 0, 0.7));
 }
 
 .playerAvatar:hover {
-  border-color: #ffd700;
+  border-color: #fff;
   transform: scale(1.1);
 }
 
@@ -227,4 +269,31 @@
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.searchBar {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.searchBar input {
+  padding: 10px 15px;
+  background-color: #2c2c2c;
+  color: white;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-size: 16px;
+  width: 250px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.searchBar input::placeholder {
+  color: #888;
+}
+
+.searchBar input:focus {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+  outline: none;
 }

@@ -3,27 +3,40 @@ import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
 import styles from "../styles/pages/TeamsPage.module.css";
 import AddTeamModal from "../components/AddTeamModal";
+import TeamDetailsModal from "../components/TeamDetailsModal";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
-function TeamsPage() {
+const TEAM_COLORS = [
+  "#FFD700",
+  "#1E90FF",
+  "#00FF7F",
+  "#FF6347",
+  "#DA70D6",
+  "#FFA500",
+  "#B0C4DE",
+  "#FF4500",
+  "#ADFF2F",
+];
+
+function TeamsPage({ user, onNotificationsRefresh }) {
   const [teams, setTeams] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/users`);
       if (!response.ok) throw new Error("Network response was not ok");
-
       const data = await response.json();
       const simplifiedUsers = data.map((user) => ({
         userId: user.userId,
         username: user.username,
         avatarUrl: user.avatarUrl,
       }));
-
       setAvailableUsers(simplifiedUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -33,47 +46,56 @@ function TeamsPage() {
   const fetchAllTeams = async () => {
     try {
       const teamsResponse = await fetch(`${API_BASE_URL}/teams`);
-      if (!teamsResponse.ok)
+      if (!teamsResponse.ok) {
+        console.error("Błąd serwera (500) lub inny:", teamsResponse.status);
         throw new Error("Błąd podczas pobierania wszystkich drużyn");
-
+      }
       const allTeamsData = await teamsResponse.json();
-
-      const mappedTeams = allTeamsData.map((team) => {
+      const mappedTeams = allTeamsData.map((team, index) => {
         const allPlayers = [];
-
+        const addedUserIds = new Set();
         if (team.captain) {
           allPlayers.push({
             userId: team.captain.userId,
-            username: team.captain.username,
+            username: team.captain.username || "Nieznany",
             avatarUrl: team.captain.avatarUrl,
             isCaptain: true,
+            status: "Member",
+          });
+          addedUserIds.add(team.captain.userId);
+        }
+        const membersList = team.teamMembers || [];
+        if (Array.isArray(membersList)) {
+          membersList.forEach((member) => {
+            const userData = member.user;
+            if (userData && !addedUserIds.has(userData.userId)) {
+              allPlayers.push({
+                userId: userData.userId,
+                username: userData.username || "Brak nicku",
+                avatarUrl: userData.avatarUrl,
+                isCaptain: false,
+                status: member.status,
+              });
+              addedUserIds.add(userData.userId);
+            }
           });
         }
-
-        if (Array.isArray(team.members)) {
-          allPlayers.push(
-            ...team.members.map((member) => ({
-              userId: member.userId,
-              username: member.username,
-              avatarUrl: member.avatarUrl,
-              isCaptain: false,
-            }))
-          );
-        }
-
         return {
           id: team.teamId,
           name: team.teamName,
           description: team.description,
+          captainId: parseInt(team.captainId, 10),
+          teamColor: team.color || TEAM_COLORS[index % TEAM_COLORS.length],
           logo:
             team.logoUrl ||
-            `https://placehold.co/150/999999/FFFFFF?text=${team.teamName
+            `https://placehold.co/150/999999/FFFFFF?text=${(
+              team.teamName || "T"
+            )
               .substring(0, 2)
               .toUpperCase()}`,
           players: allPlayers,
         };
       });
-
       setTeams(mappedTeams);
     } catch (error) {
       console.error("Błąd podczas pobierania drużyn:", error);
@@ -88,75 +110,53 @@ function TeamsPage() {
 
   const handleOpenAddTeamModal = () => {
     const token = localStorage.getItem("jwt_token");
-
     if (!token) {
-      alert(
-        "⚠️ Nie możesz utworzyć drużyny bez zalogowania. Zaloguj się, aby kontynuować."
-      );
+      alert("⚠️ Nie możesz utworzyć drużyny bez zalogowania.");
       return;
     }
-
     setIsModalOpen(true);
   };
 
-  const handleAddTeam = (newTeamData) => {
-    const MOCK_TOURNAMENT_ID = 1;
+  const handleOpenTeamDetails = (team) => {
+    setSelectedTeam(team);
+    setIsDetailsModalOpen(true);
+  };
 
-    const newTeam = {
-      teamName: newTeamData.name,
-      description: newTeamData.description,
-      captainId: newTeamData.players[0]?.userId,
-      memberIds: newTeamData.players
-        .map((p) => p.userId)
-        .filter((id, index) => index !== 0),
-      tournamentId: MOCK_TOURNAMENT_ID,
-    };
-
+  const handleJoinTeam = async (teamId) => {
     const token = localStorage.getItem("jwt_token");
-
-    fetch(`${API_BASE_URL}/teams`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(newTeam),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error(
-              "401 Unauthorized: Brak uprawnień lub wygasła sesja. Zaloguj się ponownie."
-            );
-          }
-
-          let errorText = `Błąd (${response.status}): Serwer nie zwrócił treści błędu.`;
-          const contentType = response.headers.get("content-type");
-
-          if (contentType?.includes("application/json")) {
-            try {
-              const errorData = await response.json();
-              errorText = errorData.message || JSON.stringify(errorData);
-            } catch (e) {
-              errorText = `Błąd (${response.status}): Błąd parsowania odpowiedzi serwera.`;
-            }
-          }
-          throw new Error(errorText);
-        }
-        return response.json();
-      })
-      .then(() => {
-        setIsModalOpen(false);
-        fetchAllTeams();
-      })
-      .catch((error) => {
-        console.error("Błąd dodawania drużyny:", error.message);
-        alert(`Błąd dodawania drużyny: ${error.message}`);
+    if (!token) {
+      alert("Musisz być zalogowany, aby dołączyć.");
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${teamId}/join`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
+      if (response.ok) {
+        alert("✅ Prośba o dołączenie wysłana! Czekaj na akceptację kapitana.");
+        if (onNotificationsRefresh) onNotificationsRefresh();
+      } else {
+        let errorMessage = `Błąd (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.detail || errorData.message || errorMessage;
+        } catch (e) {}
+        throw new Error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Błąd dołączania:", error);
+      alert(`Błąd: ${error.message}`);
+    } finally {
+      setIsDetailsModalOpen(false);
+      fetchAllTeams();
+    }
   };
 
   const filteredTeams = teams.filter((team) =>
-    team.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (team.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -166,60 +166,66 @@ function TeamsPage() {
         <Nav />
         <div className={styles.container}>
           <div className={styles.header}>
-            <h1>🏆 TEAMS 🏆</h1>
-            <div className={styles.headerActions}>
+            <h1>Teams</h1>
+            <div className={styles.searchBar}>
               <input
                 type="text"
-                placeholder="Szukaj drużyn..."
+                placeholder="Search teams..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={styles.searchInput}
               />
               <button
                 className={styles.addButton}
-                type="button"
                 onClick={handleOpenAddTeamModal}
               >
                 ➕ Add Team
               </button>
             </div>
           </div>
-
           <div className={styles.teamGrid}>
-            {filteredTeams.length === 0 && searchTerm === "" && (
-              <p>Brak drużyn do wyświetlenia.</p>
-            )}
-            {filteredTeams.length === 0 && searchTerm !== "" && (
-              <p>Brak drużyn pasujących do "{searchTerm}".</p>
-            )}
-
             {filteredTeams.map((team, index) => (
-              <div key={index} className={styles.cardWrapper}>
+              <div
+                key={index}
+                className={styles.cardWrapper}
+                onClick={() => handleOpenTeamDetails(team)}
+                style={{
+                  "--team-color":
+                    team.teamColor || TEAM_COLORS[index % TEAM_COLORS.length],
+                }}
+              >
                 <div className={styles.teamCard}>
                   <div className={styles.cardBackground}></div>
                   <div className={styles.cardContent}>
                     <div className={styles.logoWrapper}>
                       <img
                         src={team.logo}
-                        alt={team.name}
+                        alt={`${team.name} logo`}
                         className={styles.teamLogo}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = `https://placehold.co/150/999999/FFFFFF?text=${(
+                            team.name || "T"
+                          )
+                            .substring(0, 2)
+                            .toUpperCase()}`;
+                        }}
                       />
                     </div>
-                    <h2 className={styles.teamName}>{team.name}</h2>
-                    <span className={styles.status}>{team.description}</span>
+                    <h3 className={styles.teamName}>{team.name}</h3>
+                    <p className={styles.description}>
+                      {team.description || "Brak opisu"}
+                    </p>
                   </div>
                 </div>
-
                 <div className={styles.playersSidebar}>
-                  {team.players.map((player, i) => (
-                    <div key={i} className={styles.playerAvatar}>
+                  {team.players.slice(0, 6).map((player, pIndex) => (
+                    <div key={pIndex} className={styles.playerAvatar}>
                       <img
                         src={
                           player.avatarUrl ||
                           `https://i.pravatar.cc/150?u=${player.userId}`
                         }
                         alt={player.username}
-                        className={styles.playerAvatar}
                       />
                     </div>
                   ))}
@@ -229,12 +235,27 @@ function TeamsPage() {
           </div>
         </div>
       </div>
-
       {isModalOpen && (
         <AddTeamModal
           onClose={() => setIsModalOpen(false)}
-          onSave={handleAddTeam}
+          onSave={() => {
+            fetchAllTeams();
+            if (onNotificationsRefresh) onNotificationsRefresh();
+            setIsModalOpen(false);
+          }}
           availableUsers={availableUsers}
+        />
+      )}
+      {isDetailsModalOpen && selectedTeam && (
+        <TeamDetailsModal
+          team={selectedTeam}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            fetchAllTeams();
+          }}
+          onJoin={handleJoinTeam}
+          onRefresh={fetchAllTeams}
+          onNotificationsRefresh={onNotificationsRefresh}
         />
       )}
     </>
