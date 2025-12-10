@@ -261,8 +261,8 @@ const TeamDetailsModal = ({
           className={styles.modalContent}
           onClick={(e) => e.stopPropagation()}
         >
-                    {error && <p className={styles.errorText}>❌ {error}</p>}
-                   {" "}
+                    {error && <p className={styles.errorText}>❌ {error}</p>}   
+               {" "}
           <img
             src={team.logo}
             alt={`${team.name} logo`}
