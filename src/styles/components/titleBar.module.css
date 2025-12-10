@@ -1,23 +1,16 @@
-/* src/styles/components/titleBar.module.css */
-
-/* Główny pasek nawigacji */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-
-  height: 80px; /* Stała wysokość */
+  height: 80px;
   box-sizing: border-box;
 }
-
-/* LEWA STRONA - Logo i Tytuł */
 .titleSection {
   display: flex;
   align-items: center;
   gap: 20px;
 }
-
 .logo {
   width: 60px;
   height: 60px;
@@ -25,13 +18,11 @@
   align-items: center;
   justify-content: center;
 }
-
 .logoImage {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-
 .title h2 {
   margin: 0;
   font-size: 22px;
@@ -39,22 +30,55 @@
   font-weight: 700;
   letter-spacing: 0.5px;
 }
-
-/* PRAWA STRONA - Kontener ogólny */
 .headerRight {
   display: flex;
   align-items: center;
 }
+.notificationIcon {
+  cursor: pointer;
+  font-size: 24px;
+  color: #facc15;
+  transition: opacity 0.2s;
+}
+.notificationIcon:hover {
+  opacity: 0.8;
+}
+.friendsIconButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+}
 
-/* --- ZALOGOWANY UŻYTKOWNIK --- */
+.friendsIconButton:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.friendsIcon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  /* Ten sam kolor co w .welcomeText strong */
+  filter: invert(88%) sepia(35%) saturate(712%) hue-rotate(1deg)
+    brightness(101%) contrast(97%);
+}
+
+.friendsIconButton:hover .friendsIcon {
+  filter: invert(88%) sepia(35%) saturate(712%) hue-rotate(1deg)
+    brightness(101%) contrast(97%);
+}
 
 .userInfoContainer {
   display: flex;
   align-items: center;
-  gap: 25px; /* Odstęp między profilem a przyciskiem wylogowania */
+  gap: 20px;
 }
-
-/* Sekcja klikalna (Nick + Avatar) */
 .userProfile {
   display: flex;
   align-items: center;
@@ -63,37 +87,30 @@
   border-radius: 8px;
   transition: background-color 0.2s ease, opacity 0.2s ease;
 }
-
-/* Efekt najechania myszką na profil */
 .userProfile:hover {
-  background-color: rgba(255, 255, 255, 0.05); /* Lekkie podświetlenie */
+  background-color: rgba(255, 255, 255, 0.05);
   opacity: 0.9;
 }
-
 .welcomeText {
   font-size: 15px;
-  color: #cbd5e0; /* Jasnoszary */
+  color: #cbd5e0;
   text-align: right;
 }
-
 .welcomeText strong {
-  color: #facc15; /* Złoty akcent dla nicku */
-  display: block; /* Nick w nowej linii lub obok - tu obok */
+  color: #facc15;
+  display: block;
   font-weight: 600;
 }
-
 .userAvatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #facc15; /* Złota ramka wokół zdjęcia */
+  border: 2px solid #facc15;
 }
-
-/* Przycisk Wylogowania */
 .logoutButton {
   background-color: transparent !important;
-  border: 1px solid #ef4444 !important; /* Czerwona ramka */
+  border: 1px solid #ef4444 !important;
   color: #ef4444 !important;
   padding: 8px 16px;
   border-radius: 6px;
@@ -102,20 +119,15 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
-
 .logoutButton:hover {
   background-color: #ef4444 !important;
   color: white !important;
 }
-
-/* --- GOŚĆ (Przyciski Log In / Sign Up) --- */
-
 .authButtons {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-
 .logInButton {
   background-color: transparent;
   color: #ffffff;
@@ -126,7 +138,6 @@
   font-weight: 600;
   transition: all 0.2s;
 }
-
 .signUpButton {
   background-color: #facc15;
   color: #000000;
@@ -136,4 +147,42 @@
   cursor: pointer;
   font-weight: 700;
   transition: background-color 0.2s;
+}
+.friendsButton {
+  display: none;
+}
+.notificationButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 15px;
+  position: relative;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+}
+
+.notificationButton:hover {
+  background-color: rgba(250, 204, 21, 0.1);
+}
+
+.notificationIcon {
+  color: #facc15;
+}
+
+.notificationBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: #ef4444;
+  color: white;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #1a202c;
 }
