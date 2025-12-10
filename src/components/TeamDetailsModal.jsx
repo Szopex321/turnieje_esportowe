@@ -186,12 +186,12 @@ const TeamDetailsModal = ({
     }
   };
 
-  // const handleUpdateLogo = () => {
-  //   // Funkcjonalność zmiany logo jest WYŁĄCZONA
-  //   setError(
-  //     "Funkcja zmiany logo jest tymczasowo niedostępna z powodu błędu serwera (405)."
-  //   );
-  // };
+  const handleUpdateLogo = () => {
+    // Funkcjonalność zmiany logo jest WYŁĄCZONA
+    setError(
+      "Funkcja zmiany logo jest tymczasowo niedostępna z powodu błędu serwera (405)."
+    );
+  };
 
   const handleKickPlayer = async (userIdToKick, username) => {
     if (!isCaptain || !currentUser) return;
@@ -261,8 +261,8 @@ const TeamDetailsModal = ({
           className={styles.modalContent}
           onClick={(e) => e.stopPropagation()}
         >
-                    {error && <p className={styles.errorText}>❌ {error}</p>}   
-               {" "}
+                    {error && <p className={styles.errorText}>❌ {error}</p>}
+                   {" "}
           <img
             src={team.logo}
             alt={`${team.name} logo`}
@@ -348,12 +348,12 @@ const TeamDetailsModal = ({
                                     📨 Zaproś (Invites)                {" "}
                 </button>
                                {" "}
-                {/* <button
+                <button
                   className={styles.manageButton}
                   onClick={handleUpdateLogo}
                 >
                                     🖼️ Zmień Logo (Update Logo)                {" "}
-                </button> */}
+                </button>
                                {" "}
                 <button
                   className={`${styles.manageButton} ${styles.disbandButton}`}
@@ -409,7 +409,7 @@ const TeamDetailsModal = ({
           }}
         />
       )}
-            {/* {showAvatarModal && ( ... ) } */}   {" "}
+         {" "}
     </>
   );
 };
