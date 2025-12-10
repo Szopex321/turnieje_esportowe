@@ -2,7 +2,6 @@
 import React, { useMemo, useState } from "react";
 import styles from "../styles/components/TeamDetailsModal.module.css";
 import TeamInvitationModal from "./TeamInvitationModal";
-import TeamAvatarSelectionModal from "./TeamAvatarSelectionModal";
 
 const API_BASE_URL = "/api";
 const MAX_PLAYERS = 5;
@@ -63,9 +62,7 @@ const TeamDetailsModal = ({
   onNotificationsRefresh,
 }) => {
   const [error, setError] = useState(null);
-  const [showInviteModal, setShowInviteModal] = useState(false);
-  const [showAvatarModal, setShowAvatarModal] = useState(false);
-
+  const [showInviteModal, setShowInviteModal] = useState(false); // const [showAvatarModal, setShowAvatarModal] = useState(false); // USUNIĘTY
   const currentUser = useMemo(() => getCurrentUser(), []);
   const isLogged = !!currentUser;
 
@@ -189,42 +186,11 @@ const TeamDetailsModal = ({
     }
   };
 
-  const updateTeamLogo = async (newLogoUrl) => {
-    if (!isCaptain || !currentUser) return;
-    setError(null);
-
-    if (newLogoUrl === null) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/teams/${team.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${currentUser.token}`,
-        },
-        body: JSON.stringify({ logoUrl: newLogoUrl.trim() }),
-      });
-
-      if (response.ok) {
-        cleanupAndClose("✅ Logo drużyny zostało pomyślnie zaktualizowane.");
-      } else {
-        const data = await response.json().catch(() => ({}));
-        setError(
-          data.message ||
-            `Nie udało się zaktualizować logo. Status: ${response.status}`
-        );
-      }
-    } catch (err) {
-      console.error("Logo update error:", err);
-      setError("Wystąpił błąd sieci podczas aktualizacji logo.");
-    }
-  };
-
   const handleUpdateLogo = () => {
-    if (!isCaptain || !currentUser) return;
-    setShowAvatarModal(true);
+    // Funkcjonalność zmiany logo jest WYŁĄCZONA
+    setError(
+      "Funkcja zmiany logo jest tymczasowo niedostępna z powodu błędu serwera (405)."
+    );
   };
 
   const handleKickPlayer = async (userIdToKick, username) => {
@@ -382,12 +348,12 @@ const TeamDetailsModal = ({
                                     📨 Zaproś (Invites)                {" "}
                 </button>
                                {" "}
-                {/* <button
+                <button
                   className={styles.manageButton}
                   onClick={handleUpdateLogo}
                 >
                                     🖼️ Zmień Logo (Update Logo)                {" "}
-                </button> */}
+                </button>
                                {" "}
                 <button
                   className={`${styles.manageButton} ${styles.disbandButton}`}
@@ -443,19 +409,7 @@ const TeamDetailsModal = ({
           }}
         />
       )}
-           {" "}
-      {showAvatarModal && (
-        <TeamAvatarSelectionModal
-          teamId={team.id}
-          currentLogoUrl={team.logo}
-          onClose={() => setShowAvatarModal(false)}
-          onLogoSelected={(url) => {
-            updateTeamLogo(url);
-            setShowAvatarModal(false);
-          }}
-        />
-      )}
-         {" "}
+            {/* {showAvatarModal && ( ... ) } */}   {" "}
     </>
   );
 };
