@@ -8,6 +8,34 @@ const LogIn = ({ loadUser }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
+  const fetchUserId = async (token) => {
+    try {
+      const meResponse = await fetch("/api/Auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (meResponse.ok) {
+        const userData = await meResponse.json();
+        if (userData.id) {
+          localStorage.setItem("currentUserId", String(userData.id));
+          console.log(
+            "ID użytkownika pobrane z /me i zapisane: " + userData.id
+          );
+          return true;
+        }
+      }
+      console.error(
+        "Nie udało się pobrać ID użytkownika z /api/Auth/me po zalogowaniu."
+      );
+      return false;
+    } catch (err) {
+      console.error("Błąd podczas żądania /api/Auth/me:", err);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -18,19 +46,25 @@ const LogIn = ({ loadUser }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Ważne dla ciasteczek HttpOnly
+        credentials: "include",
         body: JSON.stringify({
           username: login,
-          Password: password, // Upewnij się, że backend oczekuje dużej litery 'P'
+          Password: password,
         }),
       });
 
       if (response.ok) {
         const responseData = await response.json().catch(() => ({}));
+        let token = null;
 
         if (responseData.token) {
           localStorage.setItem("jwt_token", responseData.token);
-          console.log("Token JWT zapisany."); //otrzymywanie tokena
+          token = responseData.token;
+          console.log("Token JWT zapisany.");
+        }
+
+        if (token) {
+          await fetchUserId(token);
         }
 
         const userToSave = {

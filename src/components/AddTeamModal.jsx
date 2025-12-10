@@ -1,57 +1,56 @@
 import React, { useState, useEffect } from "react";
-import styles from "../styles/components/addTeamModal.module.css";
-
+import styles from "../styles/components/AddTeamModal.module.css";
+const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
 
-// Funkcja do pobrania zalogowanego użytkownika z localStorage
 const getCurrentUser = () => {
   try {
     const savedUserJSON = localStorage.getItem("currentUser");
     const jwtToken = localStorage.getItem("jwt_token");
+    const currentUserIdString = localStorage.getItem("currentUserId");
 
-    if (savedUserJSON && jwtToken) {
+    if (savedUserJSON && jwtToken && currentUserIdString) {
       const user = JSON.parse(savedUserJSON);
       return {
-        userId: user.userId,
+        userId: parseInt(currentUserIdString, 10),
         username: user.username,
+        token: jwtToken,
         avatarUrl:
           user.avatar ||
           user.avatarUrl ||
-          `https://i.pravatar.cc/150?u=${user.userId}`,
+          `https://i.pravatar.cc/150?u=${currentUserIdString}`,
       };
     }
   } catch (e) {
-    console.error("Błąd odczytu danych użytkownika:", e);
+    console.error("Error reading user data:", e);
   }
   return null;
 };
 
-// Komponent UserListItem - zmieniony, aby przyjmować onError jako prop
 const UserListItem = ({
   user,
   isSelected,
   isCaptain,
   onToggle,
   isDisabled = false,
-  onError = null, // Dodany prop do obsługi błędów
+  onError = null,
 }) => (
   <div
-    className={`${styles.userListItem} ${isSelected ? styles.selected : ""} ${
-      isCaptain ? styles.captain : ""
-    } ${isDisabled ? styles.disabled : ""}`}
+    className={`${styles.userListItem}${
+      isSelected ? ` ${styles.selected}` : ""
+    }${isCaptain ? ` ${styles.captain}` : ""}${
+      isDisabled ? ` ${styles.disabled}` : ""
+    }`}
     onClick={(e) => {
       if (isDisabled) {
-        if (onError) {
-          onError("Jesteś Kapitanem tej drużyny i nie można Cię usunąć.");
-        }
+        if (onError)
+          onError("You are the Captain of this team and cannot be removed.");
         return;
       }
       e.stopPropagation();
       onToggle(user);
     }}
-    title={
-      isDisabled ? "Nie można usunąć Kapitana" : "Kliknij, aby wybrać/odznaczyć"
-    }
+    title={isDisabled ? "Cannot remove Captain" : "Click to select/unselect"}
   >
     <img
       src={user.avatarUrl || `https://i.pravatar.cc/150?u=${user.userId}`}
@@ -62,106 +61,186 @@ const UserListItem = ({
         e.target.src = `https://i.pravatar.cc/150?u=${user.userId}`;
       }}
     />
+    {/* KLUCZOWA POPRAWKA STABILNOŚCI DLA CSS (UCINANIE TEKSTU) */}
     <span className={styles.userName}>
-      {user.username}
-      {isCaptain && <span className={styles.captainBadge}> 👑 KAPITAN</span>}
+      <span className={styles.usernameDisplay}>{user.username}</span>
+      {isCaptain && <span className={styles.captainBadge}>👑 CAPTAIN</span>}
     </span>
   </div>
 );
 
-const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
-  // Pobierz zalogowanego użytkownika (Kapitana)
+const AddTeamModal = ({ onClose, onSave }) => {
   const [currentUser, setCurrentUser] = useState(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Zmieniono z powrotem na 'friends'
+  const [friends, setFriends] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Przywrócono endpoint /friends
+  const fetchFriends = async (token) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/friends`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => ({ message: "Server error." }));
+        throw new Error(errorData.message || "Error loading friends list.");
+      }
+      const data = await response.json();
+      const friendList = data.map((friend) => ({
+        userId: parseInt(friend.userId || friend.id, 10), // Dostosowanie do userId/id z backendu
+        username: friend.username,
+        avatarUrl:
+          friend.avatarUrl ||
+          `https://i.pravatar.cc/150?u=${friend.userId || friend.id}`,
+      }));
+      setFriends(friendList);
+    } catch (error) {
+      console.error("Error fetching friends:", error);
+      setErrorMessage(`Failed to load friends list: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const sendInvitations = async (teamId, players) => {
+    const invitations = players.map((player) =>
+      fetch(`${API_BASE_URL}/teams/${teamId}/invite/${player.userId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+      })
+    );
+    const results = await Promise.allSettled(invitations);
+    const failedInvitations = results
+      .filter(
+        (result) =>
+          result.status === "rejected" || (result.value && !result.value.ok)
+      )
+      .map((result, index) => players[index].username);
+    return failedInvitations;
+  };
+
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
-
-    // Automatycznie dodaj zalogowanego użytkownika jako Kapitan
-    if (user) {
-      setSelectedPlayers([user]);
-    }
+    if (user && user.token) {
+      fetchFriends(user.token);
+    } else setIsLoading(false);
   }, []);
 
   const clearError = () => setErrorMessage("");
 
   const handleTogglePlayer = (userToToggle) => {
     clearError();
-
-    // Blokada usuwania Kapitana (zalogowanego użytkownika)
-    if (currentUser && userToToggle.userId === currentUser.userId) {
-      setErrorMessage("Jesteś Kapitanem tej drużyny i nie można Cię usunąć.");
-      return;
-    }
-
     const isCurrentlySelected = selectedPlayers.some(
       (p) => p.userId === userToToggle.userId
     );
-
     if (isCurrentlySelected) {
       const newSelection = selectedPlayers.filter(
         (p) => p.userId !== userToToggle.userId
       );
       setSelectedPlayers(newSelection);
     } else {
-      if (selectedPlayers.length < MAX_PLAYERS) {
+      if (selectedPlayers.length < MAX_PLAYERS - 1) {
         const newPlayer = {
           userId: userToToggle.userId,
           username: userToToggle.username,
           avatarUrl: userToToggle.avatarUrl,
         };
         setSelectedPlayers((prev) => [...prev, newPlayer]);
-      } else {
+      } else
         setErrorMessage(
-          `Za duża liczba graczy: Limit ${MAX_PLAYERS} członków drużyny.`
+          `Too many players: Limit is ${
+            MAX_PLAYERS - 1
+          } invited players (plus captain).`
         );
-      }
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
-
     if (!name.trim()) {
-      setErrorMessage("Nazwa drużyny jest wymagana.");
+      setErrorMessage("Team name is required.");
       return;
     }
-
-    if (selectedPlayers.length === 0) {
-      setErrorMessage("Wybierz co najmniej jednego członka drużyny.");
+    if (!currentUser) {
+      setErrorMessage("Error: You must be logged in to create a team.");
       return;
     }
-
-    // Walidacja: Kapitan musi być na pozycji 0
-    if (!currentUser || selectedPlayers[0]?.userId !== currentUser.userId) {
-      setErrorMessage(
-        "Błąd: Kapitan (zalogowany użytkownik) musi być na pierwszej pozycji."
-      );
-      return;
+    setIsSaving(true);
+    const teamData = { TeamName: name, Description: description };
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        body: JSON.stringify(teamData),
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Error ${response.status}: Failed to create team.`
+        );
+      }
+      const newTeamFromBackend = await response.json();
+      const teamId = newTeamFromBackend.teamId;
+      let failedInvitations = [];
+      if (selectedPlayers.length > 0) {
+        failedInvitations = await sendInvitations(teamId, selectedPlayers);
+      }
+      if (failedInvitations.length === 0) {
+        if (selectedPlayers.length > 0)
+          alert(
+            "✅ Team successfully created. All invitations have been sent!"
+          );
+        else alert("✅ Team successfully created!");
+      } else
+        alert(
+          `✅ Team successfully created. However, failed to send invitations to: ${failedInvitations.join(
+            ", "
+          )}.`
+        );
+      if (onSave) onSave();
+    } catch (error) {
+      console.error("Error creating team:", error);
+      setErrorMessage(`Server error: ${error.message}`);
+    } finally {
+      setIsSaving(false);
     }
-
-    onSave({
-      name,
-      description,
-      players: selectedPlayers, // Kapitan jest na index 0
-    });
   };
+
+  // Użytkownicy do wyświetlenia (filtrowanie zalogowanego kapitana)
+  const availableFriends = friends.filter(
+    (friend) => !currentUser || friend.userId !== currentUser.userId
+  );
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <h3>Stwórz Nową Drużynę</h3>
-
+        <h3>Create New Team</h3>
         <form onSubmit={handleSubmit}>
           {errorMessage && <p className={styles.errorText}>{errorMessage}</p>}
-
           <div className={styles.formGroup}>
-            <label htmlFor="name">Nazwa Drużyny:</label>
+            <label htmlFor="name">Team Name:</label>
             <input
               id="name"
               type="text"
@@ -173,9 +252,8 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
               required
             />
           </div>
-
           <div className={styles.formGroup}>
-            <label htmlFor="description">Opis Drużyny:</label>
+            <label htmlFor="description">Team Description:</label>
             <input
               id="description"
               type="text"
@@ -184,17 +262,15 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
                 setDescription(e.target.value);
                 clearError();
               }}
-              placeholder="Wprowadź krótki opis drużyny..."
+              placeholder="Enter a brief team description..."
             />
           </div>
-
           <div className={styles.formGroup}>
             <label>
-              Członkowie Drużyny ({selectedPlayers.length} / {MAX_PLAYERS}):
+              Team Members ({selectedPlayers.length + 1}/{MAX_PLAYERS}):{" "}
             </label>
             <div className={styles.userListContainer}>
-              {/* Wyświetlanie Kapitana (zalogowanego użytkownika) jako pierwszego */}
-              {currentUser ? (
+              {currentUser && (
                 <UserListItem
                   key={currentUser.userId}
                   user={currentUser}
@@ -202,72 +278,62 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
                   isCaptain={true}
                   isDisabled={true}
                   onToggle={() => {}}
-                  onError={setErrorMessage} // Przekazujemy funkcję setErrorMessage jako prop
+                  onError={setErrorMessage}
                 />
-              ) : (
-                <div
-                  className={styles.errorText}
-                  style={{ padding: "10px", margin: "5px 0" }}
-                >
-                  Nie jesteś zalogowany. Zaloguj się, aby tworzyć drużyny.
-                </div>
               )}
-
-              {/* Wyświetlanie pozostałych dostępnych użytkowników */}
-              {availableUsers.length > 0 ? (
-                availableUsers
-                  .filter(
-                    (user) => !currentUser || user.userId !== currentUser.userId
-                  )
-                  .map((user) => (
-                    <UserListItem
-                      key={user.userId}
-                      user={user}
-                      isSelected={selectedPlayers.some(
-                        (p) => p.userId === user.userId
-                      )}
-                      isCaptain={false}
-                      onToggle={handleTogglePlayer}
-                      onError={setErrorMessage} // Przekazujemy funkcję setErrorMessage jako prop
-                    />
-                  ))
+              {isLoading ? (
+                <div style={{ padding: "10px", color: "#888" }}>
+                  Loading friends...
+                </div>
+              ) : availableFriends.length > 0 ? (
+                availableFriends.map((user) => (
+                  <UserListItem
+                    key={user.userId}
+                    user={user}
+                    isSelected={selectedPlayers.some(
+                      (p) => p.userId === user.userId
+                    )}
+                    isCaptain={false}
+                    onToggle={handleTogglePlayer}
+                    onError={setErrorMessage}
+                  />
+                ))
               ) : (
                 <div style={{ padding: "10px", color: "#aaa" }}>
-                  Brak dostępnych użytkowników do wyboru.
+                  No accepted friends available to select.
                 </div>
               )}
             </div>
-
             <small>
               {currentUser ? (
                 <>
-                  Jesteś{" "}
+                  You are the{" "}
                   <strong style={{ color: "#ffd700" }}>
-                    Kapitanem ({currentUser.username})
+                    Captain ({currentUser.username})
                   </strong>{" "}
-                  tej drużyny i nie możesz zostać usunięty.{" "}
+                  of this team.{" "}
                 </>
               ) : (
-                <>Nie jesteś zalogowany. Zaloguj się, aby tworzyć drużyny.</>
+                <>You are not logged in. Log in to create teams.</>
               )}
-              Limit: {MAX_PLAYERS} osób.
+              Limit: {MAX_PLAYERS} members total ({MAX_PLAYERS - 1} invited
+              players plus captain).
             </small>
           </div>
-
           <div className={styles.actions}>
             <button
               type="button"
               className={styles.cancelButton}
               onClick={onClose}
             >
-              Anuluj
+              Cancel
             </button>
             <button
               type="submit"
               className={styles.saveButton}
-              disabled={!currentUser || selectedPlayers.length === 0}
+              disabled={!currentUser || isSaving}
             >
-              Zapisz Drużynę
+              {isSaving ? "Saving..." : "Save Team"}
             </button>
           </div>
         </form>
@@ -275,5 +341,4 @@ const AddTeamModal = ({ onClose, onSave, availableUsers = [] }) => {
     </div>
   );
 };
-
 export default AddTeamModal;
