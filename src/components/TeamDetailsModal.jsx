@@ -29,25 +29,29 @@ const getCurrentUser = () => {
 
 const PlayerItem = ({ player, isCaptain, onKick }) => (
   <div className={styles.playerItem}>
+       {" "}
     <img
       src={player.avatarUrl || `https://i.pravatar.cc/150?u=${player.userId}`}
       alt={player.username}
       className={styles.playerAvatar}
     />
-    <span className={styles.playerName}>{player.username}</span>
-    {player.isCaptain && <span className={styles.captainTag}>👑 Captain</span>}
+        <span className={styles.playerName}>{player.username}</span>   {" "}
+    {player.isCaptain && <span className={styles.captainTag}>👑 Captain</span>} 
+     {" "}
     {player.status === "Pending" && (
       <span className={styles.pendingTag}>⏳ Pending</span>
     )}
+       {" "}
     {isCaptain && !player.isCaptain && (
       <button
         className={styles.kickButton}
         onClick={() => onKick(player.userId, player.username)}
         title={`Kick ${player.username} from team`}
       >
-        ❌ Kick
+                ❌ Kick      {" "}
       </button>
     )}
+     {" "}
   </div>
 );
 
@@ -92,13 +96,11 @@ const TeamDetailsModal = ({
   const captain = team.players.find(
     (p) => parseInt(p.userId, 10) === parseInt(team.captainId, 10)
   );
-
   const acceptedMembers = team.players.filter(
     (p) =>
       (p.status === "Member" || p.status === "Captain") &&
       parseInt(p.userId, 10) !== parseInt(team.captainId, 10)
   );
-
   const activeMembersCount = captain
     ? 1 + acceptedMembers.length
     : acceptedMembers.length;
@@ -286,13 +288,15 @@ const TeamDetailsModal = ({
 
   return (
     <>
+           {" "}
       <div className={styles.modalOverlay} onClick={onClose}>
+               {" "}
         <div
           className={styles.modalContent}
           onClick={(e) => e.stopPropagation()}
         >
-          {error && <p className={styles.errorText}>❌ {error}</p>}
-
+                    {error && <p className={styles.errorText}>❌ {error}</p>}   
+               {" "}
           <img
             src={team.logo}
             alt={`${team.name} logo`}
@@ -306,17 +310,18 @@ const TeamDetailsModal = ({
                 .toUpperCase()}`;
             }}
           />
-
-          <h2>{team.name}</h2>
+                    <h2>{team.name}</h2>         {" "}
           <p className={styles.description}>{team.description}</p>
-
-          <hr className={styles.divider} />
-
+                    <hr className={styles.divider} />         {" "}
           <div className={styles.section}>
+                       {" "}
             <h3>
-              🧑‍🤝‍🧑 Team Members ({visiblePlayers.length}/{MAX_PLAYERS})
+                            🧑‍🤝‍🧑 Team Members ({visiblePlayers.length}/
+              {MAX_PLAYERS})            {" "}
             </h3>
+                       {" "}
             <div className={styles.playersList}>
+                           {" "}
               {visiblePlayers.map((player) => (
                 <PlayerItem
                   key={player.userId}
@@ -330,15 +335,21 @@ const TeamDetailsModal = ({
                   onKick={handleKickPlayer}
                 />
               ))}
+                         {" "}
             </div>
+                     {" "}
           </div>
-
+                   {" "}
           {isCaptain && pendingPlayers.length > 0 && (
             <div className={styles.section}>
+                           {" "}
               <h3 className={styles.pendingHeader}>
-                📨 Pending Requests ({pendingPlayers.length})
+                                📨 Pending Requests ({pendingPlayers.length})  
+                           {" "}
               </h3>
+                           {" "}
               <div className={styles.playersList}>
+                               {" "}
                 {pendingPlayers.map((player) => (
                   <PlayerItem
                     key={player.userId}
@@ -347,15 +358,17 @@ const TeamDetailsModal = ({
                     onKick={handleKickPlayer}
                   />
                 ))}
+                             {" "}
               </div>
+                         {" "}
             </div>
           )}
-
-          <hr className={styles.divider} />
-
+                    <hr className={styles.divider} />         {" "}
           <div className={styles.actions}>
+                       {" "}
             {isCaptain ? (
               <>
+                               {" "}
                 <button
                   className={`${styles.manageButton} ${styles.inviteButton}`}
                   onClick={handleOpenInviteModal}
@@ -366,50 +379,57 @@ const TeamDetailsModal = ({
                       : "Zaproś nowego gracza"
                   }
                 >
-                  📨 Zaproś (Invites)
+                                    📨 Zaproś (Invites)                {" "}
                 </button>
-
-                <button
+                               {" "}
+                {/* <button
                   className={styles.manageButton}
                   onClick={handleUpdateLogo}
                 >
-                  🖼️ Zmień Logo (Update Logo)
-                </button>
-
+                                    🖼️ Zmień Logo (Update Logo)                {" "}
+                </button> */}
+                               {" "}
                 <button
                   className={`${styles.manageButton} ${styles.disbandButton}`}
                   onClick={handleDisbandTeam}
                   disabled={!canDisband}
                   title={disbandTitle}
                 >
-                  💥 Rozwiąż Drużynę (Disband Team)
+                                    💥 Rozwiąż Drużynę (Disband Team)          
+                       {" "}
                 </button>
+                             {" "}
               </>
             ) : isMember ? (
               <button className={styles.leaveButton} onClick={handleLeaveTeam}>
-                🚪 Leave Team
+                                🚪 Leave Team              {" "}
               </button>
             ) : isPending ? (
               <p className={styles.infoText}>
-                ⏳ Twoja prośba/zaproszenie oczekuje na akceptację kapitana.
+                                ⏳ Twoja prośba/zaproszenie oczekuje na
+                akceptację kapitana.              {" "}
               </p>
             ) : isLogged && !isInTeam ? (
               <button className={styles.joinButton} onClick={handleJoin}>
-                ➕ Request to Join
+                                ➕ Request to Join              {" "}
               </button>
             ) : (
               <p className={styles.infoText}>
-                Zaloguj się, aby móc poprosić o dołączenie do tej drużyny.
+                                Zaloguj się, aby móc poprosić o dołączenie do
+                tej drużyny.              {" "}
               </p>
             )}
-
+                       {" "}
             <button className={styles.closeButton} onClick={onClose}>
-              Zamknij
+                            Zamknij            {" "}
             </button>
+                     {" "}
           </div>
+                 {" "}
         </div>
+             {" "}
       </div>
-
+           {" "}
       {showInviteModal && (
         <TeamInvitationModal
           teamId={team.id}
@@ -423,7 +443,7 @@ const TeamDetailsModal = ({
           }}
         />
       )}
-
+           {" "}
       {showAvatarModal && (
         <TeamAvatarSelectionModal
           teamId={team.id}
@@ -435,6 +455,7 @@ const TeamDetailsModal = ({
           }}
         />
       )}
+         {" "}
     </>
   );
 };
