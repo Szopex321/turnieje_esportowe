@@ -5,7 +5,7 @@ import Button from "./Button";
 
 function MainPageContent(props) {
   const {
-    id, // <--- Odbieramy ID turnieju
+    tournamentId, // Odbieramy ID turnieju
     title,
     description,
     baner,
@@ -21,58 +21,52 @@ function MainPageContent(props) {
   const [state, setState] = useState("Upcoming");
   const [timeInfo, setTimeInfo] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Stan do obsługi ładowania podczas zapisywania
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false); // Stan ładowania przycisku
 
   const safeEndDate = endDate ? endDate : startDate;
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
-  // --- LOGIKA REJESTRACJI ---
+  // --- LOGIKA REJESTRACJI (POPRAWIONA) ---
   const handleRegister = async () => {
-    // 1. Pobierz token z localStorage (zakładam, że klucz to 'token' lub 'user')
-    // Jeśli trzymasz cały obiekt usera, użyj: JSON.parse(localStorage.getItem('user')).token
-    const token = localStorage.getItem('token'); 
+    // 1. UŻYWAMY KLUCZA "jwt_token" - tak jak zapisałeś w LogIn.js
+    const token = localStorage.getItem("jwt_token");
 
     if (!token) {
-      alert("Musisz być zalogowany, aby wziąć udział w turnieju!");
+      alert("You need to be logged in to register!");
       return;
     }
 
     setIsRegistering(true);
 
     try {
-      // 2. Wyślij zapytanie do Backend .NET
-      // Sprawdź w swojej dokumentacji API jaki jest dokładny endpoint.
-      // Częsty wzorzec: POST /api/Tournaments/{id}/participants
-      const response = await fetch(`https://projektturniej.onrender.com/api/Tournaments/${id}/participants`, {
-        method: 'POST',
+      // 2. Wysyłamy ID turnieju i Token do API
+      const response = await fetch(`/api/TournamentRegistration/${tournamentId}`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Przekazujemy token JWT
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}` // Backend .NET sam wyciągnie UserID z tokena
         },
-        // Jeśli backend wymaga body, dodaj je tutaj, np: JSON.stringify({})
+        body: JSON.stringify({}) // Puste body (chyba że backend wymaga czegoś specyficznego)
       });
 
       if (response.ok) {
-        alert("Pomyślnie zapisano na turniej!");
+        alert("Success! You have been registered.");
         handleCloseModal();
       } else {
-        // Obsługa błędów z backendu (np. brak miejsc, użytkownik już zapisany)
-        const errorData = await response.text(); // lub response.json() zależnie od backendu
-        alert(`Błąd rejestracji: ${errorData || response.statusText}`);
+        const errorText = await response.text();
+        alert(`Registration failed: ${errorText}`);
       }
     } catch (error) {
-      console.error("Błąd sieci:", error);
-      alert("Wystąpił problem z połączeniem.");
+      console.error("Network error:", error);
+      alert("Connection error.");
     } finally {
       setIsRegistering(false);
     }
   };
 
-  // --- LOGIKA DAT (bez zmian) ---
+  // --- LOGIKA DAT ---
   useEffect(() => {
     if (!startDate) return;
     const today = new Date();
@@ -92,19 +86,27 @@ function MainPageContent(props) {
   useEffect(() => {
     if (!startDate) return;
     const today = new Date();
-    // ... (reszta logiki daty bez zmian) ...
-    // Skróciłem dla czytelności odpowiedzi, wstaw tu swój oryginalny kod dat
+
     if (state === "Upcoming") {
-        const diffTime = new Date(startDate) - today;
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        if(diffDays > 0) setTimeInfo(`Launches in ${diffDays} days`);
+      const diffTime = new Date(startDate) - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      if (diffDays <= 0) setTimeInfo("Launches Today");
+      else if (diffDays === 1) setTimeInfo("Launches Tomorrow");
+      else if (diffDays <= 31) setTimeInfo(`Launches in ${diffDays} days`);
+      else setTimeInfo(`Launches at ${new Date(startDate).toLocaleDateString()}`);
+    } else if (state === "Ongoing") {
+        // ... (Twoja logika ongoing)
+        setTimeInfo("Ongoing");
+    } else if (state === "Completed") {
+        // ... (Twoja logika completed)
+        setTimeInfo("Ended");
     }
   }, [state, startDate, safeEndDate]);
 
   return (
     <>
+      {/* KAFELEK NA GŁÓWNEJ STRONIE - BEZ ZMIAN */}
       <div className={styles.container} onClick={handleOpenModal}>
-        {/* ... (Baner i podgląd bez zmian) ... */}
         <div className={styles.bannerWrapper}>
           <img
             src={baner || "https://placehold.co/600x400?text=No+Image"}
@@ -112,13 +114,20 @@ function MainPageContent(props) {
             className={styles.banner}
           />
         </div>
+
         <div className={styles.contentWrapper}>
-            <h3 className={styles.title}>{title}</h3>
-            <div className={styles.timeInfo}>{timeInfo}</div>
-            {/* Reszta listy... */}
+          <h3 className={styles.title}>{title}</h3>
+          <div className={styles.timeInfo}>{timeInfo}</div>
+          <ul className={styles.list}>
+            <li><strong>Location:</strong> <span>{location}</span></li>
+            <li><strong>Max Participants:</strong> <span>{maxParticipants}</span></li>
+            <li><strong>Registration Type:</strong> <span>{registrationType}</span></li>
+            <li><strong>State:</strong> <span>{state}</span></li>
+          </ul>
         </div>
       </div>
 
+      {/* MODAL - WYGLĄD ZACHOWANY, DODANA TYLKO FUNKCJA ONCLICK */}
       {isModalOpen && (
         <Modal onClose={handleCloseModal}>
           <h2 className={styles.modalTitle}>{title}</h2>
@@ -132,17 +141,27 @@ function MainPageContent(props) {
           </p>
 
           <ul className={styles.modalList}>
-            {/* ... (Lista szczegółów bez zmian) ... */}
+            <li><strong>Localization:</strong> <span>{location}</span></li>
+            <li><strong>Start Date:</strong> <span>{new Date(startDate).toLocaleDateString()}</span></li>
+            <li><strong>End Date:</strong> <span>{endDate ? new Date(endDate).toLocaleDateString() : "TBA"}</span></li>
+            <li><strong>Rules:</strong> <span>{rules || "Standard rules apply."}</span></li>
+            <li><strong>Max Participants:</strong> <span>{maxParticipants}</span></li>
+            <li><strong>Registration Type:</strong> <span>{registrationType}</span></li>
+            <li><strong>Tournament Type:</strong> <span>{tournamentType}</span></li>
             <li><strong>State:</strong> <span>{state}</span></li>
           </ul>
 
           <div className={styles.modalActions}>
-            {/* DODANO: Obsługa onClick i disable podczas ładowania */}
             <Button 
-                name={isRegistering ? "Registering..." : "Registration"} 
-                className={styles.registrationButton} 
+                // Zachowujemy małą literę 'registration' tak jak na Twoim screenie
+                name={isRegistering ? "registering..." : "registration"} 
+                className={styles.registrationButton}
+                
+                // PODPINAMY LOGIKĘ
                 onClick={handleRegister}
-                disabled={isRegistering || state === "Completed"} // Blokada jeśli zakończony
+                
+                // Opcjonalnie: zablokuj przycisk jeśli turniej zakończony
+                disabled={isRegistering || state === "Completed"} 
             />
           </div>
         </Modal>

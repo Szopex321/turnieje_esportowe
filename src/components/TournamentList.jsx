@@ -22,11 +22,13 @@ const TournamentList = () => {
 
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center', width: '100%' }}>
-      
       {tournaments.map((t) => (
         <MainPageContent
-          key={t.tournamentId} 
-          id={t.tournamentId}
+          key={t.tournamentId}
+          
+          // --- WAŻNE: PRZEKAZUJEMY ID DO ŚRODKA ---
+          tournamentId={t.tournamentId} 
+          
           title={t.tournamentName}
           description={t.description}
           baner={t.imageUrl}
@@ -38,9 +40,7 @@ const TournamentList = () => {
           tournamentType={t.tournamentFormat}
           rules={t.rules}
         />
-        
       ))}
-      
     </div>
   );
 };
