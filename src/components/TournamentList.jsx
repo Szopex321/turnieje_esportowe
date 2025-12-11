@@ -25,23 +25,20 @@ const TournamentList = () => {
       
       {tournaments.map((t) => (
         <MainPageContent
-          key={t.tournamentId} // Unikalne ID
-          
-          // --- TŁUMACZENIE JSON Z BACKENDU NA PROPSY KOMPONENTU ---
+          key={t.tournamentId} 
+          id={t.tournamentId}
           title={t.tournamentName}
           description={t.description}
           baner={t.imageUrl}
           startDate={t.startDate}
           endDate={t.endDate}
-          
-          // Backend nie ma "location", więc używamy nazwy gry:
           location={t.game ? t.game.gameName : "Online"} 
-          
           maxParticipants={t.maxParticipants}
           registrationType={t.registrationType}
           tournamentType={t.tournamentFormat}
           rules={t.rules}
         />
+        
       ))}
       
     </div>
