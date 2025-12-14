@@ -16,6 +16,7 @@ function MainPageContent(props) {
     maxParticipants,
     registrationType,
     tournamentType,
+    currentParticipants,
   } = props;
 
   const [state, setState] = useState("Upcoming");
@@ -145,7 +146,16 @@ function MainPageContent(props) {
             <li><strong>Start Date:</strong> <span>{new Date(startDate).toLocaleDateString()}</span></li>
             <li><strong>End Date:</strong> <span>{endDate ? new Date(endDate).toLocaleDateString() : "TBA"}</span></li>
             <li><strong>Rules:</strong> <span>{rules || "Standard rules apply."}</span></li>
-            <li><strong>Max Participants:</strong> <span>{maxParticipants}</span></li>
+            <li>
+              <strong>Participants:</strong>{" "}
+              <span>
+                {currentParticipants} / {maxParticipants}
+              </span>
+            </li>
+            
+            <li>
+                <strong>Registration Type:</strong> <span>{props.registrationType}</span>
+            </li>
             <li><strong>Registration Type:</strong> <span>{registrationType}</span></li>
             <li><strong>Tournament Type:</strong> <span>{tournamentType}</span></li>
             <li><strong>State:</strong> <span>{state}</span></li>

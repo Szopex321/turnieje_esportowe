@@ -28,7 +28,7 @@ const TournamentList = () => {
           
           // --- WAŻNE: PRZEKAZUJEMY ID DO ŚRODKA ---
           tournamentId={t.tournamentId} 
-          
+          currentParticipants={t.currentParticipants || 0}
           title={t.tournamentName}
           description={t.description}
           baner={t.imageUrl}
