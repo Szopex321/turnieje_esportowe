@@ -138,3 +138,35 @@
     flex-direction: column;
     gap: 15px;
 }
+
+.avatarGrid {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Pozwala zawijać awatary jeśli jest ich dużo */
+}
+
+.avatarOption {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%; /* Okrągłe awatary */
+  cursor: pointer;
+  object-fit: cover;
+  border: 3px solid transparent; 
+  transition: all 0.2s ease-in-out;
+  opacity: 0.6;
+}
+
+.avatarOption:hover {
+  transform: scale(1.1);
+  opacity: 0.9;
+}
+
+/* Styl dla aktywnego awatara */
+.avatarSelected {
+  border-color: #fbbf24; /* Złoty kolor ramki */
+  opacity: 1;
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
