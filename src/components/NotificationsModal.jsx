@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../styles/components/NotificationsModal.module.css";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -21,6 +21,19 @@ const getCurrentUser = () => {
     console.error("Error reading user data:", e);
   }
   return null;
+};
+
+const fetchUsernameById = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/users`);
+    if (!response.ok) throw new Error("Failed to fetch users");
+    const data = await response.json();
+    const user = data.find((u) => u.userId === userId);
+    return user ? user.username : `ID ${userId}`;
+  } catch (e) {
+    console.error(`Error fetching username for ID ${userId}:`, e);
+    return `ID ${userId}`;
+  }
 };
 
 const handleMarkAsRead = async (notificationId, onRefresh) => {
@@ -125,6 +138,8 @@ const handleRejectInvite = async (teamId, notificationId, onRefresh) => {
 };
 
 const NotificationItem = ({ notification, onRefresh }) => {
+  const [displayMessage, setDisplayMessage] = useState(notification.message);
+
   const isTeamInvite =
     notification.notificationType === "TeamInvite" && notification.relatedId;
   const isJoinRequest =
@@ -132,7 +147,32 @@ const NotificationItem = ({ notification, onRefresh }) => {
     notification.relatedId;
   const teamId = notification.relatedId;
   const notificationId = notification.notificationId;
-  const userId = notification.relatedUserId;
+  const targetUserId = notification.relatedUserId;
+
+  useEffect(() => {
+    const friendRequestPattern = /Użytkownik Ktoś \(ID:\s*(\d+)\)/;
+
+    if (
+      notification.notificationType === "FriendRequest" &&
+      friendRequestPattern.test(notification.message)
+    ) {
+      const match = notification.message.match(friendRequestPattern);
+      if (match) {
+        const problematicId = parseInt(match[1], 10);
+        if (problematicId) {
+          fetchUsernameById(problematicId).then((username) => {
+            const newMessage = notification.message.replace(
+              friendRequestPattern,
+              `Użytkownik ${username}`
+            );
+            setDisplayMessage(newMessage);
+          });
+        }
+      }
+    } else {
+      setDisplayMessage(notification.message);
+    }
+  }, [notification.message, notification.notificationType]);
 
   const handleAcceptInviteClick = (e) => {
     e.stopPropagation();
@@ -146,8 +186,8 @@ const NotificationItem = ({ notification, onRefresh }) => {
 
   const handleAcceptJoinRequestClick = (e) => {
     e.stopPropagation();
-    if (userId) {
-      handleAcceptJoinRequest(teamId, userId, notificationId, onRefresh);
+    if (targetUserId) {
+      handleAcceptJoinRequest(teamId, targetUserId, notificationId, onRefresh);
     } else {
       console.error(
         "Error: Cannot identify player ID for acceptance (missing RelatedUserId)."
@@ -158,8 +198,8 @@ const NotificationItem = ({ notification, onRefresh }) => {
 
   const handleRejectJoinRequestClick = (e) => {
     e.stopPropagation();
-    if (userId) {
-      handleRejectJoinRequest(teamId, userId, notificationId, onRefresh);
+    if (targetUserId) {
+      handleRejectJoinRequest(teamId, targetUserId, notificationId, onRefresh);
     } else {
       console.error("Error: Cannot identify player ID for rejection.");
       handleMarkAsRead(notificationId, onRefresh);
@@ -186,7 +226,7 @@ const NotificationItem = ({ notification, onRefresh }) => {
           {new Date(notification.createdAt).toLocaleString()}
         </span>
       </div>
-      <p className={styles.notificationMessage}>{notification.message}</p>
+      <p className={styles.notificationMessage}>{displayMessage}</p>
 
       {isTeamInvite && !notification.isRead && (
         <div className={styles.actions}>
@@ -210,14 +250,14 @@ const NotificationItem = ({ notification, onRefresh }) => {
           <button
             className={styles.acceptButton}
             onClick={handleAcceptJoinRequestClick}
-            disabled={!userId}
+            disabled={!targetUserId}
           >
             ✅ Accept Player
           </button>
           <button
             className={styles.rejectButton}
             onClick={handleRejectJoinRequestClick}
-            disabled={!userId}
+            disabled={!targetUserId}
           >
             ❌ Reject Request
           </button>
