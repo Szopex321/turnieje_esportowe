@@ -8,7 +8,8 @@ const LogIn = ({ loadUser }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const fetchUserId = async (token) => {
+  // ZMIANA 1: Zmieniamy nazwę funkcji na bardziej pasującą i zwracamy DANE, a nie true/false
+  const fetchUserDetails = async (token) => {
     try {
       const meResponse = await fetch("/api/Auth/me", {
         headers: {
@@ -18,21 +19,19 @@ const LogIn = ({ loadUser }) => {
 
       if (meResponse.ok) {
         const userData = await meResponse.json();
+        
+        // Zapisujemy ID tak jak wcześniej
         if (userData.id) {
           localStorage.setItem("currentUserId", String(userData.id));
-          console.log(
-            "ID użytkownika pobrane z /me i zapisane: " + userData.id
-          );
-          return true;
         }
+
+        console.log("Pobrano dane użytkownika z /me:", userData);
+        return userData; // <--- ZWRACAMY CAŁY OBIEKT (tam powinien być avatar/url)
       }
-      console.error(
-        "Nie udało się pobrać ID użytkownika z /api/Auth/me po zalogowaniu."
-      );
-      return false;
+      return null;
     } catch (err) {
       console.error("Błąd podczas żądania /api/Auth/me:", err);
-      return false;
+      return null;
     }
   };
 
@@ -60,16 +59,21 @@ const LogIn = ({ loadUser }) => {
         if (responseData.token) {
           localStorage.setItem("jwt_token", responseData.token);
           token = responseData.token;
-          console.log("Token JWT zapisany.");
         }
 
+        // ZMIANA 2: Pobieramy szczegóły użytkownika (w tym awatar) z endpointu /me
+        let detailedUserData = null;
         if (token) {
-          await fetchUserId(token);
+          detailedUserData = await fetchUserDetails(token);
         }
+
+        // ZMIANA 3: Priorytetyzujemy awatar pobrany z /me (detailedUserData)
+        // Sprawdź w konsoli czy backend zwraca pole 'avatar' czy 'url'!
+        const finalAvatar = detailedUserData?.avatarUrl || detailedUserData?.avatar || detailedUserData?.url || responseData.avatar || "";
 
         const userToSave = {
-          username: responseData.username || login,
-          avatar: responseData.avatar || "",
+          username: responseData.username || detailedUserData?.username || login,
+          avatar: finalAvatar, // <--- Tutaj trafia poprawny link
           role: responseData.role || "user",
           isLoggedIn: true,
         };
@@ -82,7 +86,7 @@ const LogIn = ({ loadUser }) => {
           window.dispatchEvent(new Event("storage"));
         }
 
-        console.log("Zalogowano pomyślnie.");
+        console.log("Zalogowano pomyślnie. Zapisany avatar:", finalAvatar);
         navigate("/");
       } else {
         const data = await response.json().catch(() => ({}));
@@ -101,17 +105,12 @@ const LogIn = ({ loadUser }) => {
         <p className={styles.subtitle}>Log in to manage your tournaments</p>
 
         {error && (
-          <div
-            style={{ color: "red", marginBottom: "10px", textAlign: "center" }}
-          >
+          <div style={{ color: "red", marginBottom: "10px", textAlign: "center" }}>
             {error}
           </div>
         )}
 
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "20px" }}
-        >
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div className={styles.inputGroup}>
             <label className={styles.label}>Login</label>
             <input
