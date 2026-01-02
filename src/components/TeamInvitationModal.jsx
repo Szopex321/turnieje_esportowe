@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-// Upewnij się, że nazwa pliku CSS jest poprawna (wcześniej używałeś addTeamModal.module.css)
 import styles from "../styles/components/TeamInvitationModal.module.css";
 
 const API_BASE_URL = "/api";
@@ -29,7 +28,6 @@ const getCurrentUser = () => {
   return null;
 };
 
-// Zaktualizowany komponent UserListItem
 const UserListItem = ({
   user,
   isSelected,
@@ -46,7 +44,7 @@ const UserListItem = ({
       e.stopPropagation();
       onToggle(user);
     }}
-    title={isDisabled ? "Already a team member" : "Click to select/unselect"}
+    title={isDisabled ? "Cannot select" : "Click to select/unselect"}
   >
     <img
       src={user.avatarUrl || `https://i.pravatar.cc/150?u=${user.userId}`}
@@ -57,21 +55,10 @@ const UserListItem = ({
         e.target.src = `https://i.pravatar.cc/150?u=${user.userId}`;
       }}
     />
-    <span className={styles["invitationModal-userName"]}>
-      {user.username}
-      {isInvited && (
-        <span
-          className={styles["invitationModal-pendingTag"]}
-          style={{ fontSize: "10px" }}
-        >
-          INVITED
-        </span>
-      )}
-    </span>
+    <span className={styles["invitationModal-userName"]}>{user.username}</span>
   </div>
 );
 
-// Zaktualizowany komponent TeamInvitationModal
 const TeamInvitationModal = ({
   teamId,
   currentTeamMembers,
@@ -85,8 +72,10 @@ const TeamInvitationModal = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
-  const currentMembersCount = currentTeamMembers.length;
-  const availableSlots = MAX_PLAYERS - currentMembersCount;
+  const acceptedMembers = currentTeamMembers.filter(
+    (p) => p.status !== "Pending"
+  ).length;
+  const availableSlots = MAX_PLAYERS - acceptedMembers;
 
   const clearError = () => setErrorMessage("");
 
@@ -94,187 +83,160 @@ const TeamInvitationModal = ({
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/friends`, {
-        method: "GET",
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (!response.ok) {
         throw new Error("Error loading friends list.");
       }
+
       const data = await response.json();
 
-      const existingMemberIds = new Set(
-        currentTeamMembers.map((p) => parseInt(p.userId, 10))
+      const existingTeamPlayerIds = new Set(
+        currentTeamMembers.map((m) => Number(m.userId))
       );
 
       const friendList = data
-        .map((friend) => ({
-          userId: parseInt(friend.userId, 10),
-          username: friend.username,
-          avatarUrl:
-            friend.avatarUrl || `https://i.pravatar.cc/150?u=${friend.userId}`,
+        .map((f) => ({
+          userId: Number(f.userId),
+          username: f.username,
+          avatarUrl: f.avatarUrl || `https://i.pravatar.cc/150?u=${f.userId}`,
         }))
-        .filter((friend) => !existingMemberIds.has(friend.userId));
+        .filter((f) => !existingTeamPlayerIds.has(f.userId));
 
       setFriends(friendList);
     } catch (error) {
-      console.error("Error fetching friends:", error);
-      setErrorMessage(`Failed to load friends list: ${error.message}`);
+      setErrorMessage(error.message);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (currentUser && currentUser.token) {
-      fetchFriends(currentUser.token);
-    } else setIsLoading(false);
+    if (currentUser?.token) fetchFriends(currentUser.token);
+    else setIsLoading(false);
   }, [currentUser]);
 
-  const handleTogglePlayer = (userToToggle) => {
+  const handleTogglePlayer = (user) => {
     clearError();
-    const isCurrentlySelected = selectedPlayers.some(
-      (p) => p.userId === userToToggle.userId
-    );
 
-    if (isCurrentlySelected) {
-      const newSelection = selectedPlayers.filter(
-        (p) => p.userId !== userToToggle.userId
+    const isSelected = selectedPlayers.some((p) => p.userId === user.userId);
+
+    if (isSelected) {
+      setSelectedPlayers((prev) =>
+        prev.filter((p) => p.userId !== user.userId)
       );
-      setSelectedPlayers(newSelection);
     } else {
-      if (selectedPlayers.length < availableSlots) {
-        setSelectedPlayers((prev) => [...prev, userToToggle]);
-      } else {
-        setErrorMessage(
-          `Limit exceeded: Only ${availableSlots} slots remaining.`
-        );
+      if (availableSlots - selectedPlayers.length <= 0) {
+        setErrorMessage("No available slots left.");
+        return;
       }
+      setSelectedPlayers((prev) => [...prev, user]);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
+
     if (selectedPlayers.length === 0) {
-      setErrorMessage("Select at least one player to invite.");
+      setErrorMessage("Select at least one player.");
       return;
     }
+
     setIsSending(true);
 
-    const invitations = selectedPlayers.map((player) =>
+    const requests = selectedPlayers.map((player) =>
       fetch(`${API_BASE_URL}/teams/${teamId}/invite/${player.userId}`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${currentUser.token}`,
         },
       })
     );
 
-    const results = await Promise.allSettled(invitations);
+    const results = await Promise.allSettled(requests);
 
-    const successfulInvites = results.filter(
-      (r) => r.status === "fulfilled" && r.value.ok
-    ).length;
-    const failedInvites = selectedPlayers.length - successfulInvites;
+    const successfulUserIds = selectedPlayers
+      .filter(
+        (_, i) => results[i].status === "fulfilled" && results[i].value.ok
+      )
+      .map((p) => p.userId);
 
+    setFriends((prev) =>
+      prev.filter((f) => !successfulUserIds.includes(f.userId))
+    );
+
+    setSelectedPlayers([]);
     setIsSending(false);
-    onClose();
 
     if (onInviteSent) onInviteSent();
-
-    if (successfulInvites > 0) {
-      alert(`✅ Successfully sent ${successfulInvites} invitation(s).`);
-    }
-    if (failedInvites > 0) {
-      alert(`⚠️ Failed to send ${failedInvites} invitation(s).`);
+    onClose();
+    if (successfulUserIds.length > 0) {
+      alert(`✅ Sent ${successfulUserIds.length} invitation(s).`);
     }
   };
 
   return (
-    // Używamy nowej klasy CSS: invitationModal-overlay
     <div className={styles["invitationModal-overlay"]} onClick={onClose}>
-      {/* Używamy nowej klasy CSS: invitationModal-content */}
       <div
         className={styles["invitationModal-content"]}
         onClick={(e) => e.stopPropagation()}
       >
         <h3>📨 Invite Friends to Team</h3>
-        <form onSubmit={handleSubmit}>
-          {/* Używamy nowej klasy CSS: invitationModal-errorText */}
-          {errorMessage && (
-            <p className={styles["invitationModal-errorText"]}>
-              {errorMessage}
-            </p>
+        {errorMessage && (
+          <p className={styles["invitationModal-errorText"]}>{errorMessage}</p>
+        )}
+        <p>
+          Available slots:{" "}
+          <strong
+            style={{
+              color:
+                availableSlots - selectedPlayers.length > 0 ? "green" : "red",
+            }}
+          >
+            {availableSlots - selectedPlayers.length}
+          </strong>{" "}
+          / {availableSlots}
+        </p>
+        <div className={styles["invitationModal-userListContainer"]}>
+          {isLoading ? (
+            <p>Loading friends...</p>
+          ) : friends.length > 0 ? (
+            friends.map((user) => (
+              <UserListItem
+                key={user.userId}
+                user={user}
+                isSelected={selectedPlayers.some(
+                  (p) => p.userId === user.userId
+                )}
+                isDisabled={
+                  availableSlots - selectedPlayers.length <= 0 &&
+                  !selectedPlayers.some((p) => p.userId === user.userId)
+                }
+                onToggle={handleTogglePlayer}
+              />
+            ))
+          ) : (
+            <p style={{ color: "#aaa" }}>No available friends to invite.</p>
           )}
+        </div>
 
-          {/* Używamy nowej klasy CSS: invitationModal-formGroup */}
-          <div className={styles["invitationModal-formGroup"]}>
-            <label>
-              Available Slots:{" "}
-              <strong style={{ color: availableSlots > 0 ? "green" : "red" }}>
-                {availableSlots}
-              </strong>{" "}
-              / {MAX_PLAYERS - currentMembersCount}
-            </label>
-            {/* Używamy nowej klasy CSS: invitationModal-userListContainer */}
-            <div className={styles["invitationModal-userListContainer"]}>
-              {isLoading ? (
-                <div style={{ padding: "10px", color: "#888" }}>
-                  Loading friends...
-                </div>
-              ) : friends.length > 0 ? (
-                friends.map((user) => (
-                  <UserListItem
-                    key={user.userId}
-                    user={user}
-                    isSelected={selectedPlayers.some(
-                      (p) => p.userId === user.userId
-                    )}
-                    onToggle={handleTogglePlayer}
-                    isDisabled={
-                      availableSlots <= 0 &&
-                      !selectedPlayers.some((p) => p.userId === user.userId)
-                    }
-                  />
-                ))
-              ) : (
-                <div style={{ padding: "10px", color: "#aaa" }}>
-                  No available friends to invite.
-                </div>
-              )}
-            </div>
-            {/* Używamy nowej klasy CSS: invitationModal-formGroup small */}
-            <small className={styles["invitationModal-formGroup"]}>
-              Select up to {availableSlots} friends to send an invitation.
-            </small>
-          </div>
-
-          {/* Używamy nowej klasy CSS: invitationModal-actions */}
-          <div className={styles["invitationModal-actions"]}>
-            {/* Używamy nowej klasy CSS: invitationModal-cancelButton */}
-            <button
-              type="button"
-              className={styles["invitationModal-cancelButton"]}
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            {/* Używamy nowej klasy CSS: invitationModal-saveButton */}
-            <button
-              type="submit"
-              className={styles["invitationModal-saveButton"]}
-              disabled={
-                !currentUser ||
-                isSending ||
-                selectedPlayers.length === 0 ||
-                availableSlots <= 0
-              }
-            >
-              {isSending ? "Sending..." : "Send Invitations"}
-            </button>
-          </div>
-        </form>
+        <div className={styles["invitationModal-actions"]}>
+          <button
+            className={styles["invitationModal-cancelButton"]}
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            className={styles["invitationModal-saveButton"]}
+            onClick={handleSubmit}
+            disabled={isSending || selectedPlayers.length === 0}
+          >
+            {isSending ? "Sending..." : "Send Invitations"}
+          </button>
+        </div>
       </div>
     </div>
   );
