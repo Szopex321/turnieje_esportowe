@@ -186,3 +186,29 @@
   justify-content: center;
   border: 2px solid #1a202c;
 }
+.iconButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iconButton:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Styl dla samej ikony - ustawiamy kolor na #facc15 */
+.teamIcon {
+  color: #facc15; /* Kolor żółty na stałe */
+  transition: transform 0.2s ease, opacity 0.2s;
+}
+
+.iconButton:hover .teamIcon {
+  transform: scale(1.1); /* Delikatne powiększenie zamiast zmiany koloru */
+  opacity: 0.8;
+}

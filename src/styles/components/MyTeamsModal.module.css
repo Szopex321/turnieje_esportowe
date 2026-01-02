@@ -1,0 +1,191 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal {
+  background: linear-gradient(145deg, #1e1e1e, #151515);
+  width: 420px;
+  border-radius: 16px;
+  border: 1px solid #2a2a2a;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header {
+  padding: 24px;
+  background: linear-gradient(90deg, #222, #1a1a1a);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #2d2d2d;
+}
+
+.header h2 {
+  margin: 0;
+  color: #facc15;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.closeBtn {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.teamItem {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #252525;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.teamItem:hover {
+  background: linear-gradient(90deg, #252525, #1f1f1f);
+  transform: translateX(4px);
+}
+
+.teamItem:hover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: linear-gradient(to bottom, #facc15, #f59e0b);
+}
+
+.teamLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  margin-right: 16px;
+  border: 2px solid #333;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.teamItem:hover .teamLogo {
+  transform: scale(1.05);
+  border-color: #facc15;
+}
+
+.teamInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.teamName {
+  display: block;
+  color: #fff;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roleText {
+  font-size: 13px;
+  color: #facc15;
+  font-weight: 500;
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(250, 204, 21, 0.1);
+  border-radius: 12px;
+  border: 1px solid rgba(250, 204, 21, 0.2);
+}
+
+.memberCount {
+  color: #888;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 12px;
+  background: rgba(136, 136, 136, 0.1);
+  border-radius: 20px;
+  border: 1px solid #333;
+  transition: all 0.2s;
+}
+
+.teamItem:hover .memberCount {
+  color: #facc15;
+  border-color: rgba(250, 204, 21, 0.3);
+  background: rgba(250, 204, 21, 0.05);
+}
+
+/* Dla pustego stanu */
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.emptyState h3 {
+  color: #888;
+  margin-bottom: 8px;
+}
+
+/* Responsywność */
+@media (max-width: 480px) {
+  .modal {
+    width: 90%;
+    margin: 0 20px;
+  }
+
+  .teamItem {
+    padding: 14px 16px;
+  }
+
+  .teamLogo {
+    width: 42px;
+    height: 42px;
+  }
+}
