@@ -1,3 +1,4 @@
+/* eslint-disable no-irregular-whitespace */
 import React, { useState, useEffect } from "react";
 import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
@@ -80,6 +81,13 @@ function TeamsPage({ user, onNotificationsRefresh }) {
             }
           });
         }
+
+        const activeMembers = allPlayers.filter(
+          (p) => p.isCaptain || p.status === "Member"
+        );
+
+        const activePlayersForDisplay = activeMembers;
+
         return {
           id: team.teamId,
           name: team.teamName,
@@ -94,6 +102,8 @@ function TeamsPage({ user, onNotificationsRefresh }) {
               .substring(0, 2)
               .toUpperCase()}`,
           players: allPlayers,
+          activePlayers: activePlayersForDisplay,
+          activeMembersCount: activeMembers.length,
         };
       });
       setTeams(mappedTeams);
@@ -101,6 +111,20 @@ function TeamsPage({ user, onNotificationsRefresh }) {
       console.error("Błąd podczas pobierania drużyn:", error);
       setTeams([]);
     }
+  };
+
+  const handleUpdateTeamLogo = (teamId, newLogoUrl) => {
+    setTeams((prevTeams) =>
+      prevTeams.map((team) =>
+        team.id === teamId ? { ...team, logo: newLogoUrl } : team
+      )
+    );
+    setSelectedTeam((prevSelectedTeam) => {
+      if (prevSelectedTeam && prevSelectedTeam.id === teamId) {
+        return { ...prevSelectedTeam, logo: newLogoUrl };
+      }
+      return prevSelectedTeam;
+    });
   };
 
   useEffect(() => {
@@ -161,28 +185,35 @@ function TeamsPage({ user, onNotificationsRefresh }) {
 
   return (
     <>
-      <TitleBar />
+            <TitleBar />     {" "}
       <div className={styles.mainContent}>
-        <Nav />
+                <Nav />       {" "}
         <div className={styles.container}>
+                   {" "}
           <div className={styles.header}>
-            <h1>Teams</h1>
+                        <h1>Teams</h1>           {" "}
             <div className={styles.searchBar}>
+                           {" "}
               <input
                 type="text"
                 placeholder="Search teams..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
+                           {" "}
               <button
                 className={styles.addButton}
                 onClick={handleOpenAddTeamModal}
               >
-                ➕ Add Team
+                                ➕ Add Team              {" "}
               </button>
+                         {" "}
             </div>
+                     {" "}
           </div>
+                   {" "}
           <div className={styles.teamGrid}>
+                       {" "}
             {filteredTeams.map((team, index) => (
               <div
                 key={index}
@@ -193,10 +224,14 @@ function TeamsPage({ user, onNotificationsRefresh }) {
                     team.teamColor || TEAM_COLORS[index % TEAM_COLORS.length],
                 }}
               >
+                               {" "}
                 <div className={styles.teamCard}>
-                  <div className={styles.cardBackground}></div>
+                                   {" "}
+                  <div className={styles.cardBackground}></div>                 {" "}
                   <div className={styles.cardContent}>
+                                       {" "}
                     <div className={styles.logoWrapper}>
+                                           {" "}
                       <img
                         src={team.logo}
                         alt={`${team.name} logo`}
@@ -210,31 +245,64 @@ function TeamsPage({ user, onNotificationsRefresh }) {
                             .toUpperCase()}`;
                         }}
                       />
+                                         {" "}
                     </div>
-                    <h3 className={styles.teamName}>{team.name}</h3>
+                                       {" "}
+                    <h3 className={styles.teamName}>{team.name}</h3>           
+                           {" "}
                     <p className={styles.description}>
-                      {team.description || "Brak opisu"}
+                                            {team.description || "Brak opisu"} 
+                                       {" "}
                     </p>
+                                     {" "}
                   </div>
+                                 {" "}
                 </div>
+                               {" "}
                 <div className={styles.playersSidebar}>
-                  {team.players.slice(0, 6).map((player, pIndex) => (
-                    <div key={pIndex} className={styles.playerAvatar}>
-                      <img
-                        src={
-                          player.avatarUrl ||
-                          `https://i.pravatar.cc/150?u=${player.userId}`
-                        }
-                        alt={player.username}
-                      />
-                    </div>
-                  ))}
+                                   {" "}
+                  {team.activePlayers && team.activePlayers.length > 0
+                    ? team.activePlayers.slice(0, 6).map((player, pIndex) => (
+                        <div key={pIndex} className={styles.playerAvatar}>
+                                                   {" "}
+                          <img
+                            src={
+                              player.avatarUrl ||
+                              `https://i.pravatar.cc/150?u=${player.userId}`
+                            }
+                            alt={player.username}
+                          />
+                                                 {" "}
+                        </div>
+                      ))
+                    : team.captainId &&
+                      team.players.find((p) => p.userId === team.captainId) && (
+                        <div className={styles.playerAvatar}>
+                                                   {" "}
+                          <img
+                            src={
+                              team.players.find(
+                                (p) => p.userId === team.captainId
+                              )?.avatarUrl ||
+                              `https://i.pravatar.cc/150?u=${team.captainId}`
+                            }
+                            alt="Captain"
+                          />
+                                                 {" "}
+                        </div>
+                      )}
+                                 {" "}
                 </div>
+                             {" "}
               </div>
             ))}
+                     {" "}
           </div>
+                 {" "}
         </div>
+             {" "}
       </div>
+           {" "}
       {isModalOpen && (
         <AddTeamModal
           onClose={() => setIsModalOpen(false)}
@@ -246,18 +314,26 @@ function TeamsPage({ user, onNotificationsRefresh }) {
           availableUsers={availableUsers}
         />
       )}
+           {" "}
       {isDetailsModalOpen && selectedTeam && (
         <TeamDetailsModal
           team={selectedTeam}
-          onClose={() => {
+          onClose={(newLogoUrl) => {
+            // ODBIERA NEWLOGOURL
             setIsDetailsModalOpen(false);
-            fetchAllTeams();
+            if (newLogoUrl && newLogoUrl !== selectedTeam.logo) {
+              handleUpdateTeamLogo(selectedTeam.id, newLogoUrl); // LOKALNY ZAPIS
+            } else {
+              fetchAllTeams();
+            }
           }}
           onJoin={handleJoinTeam}
           onRefresh={fetchAllTeams}
           onNotificationsRefresh={onNotificationsRefresh}
+          onLogoUpdate={handleUpdateTeamLogo}
         />
       )}
+         {" "}
     </>
   );
 }
