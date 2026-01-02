@@ -343,12 +343,6 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
             </div>
           )}
         </div>
-
-        <div className={styles.footer}>
-          <button onClick={onClose} className={styles.closeFooterButton}>
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );
