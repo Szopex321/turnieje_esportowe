@@ -1,0 +1,129 @@
+.mainContainer {
+  display: flex;
+  /* ZMIANA: Używamy zmiennej globalnej, tak jak w TeamsPage */
+  background-color: rgba(255, 255, 255, 0.05);
+  min-height: 100vh;
+  color: #fff;
+  font-family: "Roboto", sans-serif;
+}
+
+.content {
+  flex: 1;
+  padding: 20px;
+  overflow-x: auto; /* Przewijanie poziome dla szerokich drabinek */
+}
+
+.header {
+  border-bottom: 1px solid #333;
+  margin-bottom: 30px;
+  padding-bottom: 15px;
+}
+
+.header h1 {
+  color: #facc15; /* Złoty kolor */
+  margin: 0;
+  font-size: 2rem;
+}
+
+/* Kontener całej drabinki - Rundy obok siebie */
+.bracketContainer {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 60px; /* Odstęp między kolumnami rund */
+  padding: 20px 0;
+  min-width: 100%;
+}
+
+/* Kolumna pojedynczej rundy */
+.roundColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around; /* To centruje mecze w pionie - kluczowe dla wyglądu drzewka */
+  gap: 20px;
+  min-width: 260px;
+}
+
+.roundTitle {
+  text-align: center;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+/* Karta Meczu */
+.matchCard {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.matchCard:hover {
+  border-color: #facc15;
+  transform: scale(1.02);
+}
+
+/* Linie łączące (wizualny łącznik między rundami) */
+.roundColumn:not(:last-child) .matchCard::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -30px; /* Połowa odstępu między rundami */
+  width: 30px;
+  height: 2px;
+  background-color: #444;
+  z-index: 0;
+}
+
+/* Wiersz uczestnika (Gracz lub Drużyna) */
+.participantRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background-color: #2a2a2a;
+  border-radius: 4px;
+}
+
+/* Styl dla zwycięzcy */
+.winner {
+  background-color: rgba(250, 204, 21, 0.2);
+  border: 1px solid rgba(250, 204, 21, 0.5);
+  color: #fff;
+  font-weight: bold;
+}
+
+.participantName {
+  font-weight: 500;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.score {
+  font-weight: bold;
+  color: #facc15;
+  margin-left: 10px;
+}
+
+.loading,
+.error,
+.empty {
+  text-align: center;
+  margin-top: 50px;
+  font-size: 1.2rem;
+  color: #888;
+}

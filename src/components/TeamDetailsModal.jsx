@@ -1,14 +1,15 @@
-/* eslint-disable no-irregular-whitespace */
-// Ostateczna wersja TeamDetailsModal.jsx (Czysta i funkcjonalna)
+// Ostateczna wersja TeamDetailsModal.jsx (Poprawiona autoryzacja)
 import React, { useMemo, useState } from "react";
 import styles from "../styles/components/TeamDetailsModal.module.css";
 import TeamInvitationModal from "./TeamInvitationModal";
 import TeamAvatarSelectionModal from "./TeamAvatarSelectionModal";
+import defaultAvatar from "../assets/deafultAvatar.jpg"; // Upewnij się, że ścieżka jest poprawna
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://projektturniej.onrender.com/api"; // Pełny URL API
 const MAX_PLAYERS = 5;
 
-const getCurrentUser = () => {
+// Funkcja fallback (zapasowa)
+const getCurrentUserFallback = () => {
   try {
     const savedUserJSON = localStorage.getItem("currentUser");
     const jwtToken = localStorage.getItem("jwt_token");
@@ -32,9 +33,13 @@ const PlayerItem = ({ player, isCaptain, onKick }) => (
   <div className={styles.playerItem}>
     <div className={styles.playerAvatarContainer}>
       <img
-        src={player.avatarUrl || `https://i.pravatar.cc/150?u=${player.userId}`}
+        src={player.avatarUrl || defaultAvatar}
         alt={player.username}
         className={styles.playerAvatar}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = defaultAvatar;
+        }}
       />
       {player.isCaptain && (
         <div className={styles.captainIndicator} title="Captain">
@@ -71,12 +76,19 @@ const TeamDetailsModal = ({
   onJoin,
   onRefresh,
   onNotificationsRefresh,
+  currentUserOverride, // Odbieramy dane z TitleBar
 }) => {
   const [error, setError] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const [localLogo, setLocalLogo] = useState(team.logo);
-  const currentUser = useMemo(() => getCurrentUser(), []);
+
+  // Używamy przekazanych danych lub fallbacku
+  const currentUser = useMemo(() => {
+    if (currentUserOverride) return currentUserOverride;
+    return getCurrentUserFallback();
+  }, [currentUserOverride]);
+
   const isLogged = !!currentUser;
 
   const userInTeam = useMemo(() => {
@@ -119,7 +131,7 @@ const TeamDetailsModal = ({
     console.log("Success:", successMessage);
     if (onNotificationsRefresh) onNotificationsRefresh();
     if (onRefresh) onRefresh();
-    onClose();
+    onClose(localLogo);
   };
 
   const handleJoin = () => {
@@ -130,12 +142,8 @@ const TeamDetailsModal = ({
     }
     onJoin(team.id);
     onClose();
-    if (onRefresh) {
-      setTimeout(onRefresh, 500);
-    }
-    if (onNotificationsRefresh) {
-      setTimeout(onNotificationsRefresh, 500);
-    }
+    if (onRefresh) setTimeout(onRefresh, 500);
+    if (onNotificationsRefresh) setTimeout(onNotificationsRefresh, 500);
   };
 
   const handleDisbandTeam = async () => {
@@ -451,7 +459,7 @@ const TeamDetailsModal = ({
           onLogoSelected={(newUrl) => {
             setLocalLogo(newUrl);
             setShowAvatarModal(false);
-            setError("-----");
+            setError(null);
           }}
         />
       )}

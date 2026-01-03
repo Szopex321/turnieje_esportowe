@@ -8,7 +8,8 @@ import { useNavigate } from "react-router-dom";
 import FriendsModal from "./FriendsModal";
 import friendsIcon from "../assets/friendsIcon.png";
 import NotificationsModal from "./NotificationsModal";
-import MyTeamsModal from "./MyTeamsModal"; // 1. Importuj nowy modal
+import MyTeamsModal from "./MyTeamsModal";
+import TeamDetailsModal from "./TeamDetailsModal";
 import { Bell, Users } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -19,24 +20,37 @@ function TitleBar() {
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState(null);
   const [userId, setUserId] = useState(null);
+
+  // Stany Modali
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] =
     useState(false);
-  const [isMyTeamsModalOpen, setIsMyTeamsModalOpen] = useState(false); // 2. Stan widoczności modalu drużyn
-  const [teams, setTeams] = useState([]); // 3. Stan na dane drużyn
+  const [isMyTeamsModalOpen, setIsMyTeamsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTeamForDetails, setSelectedTeamForDetails] = useState(null);
+
+  const [teams, setTeams] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
 
-  // 4. Funkcja pobierająca drużyny (potrzebna dla MyTeamsModal)
+  // Funkcja pomocnicza do sprawdzania awatarów (zapobiega wyświetlaniu "duchów")
+  const getValidAvatar = useCallback((url) => {
+    if (!url || url === "string" || url.includes("pravatar.cc")) {
+      return defaultAvatar;
+    }
+    return url;
+  }, []);
+
+  // Poprawiona funkcja pobierania i mapowania danych drużyn
   const fetchAllTeams = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/teams`);
       if (response.ok) {
         const data = await response.json();
-        // Mapujemy dane, aby pasowały do formatu oczekiwanego przez MyTeamsModal
         const mappedTeams = data.map((team) => ({
           id: team.teamId,
           name: team.teamName,
+          description: team.description,
           captainId: team.captainId,
           logo:
             team.logoUrl ||
@@ -45,8 +59,14 @@ function TitleBar() {
             )
               .substring(0, 2)
               .toUpperCase()}`,
+          // Mapowanie graczy z użyciem getValidAvatar dla widoku szczegółów
           players: team.teamMembers
-            ? team.teamMembers.map((m) => ({ userId: m.userId }))
+            ? team.teamMembers.map((m) => ({
+                userId: m.user?.userId || m.userId,
+                username: m.user?.username || "Gracz",
+                avatarUrl: getValidAvatar(m.user?.avatarUrl), // POPRAWKA: Tutaj naprawiamy awatary
+                status: m.status,
+              }))
             : [],
           activePlayers: team.teamMembers
             ? team.teamMembers.filter((m) => m.status === "Member")
@@ -57,7 +77,7 @@ function TitleBar() {
     } catch (error) {
       console.error("Błąd pobierania drużyn:", error);
     }
-  }, []);
+  }, [getValidAvatar]);
 
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem("jwt_token");
@@ -96,19 +116,25 @@ function TitleBar() {
             setUserId(parseInt(savedUserId, 10));
           }
           fetchNotifications();
-          fetchAllTeams(); // Pobierz drużyny po zalogowaniu
+          fetchAllTeams();
           const interval = setInterval(fetchNotifications, 30000);
           return () => clearInterval(interval);
         }
       } catch (e) {
         console.error("Błąd odczytu danych użytkownika", e);
-        localStorage.clear();
+        localStorage.removeItem("currentUser");
+        localStorage.removeItem("jwt_token");
+        localStorage.removeItem("currentUserId");
       }
     }
   }, [fetchNotifications, fetchAllTeams]);
 
   const goToProfile = () => {
     navigate("/profile");
+  };
+
+  const goToMyTeams = () => {
+    setIsMyTeamsModalOpen(true);
   };
 
   const toggleFriendsModal = () => {
@@ -136,6 +162,12 @@ function TitleBar() {
     fetchNotifications();
   };
 
+  const handleSelectTeamFromList = (team) => {
+    setSelectedTeamForDetails(team);
+    setIsDetailsModalOpen(true);
+    setIsMyTeamsModalOpen(false);
+  };
+
   return (
     <>
       <header className={styles.header}>
@@ -155,13 +187,16 @@ function TitleBar() {
         <div className={styles.headerRight}>
           {isLoggedIn ? (
             <div className={styles.userInfoContainer}>
-              {/* ZMIENIONO: Przycisk teraz otwiera modal */}
               <button
-                onClick={() => setIsMyTeamsModalOpen(true)}
+                onClick={goToMyTeams}
                 className={styles.iconButton}
                 title="My Teams"
               >
-                <Users size={24} className={styles.teamIcon} />
+                <Users
+                  size={24}
+                  className={styles.teamIcon}
+                  style={{ color: "#facc15" }}
+                />
               </button>
 
               <button
@@ -228,7 +263,6 @@ function TitleBar() {
         </div>
       </header>
 
-      {/* MODALE */}
       {isFriendsModalOpen && <FriendsModal onClose={toggleFriendsModal} />}
 
       {isNotificationsModalOpen && (
@@ -239,16 +273,21 @@ function TitleBar() {
         />
       )}
 
-      {/* 5. Renderowanie Modalu Moich Drużyn */}
       {isMyTeamsModalOpen && (
         <MyTeamsModal
           teams={teams}
           currentUserId={userId}
           onClose={() => setIsMyTeamsModalOpen(false)}
-          onSelectTeam={(team) => {
-            navigate(`/teams?id=${team.id}`);
-            setIsMyTeamsModalOpen(false);
-          }}
+          onSelectTeam={handleSelectTeamFromList}
+        />
+      )}
+
+      {isDetailsModalOpen && selectedTeamForDetails && (
+        <TeamDetailsModal
+          team={selectedTeamForDetails}
+          onClose={() => setIsDetailsModalOpen(false)}
+          onRefresh={fetchAllTeams}
+          onNotificationsRefresh={handleRefreshNotifications}
         />
       )}
     </>
