@@ -17,7 +17,7 @@
   overflow-y: auto;
 }
 
-/* TABS (Zakładki na górze panelu) */
+/* TABS */
 .tabsContainer {
   display: flex;
   gap: 10px;
@@ -41,11 +41,11 @@
 }
 
 .activeTab {
-  color: #fca311; /* Twój kolor akcentowy */
+  color: #fca311;
   border-bottom: 2px solid #fca311;
 }
 
-/* SEKCJA: Create Tournament */
+/* FORMULARZ */
 .formGroup {
   margin-bottom: 15px;
   display: flex;
@@ -56,6 +56,7 @@
 .formGroup label {
   margin-bottom: 5px;
   color: #ccc;
+  font-size: 0.9rem;
 }
 
 .input, .textarea, .select {
@@ -64,6 +65,13 @@
   border: 1px solid #444;
   color: white;
   border-radius: 5px;
+  font-size: 1rem;
+}
+
+.buttonGroup {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
 }
 
 .createBtn {
@@ -73,10 +81,20 @@
   border: none;
   font-weight: bold;
   cursor: pointer;
-  margin-top: 10px;
+  border-radius: 4px;
 }
 
-/* SEKCJA: Manage Results (Lista) */
+.cancelBtn {
+    background-color: #444;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* LISTA TURNIEJÓW */
 .tournamentList {
   display: flex;
   flex-direction: column;
@@ -98,68 +116,109 @@
 .tournamentItem:hover {
   background-color: #333;
   border-color: #fca311;
+  transform: translateX(5px);
 }
 
-.statusBadge {
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-.statusConflict { background-color: #ff4d4d; color: white; } /* Czerwony dla konfliktów */
-.statusPending { background-color: #fca311; color: black; } /* Żółty dla oczekujących */
-.statusOk { background-color: #4ade80; color: black; } /* Zielony */
-
-/* MODAL WYNIKÓW */
-.matchConflictContainer {
-  background-color: #2a2a2a;
-  padding: 20px;
-  border-radius: 8px;
-  margin-top: 10px;
-  border: 1px solid #444;
+.itemTitle {
+    font-size: 1.1rem;
+    color: #fff;
 }
 
-.scoreBoard {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 20px 0;
-  text-align: center;
+.itemSubtitle {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 4px;
 }
 
-.teamScore {
-  flex: 1;
+.arrowIcon {
+    color: #555;
+    font-size: 1.5rem;
 }
 
-.scoreInput {
-  font-size: 2rem;
-  width: 60px;
-  text-align: center;
-  background: #111;
-  border: 1px solid #555;
-  color: white;
-  margin: 10px 0;
+/* MODAL SZCZEGÓŁÓW */
+.detailsContainer {
+    color: white;
+    min-width: 300px;
 }
 
-.conflictAlert {
-  color: #ff4d4d;
-  background: rgba(255, 77, 77, 0.1);
-  padding: 10px;
-  border: 1px solid #ff4d4d;
-  margin-bottom: 15px;
-  text-align: center;
+.detailsTitle {
+    text-align: center;
+    color: #fca311;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #444;
+    padding-bottom: 10px;
+}
+
+.detailsGrid {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 20px;
+    background: #222;
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.detailRow {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.detailRow span {
+    color: #aaa;
+}
+
+.descriptionBox {
+    margin-bottom: 25px;
+}
+.descriptionBox label {
+    display: block;
+    color: #888;
+    font-size: 0.8rem;
+    margin-bottom: 5px;
+}
+.descriptionBox p {
+    background: #222;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 0;
+    font-size: 0.95rem;
 }
 
 .adminActions {
   display: flex;
-  gap: 10px;
+  gap: 15px;
   justify-content: center;
+  margin-top: 10px;
 }
 
-.confirmBtn {
-  background-color: #4ade80;
+.editBtn {
+  background-color: #3b82f6; /* Niebieski */
+  color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 25px;
   cursor: pointer;
   font-weight: bold;
+  border-radius: 5px;
+  transition: 0.2s;
+}
+
+.editBtn:hover {
+    background-color: #2563eb;
+}
+
+.deleteBtn {
+  background-color: #ef4444; /* Czerwony */
+  color: white;
+  border: none;
+  padding: 10px 25px;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 5px;
+  transition: 0.2s;
+}
+
+.deleteBtn:hover {
+    background-color: #dc2626;
 }

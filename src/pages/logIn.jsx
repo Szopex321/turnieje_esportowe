@@ -19,7 +19,7 @@ const LogIn = ({ loadUser }) => {
 
       if (meResponse.ok) {
         const userData = await meResponse.json();
-        
+
         // Zapisujemy ID tak jak wcześniej
         if (userData.id) {
           localStorage.setItem("currentUserId", String(userData.id));
@@ -71,14 +71,16 @@ const LogIn = ({ loadUser }) => {
         // Sprawdź w konsoli czy backend zwraca pole 'avatar' czy 'url'!
         const finalAvatar = detailedUserData?.avatarUrl || detailedUserData?.avatar || detailedUserData?.url || responseData.avatar || "";
 
+        const userRole = detailedUserData?.role || responseData.role || "user";
         const userToSave = {
           username: responseData.username || detailedUserData?.username || login,
-          avatar: finalAvatar, // <--- Tutaj trafia poprawny link
-          role: responseData.role || "user",
+          avatar: finalAvatar,
+          role: userRole, // <--- Tutaj teraz trafi poprawny "admin"
           isLoggedIn: true,
         };
 
         localStorage.setItem("currentUser", JSON.stringify(userToSave));
+        window.dispatchEvent(new Event("authChange"));
 
         if (loadUser) {
           await loadUser();
