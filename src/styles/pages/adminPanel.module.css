@@ -222,3 +222,129 @@
 .deleteBtn:hover {
     background-color: #dc2626;
 }
+
+/* ... (Poprzednie style) ... */
+
+/* --- BRACKET & MATCHES SECTION --- */
+.bracketSection {
+    margin: 20px 0;
+    border-top: 1px solid #444;
+    padding-top: 15px;
+}
+
+.bracketSection h3 {
+    color: #fca311;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+/* Generate Button */
+.generateBox {
+    background-color: #222;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+    border: 1px dashed #555;
+}
+.generateBtn {
+    background-color: #fca311;
+    color: #000;
+    border: none;
+    padding: 10px 20px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 1rem;
+    transition: 0.2s;
+}
+.generateBtn:hover {
+    background-color: #e5920d;
+    transform: scale(1.02);
+}
+
+/* Match List */
+.matchesList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.matchCard {
+    background-color: #252525;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 4px solid #444; /* Domyślny kolor */
+}
+
+.matchHeader {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+    color: #aaa;
+}
+
+.matchTeams {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.95rem;
+    margin-bottom: 5px;
+}
+.score {
+    background: #444;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    color: #fff;
+    font-weight: bold;
+}
+.winner {
+    color: #10b981; /* Zielony dla wygranego */
+    font-weight: bold;
+}
+
+/* Dispute Controls (Scenariusz C) */
+.disputeControls {
+    background-color: rgba(239, 68, 68, 0.1); /* Lekki czerwony */
+    border: 1px solid #ef4444;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    text-align: center;
+}
+.disputeControls p {
+    color: #ef4444;
+    font-weight: bold;
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+}
+.disputeButtons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.winBtn {
+    background-color: #333;
+    border: 1px solid #555;
+    color: white;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 0.8rem;
+}
+.winBtn:hover {
+    background-color: #10b981;
+    border-color: #10b981;
+}
+.proofLink {
+    display: block;
+    margin-top: 8px;
+    color: #3b82f6;
+    font-size: 0.8rem;
+    text-decoration: underline;
+}

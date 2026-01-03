@@ -1,95 +1,172 @@
 import React, { useState, useEffect } from "react";
-// Upewnij się, że te importy pasują do Twojej struktury folderów
 import TitleBar from "../components/titleBar";
 import Nav from "../components/nav";
-import Modal from "../components/modal";
+// Import Twojego komponentu Modal
+import Modal from "../components/modal"; 
 import styles from "../styles/pages/adminPanel.module.css";
 
 const AdminPanel = () => {
-  // Domyślna zakładka to 'results'
-  const [activeTab, setActiveTab] = useState("results");
-  const [selectedMatch, setSelectedMatch] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("tournaments");
   
-  // --- DANE Z API ---
-  const [matchesToReview, setMatchesToReview] = useState([]);
-  const [gamesList, setGamesList] = useState([]); 
+  // Dane list
+  const [tournamentsList, setTournamentsList] = useState([]);
+  const [gamesList, setGamesList] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // --- FORMULARZ TWORZENIA TURNIEJU ---
-  const [newTournament, setNewTournament] = useState({
-    title: "",            
-    gameId: "",           
-    organizerId: "",      
-    maxParticipants: 16,  
-    startDate: "",        
-    description: ""       
+  // --- MODAL I MECZE ---
+  const [selectedTournament, setSelectedTournament] = useState(null);
+  const [tournamentMatches, setTournamentMatches] = useState([]); // Lista meczów w modalu
+  const [matchesLoading, setMatchesLoading] = useState(false);
+
+  // Formularz
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [tournamentForm, setTournamentForm] = useState({
+    title: "", gameId: "", organizerId: "", maxParticipants: 16, startDate: "", description: ""
   });
 
-  // --- 1. POBIERANIE DANYCH ---
+  // Helper daty
+  const formatDateForInput = (dateString) => {
+    if (!dateString) return "";
+    return new Date(dateString).toISOString().slice(0, 16);
+  };
 
-  // Pobieranie meczów do akceptacji
-  const fetchMatches = async () => {
-    const token = localStorage.getItem("jwt_token");
+  // --- 1. POBIERANIE DANYCH ---
+  const fetchTournaments = async () => {
     setLoading(true);
     try {
-      const response = await fetch("https://projektturniej.onrender.com/api/Matches/admin-review", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const response = await fetch("/api/tournaments");
       if (response.ok) {
         const data = await response.json();
-        setMatchesToReview(data);
+        setTournamentsList(data);
       }
     } catch (err) {
-      console.error("Error fetching matches:", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Pobieranie listy gier (do dropdowna)
   const fetchGames = async () => {
     try {
-        const response = await fetch('https://projektturniej.onrender.com/api/games');
+      const response = await fetch('/api/games');
+      if (response.ok) setGamesList(await response.json());
+    } catch (error) { console.error(error); }
+  };
+
+  // --- NOWE: POBIERANIE MECZÓW DO MODALA ---
+  const fetchMatches = async (tournamentId) => {
+    setMatchesLoading(true);
+    const token = localStorage.getItem("jwt_token");
+    try {
+        // ZAKŁADAM ENDPOINT DO POBRANIA MECZÓW TURNIEJU
+        // Jeśli masz inny, np. /api/brackets/matches/{id}, zmień tutaj
+        const response = await fetch(`/api/brackets/${tournamentId}/matches`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
         if (response.ok) {
             const data = await response.json();
-            setGamesList(data);
+            setTournamentMatches(data);
+        } else {
+            setTournamentMatches([]); // Brak drabinki lub błąd
         }
-    } catch (error) {
-        console.error("Error fetching games:", error);
+    } catch (err) {
+        console.error("Błąd pobierania meczów:", err);
+    } finally {
+        setMatchesLoading(false);
     }
   };
 
-  // Obsługa zmiany zakładek
   useEffect(() => {
-    if (activeTab === "results") fetchMatches();
-    if (activeTab === "create") fetchGames();
+    if (activeTab === "tournaments") fetchTournaments();
+    fetchGames();
   }, [activeTab]);
 
-  // --- 2. AKCJA: TWORZENIE TURNIEJU (NAPRAWIONE: POJEDYNCZY FETCH) ---
-  const handleCreateTournament = async (e) => {
+  // Efekt: Jak otworzysz modal, pobierz mecze
+  useEffect(() => {
+    if (selectedTournament) {
+        fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
+    }
+  }, [selectedTournament]);
+
+  // --- 2. GENEROWANIE DRABINKI ---
+  const handleGenerateBracket = async () => {
+    if (!selectedTournament) return;
+    const token = localStorage.getItem("jwt_token");
+
+    try {
+        const response = await fetch(`/api/brackets/generate/${selectedTournament.tournamentId || selectedTournament.id}`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            alert("Drabinka została wygenerowana!");
+            fetchMatches(selectedTournament.tournamentId || selectedTournament.id); // Odśwież listę meczów
+        } else {
+            const txt = await response.text();
+            alert(`Błąd: ${txt}`);
+        }
+    } catch (err) {
+        alert("Błąd sieci podczas generowania.");
+    }
+  };
+
+  // --- 3. ROZWIĄZYWANIE SPORU (SCENARIUSZ C) ---
+  const handleResolveDispute = async (matchId, winnerTeamId) => {
+    if (!window.confirm("Czy na pewno chcesz przyznać zwycięstwo tej drużynie?")) return;
+    const token = localStorage.getItem("jwt_token");
+
+    try {
+        const response = await fetch(`/api/brackets/admin-resolve/${matchId}`, {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}` 
+            },
+            body: JSON.stringify({ winnerId: winnerTeamId }) // Wysyłamy ID zwycięzcy
+        });
+
+        if (response.ok) {
+            alert("Spór rozwiązany.");
+            fetchMatches(selectedTournament.tournamentId || selectedTournament.id); // Odśwież widok
+        } else {
+            alert("Nie udało się rozwiązać sporu.");
+        }
+    } catch (err) {
+        alert("Błąd sieci.");
+    }
+  };
+
+  
+
+  // --- 2. ZAPISYWANIE (POST/PUT) ---
+  const handleSaveTournament = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("jwt_token");
 
-    // Formatowanie daty
-    const formattedDate = newTournament.startDate 
-        ? new Date(newTournament.startDate).toISOString() 
+    const formattedDate = tournamentForm.startDate 
+        ? new Date(tournamentForm.startDate).toISOString() 
         : new Date().toISOString();
 
     const payload = {
-        TournamentName: newTournament.title,
-        GameId: parseInt(newTournament.gameId),
-        OrganizerId: parseInt(newTournament.organizerId),
-        Description: newTournament.description,
-        MaxParticipants: parseInt(newTournament.maxParticipants),
+        TournamentName: tournamentForm.title,
+        GameId: parseInt(tournamentForm.gameId),
+        OrganizerId: parseInt(tournamentForm.organizerId),
+        Description: tournamentForm.description,
+        MaxParticipants: parseInt(tournamentForm.maxParticipants),
         StartDate: formattedDate 
     };
 
-    console.log("Wysyłany JSON:", JSON.stringify(payload));
+    const url = isEditing 
+        ? `https://projektturniej.onrender.com/api/tournaments/${editingId}`
+        : "https://projektturniej.onrender.com/api/tournaments";
+    
+    const method = isEditing ? "PUT" : "POST";
 
     try {
-      const response = await fetch("https://projektturniej.onrender.com/api/tournaments", {
-        method: "POST",
+      const response = await fetch(url, {
+        method: method,
         headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
@@ -98,177 +175,130 @@ const AdminPanel = () => {
       });
 
       if (response.ok) {
-        alert("Sukces! Turniej został utworzony.");
-        // Reset formularza
-        setNewTournament({ 
-            title: "", gameId: "", organizerId: "", 
-            maxParticipants: 16, startDate: "", description: "" 
-        });
+        alert(isEditing ? "Zaktualizowano turniej!" : "Utworzono turniej!");
+        resetForm();
+        setActiveTab("tournaments");
       } else {
-        // Obsługa błędu
         const text = await response.text();
-        try {
-            const errorData = JSON.parse(text);
-            console.error("Błąd backendu:", errorData);
-            alert(`Błąd: ${JSON.stringify(errorData)}`);
-        } catch {
-            console.error("Błąd backendu (raw):", text);
-            alert(`Błąd serwera: ${text}`);
-        }
+        alert(`Błąd: ${text}`);
       }
     } catch (err) {
-      console.error(err);
-      alert("Błąd połączenia z serwerem.");
+      alert("Błąd połączenia.");
     }
   };
 
-  // --- 3. AKCJA: ZATWIERDZANIE WYNIKU ---
-  const handleConfirmResult = async (matchId, finalScoreA, finalScoreB) => {
+  // --- 3. USUWANIE (DELETE) ---
+  const handleDeleteTournament = async (id) => {
+    if (!window.confirm("Czy na pewno usunąć ten turniej?")) return;
+    
     const token = localStorage.getItem("jwt_token");
-    if(!window.confirm(`Czy na pewno ustawić wynik ${finalScoreA}:${finalScoreB}?`)) return;
-
     try {
-      const response = await fetch(`https://projektturniej.onrender.com/api/Matches/${matchId}/resolve`, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ scoreTeamA: finalScoreA, scoreTeamB: finalScoreB })
-      });
+        const response = await fetch(`https://projektturniej.onrender.com/api/tournaments/${id}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` }
+        });
 
-      if (response.ok) {
-        alert("Mecz rozstrzygnięty pomyślnie!");
-        setSelectedMatch(null);
-        fetchMatches(); // Odśwież listę
-      } else {
-        alert("Nie udało się rozstrzygnąć meczu.");
-      }
+        if (response.ok) {
+            alert("Usunięto pomyślnie.");
+            setSelectedTournament(null); // Zamknij modal
+            fetchTournaments(); // Odśwież listę
+        } else {
+            alert("Błąd usuwania.");
+        }
     } catch (err) {
-      console.error(err);
-      alert("Błąd sieci.");
+        alert("Błąd sieci.");
     }
   };
 
-  // --- RENDERY (HTML) ---
+  // --- 4. PRZYGOTOWANIE EDYCJI ---
+  const handleEditClick = (tournament) => {
+    setTournamentForm({
+        title: tournament.tournamentName,
+        gameId: tournament.gameId,
+        organizerId: tournament.organizerId,
+        maxParticipants: tournament.maxParticipants,
+        startDate: formatDateForInput(tournament.startDate),
+        description: tournament.description || ""
+    });
+    setEditingId(tournament.tournamentId || tournament.id);
+    setIsEditing(true);
+    
+    setSelectedTournament(null); // Zamknij modal
+    setActiveTab("create"); // Przejdź do formularza
+  };
 
-  const renderCreateTournament = () => (
+  const resetForm = () => {
+    setTournamentForm({ 
+        title: "", gameId: "", organizerId: "", 
+        maxParticipants: 16, startDate: "", description: "" 
+    });
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
+  // --- RENDERY ---
+  const renderForm = () => (
     <div className={styles.tabContent}>
-      <h2>Create New Tournament</h2>
-      <form onSubmit={handleCreateTournament}>
-        
-        {/* Nazwa Turnieju */}
+      <h2>{isEditing ? "Edytuj turniej" : "Stwórz nowy turniej"}</h2>
+      <form onSubmit={handleSaveTournament}>
         <div className={styles.formGroup}>
-          <label>Tournament Name</label>
-          <input 
-            type="text" 
-            className={styles.input} 
-            required 
-            value={newTournament.title}
-            onChange={e => setNewTournament({...newTournament, title: e.target.value})}
-            placeholder="Np. Winter Cup 2025"
-          />
+          <label>Nazwa Turnieju</label>
+          <input type="text" className={styles.input} required value={tournamentForm.title} onChange={e => setTournamentForm({...tournamentForm, title: e.target.value})} />
         </div>
-
-        {/* Wybór Gry */}
         <div className={styles.formGroup}>
-          <label>Game</label>
-          <select 
-            className={styles.select}
-            value={newTournament.gameId}
-            onChange={e => setNewTournament({...newTournament, gameId: e.target.value})}
-            required
-          >
-            <option value="">-- Select Game --</option>
-            {gamesList.map(g => (
-                <option key={g.gameId} value={g.gameId}>{g.gameName}</option>
-            ))}
-            <option value="4">Fortnite (ID: 4)</option>
+          <label>Gra</label>
+          <select className={styles.select} required value={tournamentForm.gameId} onChange={e => setTournamentForm({...tournamentForm, gameId: e.target.value})}>
+            <option value="">-- Wybierz Grę --</option>
+            {gamesList.map(g => <option key={g.gameId} value={g.gameId}>{g.gameName}</option>)}
           </select>
         </div>
-
-        {/* Organizer ID */}
         <div className={styles.formGroup}>
-          <label>Organizer ID</label>
-          <input 
-            type="number" 
-            className={styles.input} 
-            required 
-            value={newTournament.organizerId}
-            onChange={e => setNewTournament({...newTournament, organizerId: e.target.value})}
-            placeholder="Np. 8"
-          />
+          <label>ID Organizatora</label>
+          <input type="number" className={styles.input} required value={tournamentForm.organizerId} onChange={e => setTournamentForm({...tournamentForm, organizerId: e.target.value})} />
         </div>
-
-        {/* Description */}
         <div className={styles.formGroup}>
-          <label>Description</label>
-          <textarea 
-             className={styles.textarea}
-             value={newTournament.description}
-             onChange={e => setNewTournament({...newTournament, description: e.target.value})}
-          />
+          <label>Opis</label>
+          <textarea className={styles.textarea} value={tournamentForm.description} onChange={e => setTournamentForm({...tournamentForm, description: e.target.value})} />
         </div>
-
-        {/* Max Participants */}
         <div className={styles.formGroup}>
-          <label>Max Participants</label>
-          <input 
-            type="number" 
-            className={styles.input} 
-            value={newTournament.maxParticipants}
-            onChange={e => setNewTournament({...newTournament, maxParticipants: e.target.value})}
-          />
+          <label>Max Graczy</label>
+          <input type="number" className={styles.input} value={tournamentForm.maxParticipants} onChange={e => setTournamentForm({...tournamentForm, maxParticipants: e.target.value})} />
         </div>
-
-        {/* Start Date */}
         <div className={styles.formGroup}>
-            <label>Start Date</label>
-            <input 
-                type="datetime-local" 
-                className={styles.input}
-                value={newTournament.startDate}
-                onChange={e => setNewTournament({...newTournament, startDate: e.target.value})}
-            />
+            <label>Data Startu</label>
+            <input type="datetime-local" className={styles.input} value={tournamentForm.startDate} onChange={e => setTournamentForm({...tournamentForm, startDate: e.target.value})} />
         </div>
-
-        <button type="submit" className={styles.createBtn}>Create Tournament</button>
+        <div className={styles.buttonGroup}>
+            <button type="submit" className={styles.createBtn}>{isEditing ? "Zapisz Zmiany" : "Utwórz Turniej"}</button>
+            {isEditing && <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setActiveTab("tournaments"); }}>Anuluj</button>}
+        </div>
       </form>
     </div>
   );
 
-  const renderManageResults = () => {
-    const sortedMatches = [...matchesToReview].sort((a, b) => new Date(b.date || Date.now()) - new Date(a.date || Date.now()));
-
-    if (loading) return <div>Loading matches...</div>;
-
-    return (
-      <div>
-        <h2>Tournament Results Approval</h2>
-        
-        {sortedMatches.length === 0 ? <p>No matches pending review.</p> : (
-            <div className={styles.tournamentList}>
-            {sortedMatches.map(match => {
-                const isConflict = match.status === "Conflict";
-                return (
-                <div key={match.id} className={styles.tournamentItem} onClick={() => setSelectedMatch(match)}>
-                    <div>
-                        <strong>{match.tournamentName}</strong>
-                        <div style={{fontSize: '0.9rem', color: '#ccc'}}>
-                            {match.teamAName} vs {match.teamBName}
-                        </div>
-                    </div>
-                    <div className={`${styles.statusBadge} ${isConflict ? styles.statusConflict : styles.statusPending}`}>
-                        {match.status}
-                    </div>
-                </div>
-                );
-            })}
-            </div>
-        )}
-      </div>
-    );
+  const getStatusColor = (status) => {
+      switch(status?.toLowerCase()) {
+          case 'scheduled': return '#888';
+          case 'pending': return '#fca311'; // Czeka na potwierdzenie
+          case 'disputed': return '#ef4444'; // CZERWONY - SPÓR!
+          case 'completed': return '#10b981';
+          default: return '#fff';
+      }
   };
+
+  const renderList = () => (
+    <div className={styles.tournamentList}>
+        {tournamentsList.map(t => (
+            <div key={t.id || t.tournamentId} className={styles.tournamentItem} onClick={() => setSelectedTournament(t)}>
+                <div>
+                    <strong className={styles.itemTitle}>{t.tournamentName}</strong>
+                    <div className={styles.itemSubtitle}>Start: {new Date(t.startDate).toLocaleDateString()}</div>
+                </div>
+                <div className={styles.arrowIcon}>Szczegóły &rsaquo;</div>
+            </div>
+        ))}
+    </div>
+  );
 
   return (
     <div className={styles.pageWrapper}>
@@ -276,78 +306,94 @@ const AdminPanel = () => {
       <div className={styles.contentContainer}>
         <Nav />
         <main className={styles.mainContent}>
-          
-          <div className={styles.tabsContainer}>
-            <button 
-                className={`${styles.tabButton} ${activeTab === 'results' ? styles.activeTab : ''}`} 
-                onClick={() => setActiveTab('results')}
-            >
-                Manage Results
-            </button>
-            <button 
-                className={`${styles.tabButton} ${activeTab === 'create' ? styles.activeTab : ''}`} 
-                onClick={() => setActiveTab('create')}
-            >
-                Create Tournament
-            </button>
-          </div>
-
-          {activeTab === 'results' && renderManageResults()}
-          {activeTab === 'create' && renderCreateTournament()}
-
+            {/* TABS (pominąłem dla czytelności kodu, wklej swoje) */}
+            {activeTab === 'tournaments' && renderList()}
+            {/* ...formularz... */}
         </main>
       </div>
 
-      {/* Modal */}
-      {selectedMatch && (
-        <Modal onClose={() => setSelectedMatch(null)}>
-            <h2 style={{color: 'white', textAlign:'center'}}>Match Review</h2>
-            
-            <div className={styles.matchConflictContainer}>
-                {selectedMatch.status === "Conflict" && (
-                    <div className={styles.conflictAlert}>⚠️ <strong>CONFLICT DETECTED!</strong></div>
-                )}
-                 
-                <div className={styles.scoreBoard}>
-                    <div className={styles.teamScore}>
-                        <h4>{selectedMatch.teamAName}</h4>
-                        <p style={{fontSize:'0.8rem', color:'#888'}}>Claimed:</p>
-                        <div className={styles.scoreInput}>
-                            {selectedMatch.scoreASubmitted ?? "?"}
-                        </div>
-                    </div>
-                    <div style={{fontSize: '2rem', fontWeight: 'bold', color:'#555'}}>VS</div>
-                    <div className={styles.teamScore}>
-                        <h4>{selectedMatch.teamBName}</h4>
-                        <p style={{fontSize:'0.8rem', color:'#888'}}>Claimed:</p>
-                        <div className={styles.scoreInput}>
-                            {selectedMatch.scoreBSubmitted ?? "?"}
-                        </div>
-                    </div>
+      {/* --- MODAL ADMINA --- */}
+      {selectedTournament && (
+        <Modal onClose={() => setSelectedTournament(null)}>
+            <div className={styles.modalInnerContent}>
+                <h2 className={styles.detailsTitle}>{selectedTournament.tournamentName}</h2>
+                
+                {/* 1. Podstawowe info */}
+                <div className={styles.detailsGrid}>
+                    <div><span>Max Graczy:</span> <strong>{selectedTournament.maxParticipants}</strong></div>
+                    <div><span>Data:</span> <strong>{new Date(selectedTournament.startDate).toLocaleString()}</strong></div>
                 </div>
 
-                {selectedMatch.status === "Conflict" && (
-                      <div style={{textAlign:'center', marginBottom: 20, color:'#ccc', fontSize:'0.9rem'}}>
-                        <p>Team A claims: {selectedMatch.scoreASubmitted} - {selectedMatch.scoreBSubmittedOpponent}</p>
-                        <p>Team B claims: {selectedMatch.scoreAOpponent} - {selectedMatch.scoreBSubmitted}</p>
-                      </div>
-                )}
+                {/* 2. Sekcja Drabinki / Meczów */}
+                <div className={styles.bracketSection}>
+                    <h3>Zarządzanie Rozgrywkami</h3>
+                    
+                    {/* Przycisk Generowania (widoczny np. gdy brak meczów) */}
+                    {tournamentMatches.length === 0 && (
+                        <div className={styles.generateBox}>
+                            <p>Turniej nie ma jeszcze wygenerowanej drabinki.</p>
+                            <button className={styles.generateBtn} onClick={handleGenerateBracket}>
+                                ⚡ Wygeneruj Drabinkę
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Lista Meczów (szczególnie tych ze sporem) */}
+                    {matchesLoading ? <p>Ładowanie meczów...</p> : (
+                        <div className={styles.matchesList}>
+                            {tournamentMatches.length > 0 && <h4>Ostatnie Aktywności:</h4>}
+                            
+                            {tournamentMatches
+                             .sort((a, b) => (b.matchStatus === 'disputed') - (a.matchStatus === 'disputed')) // Pokaż SPORY na górze
+                             .map(match => (
+                                <div key={match.matchId} className={styles.matchCard} style={{borderColor: getStatusColor(match.matchStatus)}}>
+                                    
+                                    <div className={styles.matchHeader}>
+                                        <span style={{color: getStatusColor(match.matchStatus), fontWeight: 'bold', textTransform: 'uppercase'}}>
+                                            {match.matchStatus}
+                                        </span>
+                                        <span className={styles.matchId}>Mecz #{match.matchId}</span>
+                                    </div>
+
+                                    <div className={styles.matchTeams}>
+                                        <div className={match.winnerId === match.teamAId ? styles.winner : ''}>
+                                            {match.teamAName || "Drużyna A"} 
+                                            {match.scoreA !== null && <span className={styles.score}>{match.scoreA}</span>}
+                                        </div>
+                                        <span>vs</span>
+                                        <div className={match.winnerId === match.teamBId ? styles.winner : ''}>
+                                            {match.teamBName || "Drużyna B"}
+                                            {match.scoreB !== null && <span className={styles.score}>{match.scoreB}</span>}
+                                        </div>
+                                    </div>
+
+                                    {/* SCENARIUSZ C: ADMIN RESOLVE */}
+                                    {match.matchStatus === 'disputed' && (
+                                        <div className={styles.disputeControls}>
+                                            <p>⚠️ Wymagana interwencja! Kto wygrał?</p>
+                                            <div className={styles.disputeButtons}>
+                                                <button onClick={() => handleResolveDispute(match.matchId, match.teamAId)} className={styles.winBtn}>
+                                                    Win {match.teamAName || "A"}
+                                                </button>
+                                                <button onClick={() => handleResolveDispute(match.matchId, match.teamBId)} className={styles.winBtn}>
+                                                    Win {match.teamBName || "B"}
+                                                </button>
+                                            </div>
+                                            {/* Tutaj można by dodać podgląd screenshota, jeśli API go zwraca */}
+                                            {match.screenshotUrl && (
+                                                <a href={match.screenshotUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>Zobacz dowód</a>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
 
                 <div className={styles.adminActions}>
-                    <button 
-                        className={styles.confirmBtn} 
-                        onClick={() => handleConfirmResult(selectedMatch.id, selectedMatch.scoreASubmitted, selectedMatch.scoreBSubmittedOpponent)}
-                    >
-                        Approve {selectedMatch.teamAName}'s Result
-                    </button>
-                    
-                    <button 
-                        className={styles.confirmBtn}
-                        style={{backgroundColor: '#fca311'}} 
-                        onClick={() => handleConfirmResult(selectedMatch.id, selectedMatch.scoreAOpponent, selectedMatch.scoreBSubmitted)}
-                    >
-                            Approve {selectedMatch.teamBName}'s Result
-                    </button>
+                    <button className={styles.editBtn} onClick={() => handleEditClick(selectedTournament)}>Edytuj</button>
+                    <button className={styles.deleteBtn} onClick={() => handleDeleteTournament(selectedTournament.tournamentId || selectedTournament.id)}>Usuń</button>
                 </div>
             </div>
         </Modal>
