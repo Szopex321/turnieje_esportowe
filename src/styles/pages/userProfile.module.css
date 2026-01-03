@@ -123,3 +123,124 @@
     border-color: #facc15;
     color: #facc15;
 }
+
+/* ... Twoje istniejące style ... */
+
+/* --- HISTORY SECTION --- */
+.historySection {
+    margin-top: 40px;
+    border-top: 1px solid #444;
+    padding-top: 20px;
+    width: 100%;
+}
+
+.historyTitle {
+    color: #fff;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+}
+
+.matchList {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.matchCard {
+    background-color: #252525;
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.matchCard:hover {
+    background-color: #2a2a2a;
+}
+
+.matchInfo {
+    display: flex;
+    flex-direction: column;
+    min-width: 120px;
+}
+
+.matchTournament {
+    color: #fca311;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.matchDate {
+    color: #888;
+    font-size: 0.8rem;
+    margin-top: 4px;
+}
+
+.matchVersus {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1rem;
+    color: #ddd;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+.vsBadge {
+    color: #666;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.winnerName {
+    color: #10b981; /* Zielony dla wygranego */
+    font-weight: bold;
+}
+
+.matchStatusBadge {
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    margin-right: 15px;
+    min-width: 100px;
+    text-align: right;
+}
+
+.actionBtn {
+    background-color: #fca311;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: #000;
+}
+
+.actionBtn:hover {
+    background-color: #e5920d;
+}
+
+/* Responsywność dla historii na małych ekranach */
+@media (max-width: 768px) {
+    .matchCard {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .matchVersus {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .matchStatusBadge {
+        text-align: left;
+    }
+    
+    .actionBtn {
+        width: 100%;
+    }
+}
