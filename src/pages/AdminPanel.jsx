@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import TitleBar from "../components/titleBar";
 import Nav from "../components/nav";
-// Import Twojego komponentu Modal
 import Modal from "../components/modal"; 
 import styles from "../styles/pages/adminPanel.module.css";
 
 const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState("tournaments");
+  
+  // ID zalogowanego admina
+  const [currentAdminId, setCurrentAdminId] = useState(null);
   
   // Dane list
   const [tournamentsList, setTournamentsList] = useState([]);
@@ -15,23 +17,36 @@ const AdminPanel = () => {
 
   // --- MODAL I MECZE ---
   const [selectedTournament, setSelectedTournament] = useState(null);
-  const [tournamentMatches, setTournamentMatches] = useState([]); // Lista meczów w modalu
+  const [tournamentMatches, setTournamentMatches] = useState([]); 
   const [matchesLoading, setMatchesLoading] = useState(false);
 
-  // Formularz
+  // Formularz - DODANO: imageUrl
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [tournamentForm, setTournamentForm] = useState({
-    title: "", gameId: "", organizerId: "", maxParticipants: 16, startDate: "", description: ""
+    title: "", 
+    gameId: "", 
+    organizerId: "", 
+    maxParticipants: 16, 
+    startDate: "", 
+    description: "",
+    imageUrl: "" // <--- NOWE POLE
   });
 
-  // Helper daty
+  const parseJwt = (token) => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
+
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toISOString().slice(0, 16);
   };
 
-  // --- 1. POBIERANIE DANYCH ---
+  // --- POBIERANIE DANYCH ---
   const fetchTournaments = async () => {
     setLoading(true);
     try {
@@ -54,13 +69,10 @@ const AdminPanel = () => {
     } catch (error) { console.error(error); }
   };
 
-  // --- NOWE: POBIERANIE MECZÓW DO MODALA ---
   const fetchMatches = async (tournamentId) => {
     setMatchesLoading(true);
     const token = localStorage.getItem("jwt_token");
     try {
-        // ZAKŁADAM ENDPOINT DO POBRANIA MECZÓW TURNIEJU
-        // Jeśli masz inny, np. /api/brackets/matches/{id}, zmień tutaj
         const response = await fetch(`/api/brackets/${tournamentId}/matches`, {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -68,7 +80,7 @@ const AdminPanel = () => {
             const data = await response.json();
             setTournamentMatches(data);
         } else {
-            setTournamentMatches([]); // Brak drabinki lub błąd
+            setTournamentMatches([]); 
         }
     } catch (err) {
         console.error("Błąd pobierania meczów:", err);
@@ -82,14 +94,26 @@ const AdminPanel = () => {
     fetchGames();
   }, [activeTab]);
 
-  // Efekt: Jak otworzysz modal, pobierz mecze
   useEffect(() => {
     if (selectedTournament) {
         fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
     }
   }, [selectedTournament]);
 
-  // --- 2. GENEROWANIE DRABINKI ---
+  useEffect(() => {
+    const token = localStorage.getItem("jwt_token");
+    if (token) {
+        const decoded = parseJwt(token);
+        const adminId = decoded?.nameid || decoded?.id || decoded?.userId;
+        
+        if (adminId) {
+            setCurrentAdminId(adminId);
+            setTournamentForm(prev => ({ ...prev, organizerId: adminId }));
+        }
+    }
+  }, []);
+
+  // --- GENEROWANIE DRABINKI ---
   const handleGenerateBracket = async () => {
     if (!selectedTournament) return;
     const token = localStorage.getItem("jwt_token");
@@ -102,7 +126,7 @@ const AdminPanel = () => {
 
         if (response.ok) {
             alert("Drabinka została wygenerowana!");
-            fetchMatches(selectedTournament.tournamentId || selectedTournament.id); // Odśwież listę meczów
+            fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
         } else {
             const txt = await response.text();
             alert(`Błąd: ${txt}`);
@@ -112,7 +136,7 @@ const AdminPanel = () => {
     }
   };
 
-  // --- 3. ROZWIĄZYWANIE SPORU (SCENARIUSZ C) ---
+  // --- ROZWIĄZYWANIE SPORU ---
   const handleResolveDispute = async (matchId, winnerTeamId) => {
     if (!window.confirm("Czy na pewno chcesz przyznać zwycięstwo tej drużynie?")) return;
     const token = localStorage.getItem("jwt_token");
@@ -124,12 +148,12 @@ const AdminPanel = () => {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${token}` 
             },
-            body: JSON.stringify({ winnerId: winnerTeamId }) // Wysyłamy ID zwycięzcy
+            body: JSON.stringify({ winnerId: winnerTeamId })
         });
 
         if (response.ok) {
             alert("Spór rozwiązany.");
-            fetchMatches(selectedTournament.tournamentId || selectedTournament.id); // Odśwież widok
+            fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
         } else {
             alert("Nie udało się rozwiązać sporu.");
         }
@@ -138,9 +162,7 @@ const AdminPanel = () => {
     }
   };
 
-  
-
-  // --- 2. ZAPISYWANIE (POST/PUT) ---
+  // --- ZAPISYWANIE (POST/PUT) ---
   const handleSaveTournament = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("jwt_token");
@@ -152,15 +174,16 @@ const AdminPanel = () => {
     const payload = {
         TournamentName: tournamentForm.title,
         GameId: parseInt(tournamentForm.gameId),
-        OrganizerId: parseInt(tournamentForm.organizerId),
+        OrganizerId: parseInt(tournamentForm.organizerId || currentAdminId),
         Description: tournamentForm.description,
         MaxParticipants: parseInt(tournamentForm.maxParticipants),
-        StartDate: formattedDate 
+        StartDate: formattedDate,
+        ImageUrl: tournamentForm.imageUrl // <--- WYSYŁAMY LINK DO BACKENDU
     };
 
     const url = isEditing 
-        ? `https://projektturniej.onrender.com/api/tournaments/${editingId}`
-        : "https://projektturniej.onrender.com/api/tournaments";
+        ? `/api/tournaments/${editingId}`
+        : "/api/tournaments";
     
     const method = isEditing ? "PUT" : "POST";
 
@@ -178,6 +201,7 @@ const AdminPanel = () => {
         alert(isEditing ? "Zaktualizowano turniej!" : "Utworzono turniej!");
         resetForm();
         setActiveTab("tournaments");
+        fetchTournaments();
       } else {
         const text = await response.text();
         alert(`Błąd: ${text}`);
@@ -187,21 +211,21 @@ const AdminPanel = () => {
     }
   };
 
-  // --- 3. USUWANIE (DELETE) ---
+  // --- USUWANIE ---
   const handleDeleteTournament = async (id) => {
     if (!window.confirm("Czy na pewno usunąć ten turniej?")) return;
     
     const token = localStorage.getItem("jwt_token");
     try {
-        const response = await fetch(`https://projektturniej.onrender.com/api/tournaments/${id}`, {
+        const response = await fetch(`/api/tournaments/${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.ok) {
             alert("Usunięto pomyślnie.");
-            setSelectedTournament(null); // Zamknij modal
-            fetchTournaments(); // Odśwież listę
+            setSelectedTournament(null);
+            fetchTournaments();
         } else {
             alert("Błąd usuwania.");
         }
@@ -210,7 +234,7 @@ const AdminPanel = () => {
     }
   };
 
-  // --- 4. PRZYGOTOWANIE EDYCJI ---
+  // --- EDYCJA I RESET ---
   const handleEditClick = (tournament) => {
     setTournamentForm({
         title: tournament.tournamentName,
@@ -218,25 +242,41 @@ const AdminPanel = () => {
         organizerId: tournament.organizerId,
         maxParticipants: tournament.maxParticipants,
         startDate: formatDateForInput(tournament.startDate),
-        description: tournament.description || ""
+        description: tournament.description || "",
+        imageUrl: tournament.imageUrl || "" // <--- WCZYTUJEMY LINK (jeśli istnieje)
     });
     setEditingId(tournament.tournamentId || tournament.id);
     setIsEditing(true);
     
-    setSelectedTournament(null); // Zamknij modal
-    setActiveTab("create"); // Przejdź do formularza
+    setSelectedTournament(null);
+    setActiveTab("create");
   };
 
   const resetForm = () => {
     setTournamentForm({ 
-        title: "", gameId: "", organizerId: "", 
-        maxParticipants: 16, startDate: "", description: "" 
+        title: "", 
+        gameId: "", 
+        organizerId: currentAdminId || "", 
+        maxParticipants: 16, 
+        startDate: "", 
+        description: "",
+        imageUrl: "" // <--- RESETUJEMY LINK
     });
     setIsEditing(false);
     setEditingId(null);
   };
 
-  // --- RENDERY ---
+  const getStatusColor = (status) => {
+      switch(status?.toLowerCase()) {
+          case 'scheduled': return '#888';
+          case 'pending': return '#fca311';
+          case 'disputed': return '#ef4444';
+          case 'completed': return '#10b981';
+          default: return '#fff';
+      }
+  };
+
+  // --- WIDOK FORMULARZA ---
   const renderForm = () => (
     <div className={styles.tabContent}>
       <h2>{isEditing ? "Edytuj turniej" : "Stwórz nowy turniej"}</h2>
@@ -245,16 +285,37 @@ const AdminPanel = () => {
           <label>Nazwa Turnieju</label>
           <input type="text" className={styles.input} required value={tournamentForm.title} onChange={e => setTournamentForm({...tournamentForm, title: e.target.value})} />
         </div>
+        
+        {/* --- NOWE POLE: ZDJĘCIE (URL) --- */}
+        <div className={styles.formGroup}>
+          <label>Zdjęcie Turnieju (URL)</label>
+          <input 
+            type="text" 
+            className={styles.input} 
+            placeholder="https://przyklad.com/obrazek.jpg"
+            value={tournamentForm.imageUrl} 
+            onChange={e => setTournamentForm({...tournamentForm, imageUrl: e.target.value})} 
+          />
+          {/* PODGLĄD ZDJĘCIA */}
+          {tournamentForm.imageUrl && (
+            <div style={{marginTop: '10px'}}>
+                <p style={{fontSize: '0.8rem', color: '#888', marginBottom: '5px'}}>Podgląd:</p>
+                <img 
+                    src={tournamentForm.imageUrl} 
+                    alt="Podgląd" 
+                    style={{maxWidth: '200px', maxHeight: '150px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #444'}} 
+                    onError={(e) => {e.target.style.display = 'none'}} // Ukryj jeśli link jest zły
+                />
+            </div>
+          )}
+        </div>
+
         <div className={styles.formGroup}>
           <label>Gra</label>
           <select className={styles.select} required value={tournamentForm.gameId} onChange={e => setTournamentForm({...tournamentForm, gameId: e.target.value})}>
             <option value="">-- Wybierz Grę --</option>
             {gamesList.map(g => <option key={g.gameId} value={g.gameId}>{g.gameName}</option>)}
           </select>
-        </div>
-        <div className={styles.formGroup}>
-          <label>ID Organizatora</label>
-          <input type="number" className={styles.input} required value={tournamentForm.organizerId} onChange={e => setTournamentForm({...tournamentForm, organizerId: e.target.value})} />
         </div>
         <div className={styles.formGroup}>
           <label>Opis</label>
@@ -276,23 +337,24 @@ const AdminPanel = () => {
     </div>
   );
 
-  const getStatusColor = (status) => {
-      switch(status?.toLowerCase()) {
-          case 'scheduled': return '#888';
-          case 'pending': return '#fca311'; // Czeka na potwierdzenie
-          case 'disputed': return '#ef4444'; // CZERWONY - SPÓR!
-          case 'completed': return '#10b981';
-          default: return '#fff';
-      }
-  };
-
+  // --- WIDOK LISTY ---
   const renderList = () => (
     <div className={styles.tournamentList}>
         {tournamentsList.map(t => (
             <div key={t.id || t.tournamentId} className={styles.tournamentItem} onClick={() => setSelectedTournament(t)}>
-                <div>
-                    <strong className={styles.itemTitle}>{t.tournamentName}</strong>
-                    <div className={styles.itemSubtitle}>Start: {new Date(t.startDate).toLocaleDateString()}</div>
+                <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                    {/* Miniaturka na liście (opcjonalnie) */}
+                    {t.imageUrl && (
+                        <img 
+                            src={t.imageUrl} 
+                            alt="Cover" 
+                            style={{width: '50px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} 
+                        />
+                    )}
+                    <div>
+                        <strong className={styles.itemTitle}>{t.tournamentName}</strong>
+                        <div className={styles.itemSubtitle}>Start: {new Date(t.startDate).toLocaleDateString()}</div>
+                    </div>
                 </div>
                 <div className={styles.arrowIcon}>Szczegóły &rsaquo;</div>
             </div>
@@ -306,29 +368,52 @@ const AdminPanel = () => {
       <div className={styles.contentContainer}>
         <Nav />
         <main className={styles.mainContent}>
-            {/* TABS (pominąłem dla czytelności kodu, wklej swoje) */}
+            
+            <div className={styles.tabs}>
+                <button 
+                    className={`${styles.tab} ${activeTab === 'tournaments' ? styles.active : ''}`}
+                    onClick={() => setActiveTab('tournaments')}
+                >
+                    Lista Turniejów
+                </button>
+                <button 
+                    className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
+                    onClick={() => { resetForm(); setActiveTab('create'); }}
+                >
+                    {isEditing ? "Edycja Turnieju" : "Dodaj Turniej"}
+                </button>
+            </div>
+
             {activeTab === 'tournaments' && renderList()}
-            {/* ...formularz... */}
+            {activeTab === 'create' && renderForm()}
+
         </main>
       </div>
 
-      {/* --- MODAL ADMINA --- */}
       {selectedTournament && (
         <Modal onClose={() => setSelectedTournament(null)}>
             <div className={styles.modalInnerContent}>
                 <h2 className={styles.detailsTitle}>{selectedTournament.tournamentName}</h2>
                 
-                {/* 1. Podstawowe info */}
+                {/* ZDJĘCIE W MODALU - JEŚLI JEST */}
+                {selectedTournament.imageUrl && (
+                    <div style={{marginBottom: '20px', textAlign: 'center'}}>
+                        <img 
+                            src={selectedTournament.imageUrl} 
+                            alt="Tournament Banner" 
+                            style={{maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #333'}}
+                        />
+                    </div>
+                )}
+
                 <div className={styles.detailsGrid}>
                     <div><span>Max Graczy:</span> <strong>{selectedTournament.maxParticipants}</strong></div>
                     <div><span>Data:</span> <strong>{new Date(selectedTournament.startDate).toLocaleString()}</strong></div>
                 </div>
 
-                {/* 2. Sekcja Drabinki / Meczów */}
                 <div className={styles.bracketSection}>
                     <h3>Zarządzanie Rozgrywkami</h3>
                     
-                    {/* Przycisk Generowania (widoczny np. gdy brak meczów) */}
                     {tournamentMatches.length === 0 && (
                         <div className={styles.generateBox}>
                             <p>Turniej nie ma jeszcze wygenerowanej drabinki.</p>
@@ -338,13 +423,12 @@ const AdminPanel = () => {
                         </div>
                     )}
 
-                    {/* Lista Meczów (szczególnie tych ze sporem) */}
                     {matchesLoading ? <p>Ładowanie meczów...</p> : (
                         <div className={styles.matchesList}>
                             {tournamentMatches.length > 0 && <h4>Ostatnie Aktywności:</h4>}
                             
                             {tournamentMatches
-                             .sort((a, b) => (b.matchStatus === 'disputed') - (a.matchStatus === 'disputed')) // Pokaż SPORY na górze
+                             .sort((a, b) => (b.matchStatus === 'disputed') - (a.matchStatus === 'disputed')) 
                              .map(match => (
                                 <div key={match.matchId} className={styles.matchCard} style={{borderColor: getStatusColor(match.matchStatus)}}>
                                     
@@ -367,7 +451,6 @@ const AdminPanel = () => {
                                         </div>
                                     </div>
 
-                                    {/* SCENARIUSZ C: ADMIN RESOLVE */}
                                     {match.matchStatus === 'disputed' && (
                                         <div className={styles.disputeControls}>
                                             <p>⚠️ Wymagana interwencja! Kto wygrał?</p>
@@ -379,7 +462,6 @@ const AdminPanel = () => {
                                                     Win {match.teamBName || "B"}
                                                 </button>
                                             </div>
-                                            {/* Tutaj można by dodać podgląd screenshota, jeśli API go zwraca */}
                                             {match.screenshotUrl && (
                                                 <a href={match.screenshotUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>Zobacz dowód</a>
                                             )}
