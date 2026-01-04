@@ -6,11 +6,11 @@ import logo from "../assets/logo.png";
 import defaultAvatar from "../assets/deafultAvatar.jpg";
 import { useNavigate } from "react-router-dom";
 import FriendsModal from "./FriendsModal";
-import friendsIcon from "../assets/friendsIcon.png";
 import NotificationsModal from "./NotificationsModal";
 import MyTeamsModal from "./MyTeamsModal";
 import TeamDetailsModal from "./TeamDetailsModal";
-import { Bell, Users } from "lucide-react";
+// IMPORTY IKON Z LUCIDE-REACT
+import { Bell, Users, Flag } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
@@ -33,7 +33,6 @@ function TitleBar() {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
 
-  // Funkcja pomocnicza do sprawdzania awatarów (zapobiega wyświetlaniu "duchów")
   const getValidAvatar = useCallback((url) => {
     if (!url || url === "string" || url.includes("pravatar.cc")) {
       return defaultAvatar;
@@ -41,7 +40,6 @@ function TitleBar() {
     return url;
   }, []);
 
-  // Poprawiona funkcja pobierania i mapowania danych drużyn
   const fetchAllTeams = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/teams`);
@@ -59,12 +57,11 @@ function TitleBar() {
             )
               .substring(0, 2)
               .toUpperCase()}`,
-          // Mapowanie graczy z użyciem getValidAvatar dla widoku szczegółów
           players: team.teamMembers
             ? team.teamMembers.map((m) => ({
                 userId: m.user?.userId || m.userId,
                 username: m.user?.username || "Gracz",
-                avatarUrl: getValidAvatar(m.user?.avatarUrl), // POPRAWKA: Tutaj naprawiamy awatary
+                avatarUrl: getValidAvatar(m.user?.avatarUrl),
                 status: m.status,
               }))
             : [],
@@ -187,18 +184,16 @@ function TitleBar() {
         <div className={styles.headerRight}>
           {isLoggedIn ? (
             <div className={styles.userInfoContainer}>
+              {/* IKONA DRUŻYNY - FLAGA */}
               <button
                 onClick={goToMyTeams}
                 className={styles.iconButton}
                 title="My Teams"
               >
-                <Users
-                  size={24}
-                  className={styles.teamIcon}
-                  style={{ color: "#facc15" }}
-                />
+                <Flag size={24} className={styles.teamIcon} />
               </button>
 
+              {/* IKONA POWIADOMIEŃ - DZWONEK */}
               <button
                 onClick={toggleNotificationsModal}
                 className={styles.notificationButton}
@@ -212,16 +207,13 @@ function TitleBar() {
                 )}
               </button>
 
+              {/* IKONA ZNAJOMYCH - UŻYTKOWNICY */}
               <button
                 onClick={toggleFriendsModal}
                 className={styles.friendsIconButton}
                 title="Friends"
               >
-                <img
-                  src={friendsIcon}
-                  alt="Friends Icon"
-                  className={styles.friendsIcon}
-                />
+                <Users size={24} className={styles.friendsIcon} />
               </button>
 
               <div

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styles from "../styles/components/AddTeamModal.module.css";
+
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
 
@@ -50,7 +51,6 @@ const UserListItem = ({
       e.stopPropagation();
       onToggle(user);
     }}
-    title={isDisabled ? "Cannot remove Captain" : "Click to select/unselect"}
   >
     <img
       src={user.avatarUrl || `https://i.pravatar.cc/150?u=${user.userId}`}
@@ -61,7 +61,6 @@ const UserListItem = ({
         e.target.src = `https://i.pravatar.cc/150?u=${user.userId}`;
       }}
     />
-    {/* KLUCZOWA POPRAWKA STABILNOŚCI DLA CSS (UCINANIE TEKSTU) */}
     <span className={styles.userName}>
       <span className={styles.usernameDisplay}>{user.username}</span>
       {isCaptain && <span className={styles.captainBadge}>👑 CAPTAIN</span>}
@@ -76,12 +75,34 @@ const AddTeamModal = ({ onClose, onSave }) => {
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Zmieniono z powrotem na 'friends'
+  const [avatars, setAvatars] = useState([]);
   const [friends, setFriends] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Przywrócono endpoint /friends
+  // Funkcja pobierająca listę dostępnych awatarów drużyn
+  const fetchAvatars = async (token) => {
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await fetch(`${API_BASE_URL}/Teams/avatars`, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAvatars(data);
+      } else {
+        console.warn(
+          "⚠️ Nie udało się pobrać awatarów, status:",
+          response.status
+        );
+      }
+    } catch (error) {
+      console.error("❌ Błąd pobierania awatarów:", error);
+    }
+  };
+
   const fetchFriends = async (token) => {
     setIsLoading(true);
     try {
@@ -93,14 +114,11 @@ const AddTeamModal = ({ onClose, onSave }) => {
         },
       });
       if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({ message: "Server error." }));
-        throw new Error(errorData.message || "Error loading friends list.");
+        throw new Error("Error loading friends list.");
       }
       const data = await response.json();
       const friendList = data.map((friend) => ({
-        userId: parseInt(friend.userId || friend.id, 10), // Dostosowanie do userId/id z backendu
+        userId: parseInt(friend.userId || friend.id, 10),
         username: friend.username,
         avatarUrl:
           friend.avatarUrl ||
@@ -109,7 +127,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
       setFriends(friendList);
     } catch (error) {
       console.error("Error fetching friends:", error);
-      setErrorMessage(`Failed to load friends list: ${error.message}`);
+      setErrorMessage("Failed to load friends list.");
     } finally {
       setIsLoading(false);
     }
@@ -138,9 +156,14 @@ const AddTeamModal = ({ onClose, onSave }) => {
   useEffect(() => {
     const user = getCurrentUser();
     setCurrentUser(user);
+
     if (user && user.token) {
+      fetchAvatars(user.token);
       fetchFriends(user.token);
-    } else setIsLoading(false);
+    } else {
+      setIsLoading(false);
+      fetchAvatars(null);
+    }
   }, []);
 
   const clearError = () => setErrorMessage("");
@@ -175,6 +198,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     clearError();
+
     if (!name.trim()) {
       setErrorMessage("Team name is required.");
       return;
@@ -183,8 +207,28 @@ const AddTeamModal = ({ onClose, onSave }) => {
       setErrorMessage("Error: You must be logged in to create a team.");
       return;
     }
+
     setIsSaving(true);
-    const teamData = { TeamName: name, Description: description };
+
+    // --- LOGIKA LOSOWANIA AWATARA ---
+    let randomAvatarUrl = null;
+
+    if (avatars.length > 0) {
+      const randomIndex = Math.floor(Math.random() * avatars.length);
+      randomAvatarUrl = avatars[randomIndex].url;
+      console.log("🎲 Wylosowano z bazy:", randomAvatarUrl);
+    } else {
+      console.warn(
+        "⚠️ Lista awatarów jest pusta. Drużyna zostanie utworzona bez logo."
+      );
+    }
+
+    const teamData = {
+      TeamName: name,
+      Description: description,
+      LogoUrl: randomAvatarUrl,
+    };
+
     try {
       const response = await fetch(`${API_BASE_URL}/teams`, {
         method: "POST",
@@ -194,41 +238,49 @@ const AddTeamModal = ({ onClose, onSave }) => {
         },
         body: JSON.stringify(teamData),
       });
+
+      // --- ZMIANA: LEPSZA OBSŁUGA BŁĘDÓW (NP. ZAJĘTEJ NAZWY) ---
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: Failed to create team.`
-        );
+        // 1. Najpierw pobieramy odpowiedź jako tekst
+        const errorText = await response.text();
+        let errorMsg = `Error ${response.status}: Failed to create team.`;
+
+        // 2. Próbujemy sparsować to jako JSON (jeśli backend zwraca obiekt)
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMsg = errorJson.message || errorJson.title || errorText;
+        } catch {
+          // 3. Jeśli to nie JSON, wyświetlamy czysty tekst (np. "Drużyna o takiej nazwie już istnieje.")
+          if (errorText) errorMsg = errorText;
+        }
+
+        throw new Error(errorMsg);
       }
+      // ---------------------------------------------------------
+
       const newTeamFromBackend = await response.json();
       const teamId = newTeamFromBackend.teamId;
       let failedInvitations = [];
+
       if (selectedPlayers.length > 0) {
         failedInvitations = await sendInvitations(teamId, selectedPlayers);
       }
+
       if (failedInvitations.length === 0) {
-        if (selectedPlayers.length > 0)
-          alert(
-            "✅ Team successfully created. All invitations have been sent!"
-          );
-        else alert("✅ Team successfully created!");
+        if (onSave) onSave();
       } else
-        alert(
-          `✅ Team successfully created. However, failed to send invitations to: ${failedInvitations.join(
-            ", "
-          )}.`
-        );
+        alert(`Created with failed invites: ${failedInvitations.join(", ")}`);
+
       if (onSave) onSave();
     } catch (error) {
       console.error("Error creating team:", error);
-      setErrorMessage(`Server error: ${error.message}`);
+      // Wyświetlamy użytkownikowi dokładny komunikat błędu (np. o zajętej nazwie)
+      setErrorMessage(error.message);
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Użytkownicy do wyświetlenia (filtrowanie zalogowanego kapitana)
   const availableFriends = friends.filter(
     (friend) => !currentUser || friend.userId !== currentUser.userId
   );
@@ -239,6 +291,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
         <h3>Create New Team</h3>
         <form onSubmit={handleSubmit}>
           {errorMessage && <p className={styles.errorText}>{errorMessage}</p>}
+
           <div className={styles.formGroup}>
             <label htmlFor="name">Team Name:</label>
             <input
@@ -252,6 +305,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
               required
             />
           </div>
+
           <div className={styles.formGroup}>
             <label htmlFor="description">Team Description:</label>
             <input
@@ -265,6 +319,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
               placeholder="Enter a brief team description..."
             />
           </div>
+
           <div className={styles.formGroup}>
             <label>
               Team Members ({selectedPlayers.length + 1}/{MAX_PLAYERS}):{" "}
@@ -341,4 +396,5 @@ const AddTeamModal = ({ onClose, onSave }) => {
     </div>
   );
 };
+
 export default AddTeamModal;

@@ -6,11 +6,13 @@
   height: 80px;
   box-sizing: border-box;
 }
+
 .titleSection {
   display: flex;
   align-items: center;
   gap: 20px;
 }
+
 .logo {
   width: 60px;
   height: 60px;
@@ -18,11 +20,13 @@
   align-items: center;
   justify-content: center;
 }
+
 .logoImage {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
+
 .title h2 {
   margin: 0;
   font-size: 22px;
@@ -30,19 +34,17 @@
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+
 .headerRight {
   display: flex;
   align-items: center;
 }
-.notificationIcon {
-  cursor: pointer;
-  font-size: 24px;
-  color: #facc15;
-  transition: opacity 0.2s;
-}
-.notificationIcon:hover {
-  opacity: 0.8;
-}
+
+/* --- Sekcja Ikon (Powiadomienia, Drużyny, Znajomi) --- */
+
+/* Wspólne style dla przycisków ikon */
+.iconButton,
+.notificationButton,
 .friendsIconButton {
   background: none;
   border: none;
@@ -53,123 +55,33 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px;
+  margin-right: 15px; /* Odstęp między ikonami */
+  position: relative; /* Dla badge'a powiadomień */
 }
 
+.iconButton:hover,
+.notificationButton:hover,
 .friendsIconButton:hover {
   background-color: rgba(255, 255, 255, 0.05);
 }
 
+/* Styl dla samych ikon SVG (Flag, Bell, Users) */
+.teamIcon,
+.notificationIcon,
 .friendsIcon {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  /* Ten sam kolor co w .welcomeText strong */
-  filter: invert(88%) sepia(35%) saturate(712%) hue-rotate(1deg)
-    brightness(101%) contrast(97%);
+  color: #facc15; /* Złoty kolor */
+  transition: transform 0.2s ease, opacity 0.2s;
 }
 
+/* Efekt najazdu na ikony */
+.iconButton:hover .teamIcon,
+.notificationButton:hover .notificationIcon,
 .friendsIconButton:hover .friendsIcon {
-  filter: invert(88%) sepia(35%) saturate(712%) hue-rotate(1deg)
-    brightness(101%) contrast(97%);
+  transform: scale(1.1);
+  opacity: 0.8;
 }
 
-.userInfoContainer {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-.userProfile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 5px 10px;
-  border-radius: 8px;
-  transition: background-color 0.2s ease, opacity 0.2s ease;
-}
-.userProfile:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  opacity: 0.9;
-}
-.welcomeText {
-  font-size: 15px;
-  color: #cbd5e0;
-  text-align: right;
-}
-.welcomeText strong {
-  color: #facc15;
-  display: block;
-  font-weight: 600;
-}
-.userAvatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid #facc15;
-}
-.logoutButton {
-  background-color: transparent !important;
-  border: 1px solid #ef4444 !important;
-  color: #ef4444 !important;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.logoutButton:hover {
-  background-color: #ef4444 !important;
-  color: white !important;
-}
-.authButtons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.logInButton {
-  background-color: transparent;
-  color: #ffffff;
-  border: 1px solid #555;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-.signUpButton {
-  background-color: #facc15;
-  color: #000000;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 700;
-  transition: background-color 0.2s;
-}
-.friendsButton {
-  display: none;
-}
-.notificationButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 8px;
-  margin-right: 15px;
-  position: relative;
-  border-radius: 50%;
-  transition: background-color 0.2s;
-}
-
-.notificationButton:hover {
-  background-color: rgba(250, 204, 21, 0.1);
-}
-
-.notificationIcon {
-  color: #facc15;
-}
-
+/* --- Badge Powiadomień --- */
 .notificationBadge {
   position: absolute;
   top: 2px;
@@ -186,29 +98,91 @@
   justify-content: center;
   border: 2px solid #1a202c;
 }
-.iconButton {
-  background: none;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: background-color 0.2s;
+
+/* --- Profil Użytkownika --- */
+.userInfoContainer {
   display: flex;
   align-items: center;
-  justify-content: center;
+  /* gap: 20px; - Zmniejszono, bo ikony mają własne margin-right */
 }
 
-.iconButton:hover {
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.userProfile:hover {
   background-color: rgba(255, 255, 255, 0.05);
+  opacity: 0.9;
 }
 
-/* Styl dla samej ikony - ustawiamy kolor na #facc15 */
-.teamIcon {
-  color: #facc15; /* Kolor żółty na stałe */
-  transition: transform 0.2s ease, opacity 0.2s;
+.welcomeText {
+  font-size: 15px;
+  color: #cbd5e0;
+  text-align: right;
 }
 
-.iconButton:hover .teamIcon {
-  transform: scale(1.1); /* Delikatne powiększenie zamiast zmiany koloru */
-  opacity: 0.8;
+.welcomeText strong {
+  color: #facc15;
+  display: block;
+  font-weight: 600;
+}
+
+.userAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #facc15;
+}
+
+/* --- Przyciski Logowania/Wylogowania --- */
+.logoutButton {
+  background-color: transparent !important;
+  border: 1px solid #ef4444 !important;
+  color: #ef4444 !important;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 15px;
+}
+
+.logoutButton:hover {
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+.authButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logInButton {
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid #555;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.signUpButton {
+  background-color: #facc15;
+  color: #000000;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: background-color 0.2s;
 }
