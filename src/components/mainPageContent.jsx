@@ -1,11 +1,16 @@
 import { useEffect, useState } from "react";
+// 1. IMPORT useNavigate
+import { useNavigate } from "react-router-dom";
 import styles from "../styles/components/mainPageContent.module.css";
 import Modal from "./modal";
 import Button from "./Button";
 
 function MainPageContent(props) {
+  // 2. INITIALIZE NAVIGATION
+  const navigate = useNavigate();
+
   const {
-    tournamentId, // Odbieramy ID turnieju
+    tournamentId,
     title,
     description,
     baner,
@@ -22,16 +27,15 @@ function MainPageContent(props) {
   const [state, setState] = useState("Upcoming");
   const [timeInfo, setTimeInfo] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false); // Stan ładowania przycisku
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const safeEndDate = endDate ? endDate : startDate;
 
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
-  // --- LOGIKA REJESTRACJI (POPRAWIONA) ---
+  // --- REGISTRATION LOGIC ---
   const handleRegister = async () => {
-    // 1. UŻYWAMY KLUCZA "jwt_token" - tak jak zapisałeś w LogIn.js
     const token = localStorage.getItem("jwt_token");
 
     if (!token) {
@@ -42,15 +46,17 @@ function MainPageContent(props) {
     setIsRegistering(true);
 
     try {
-      // 2. Wysyłamy ID turnieju i Token do API
-      const response = await fetch(`/api/TournamentRegistration/${tournamentId}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}` // Backend .NET sam wyciągnie UserID z tokena
-        },
-        body: JSON.stringify({}) // Puste body (chyba że backend wymaga czegoś specyficznego)
-      });
+      const response = await fetch(
+        `/api/TournamentRegistration/${tournamentId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({}),
+        }
+      );
 
       if (response.ok) {
         alert("Success! You have been registered.");
@@ -67,7 +73,7 @@ function MainPageContent(props) {
     }
   };
 
-  // --- LOGIKA DAT ---
+  // --- DATE LOGIC ---
   useEffect(() => {
     if (!startDate) return;
     const today = new Date();
@@ -94,19 +100,18 @@ function MainPageContent(props) {
       if (diffDays <= 0) setTimeInfo("Launches Today");
       else if (diffDays === 1) setTimeInfo("Launches Tomorrow");
       else if (diffDays <= 31) setTimeInfo(`Launches in ${diffDays} days`);
-      else setTimeInfo(`Launches at ${new Date(startDate).toLocaleDateString()}`);
+      else
+        setTimeInfo(`Launches at ${new Date(startDate).toLocaleDateString()}`);
     } else if (state === "Ongoing") {
-        // ... (Twoja logika ongoing)
-        setTimeInfo("Ongoing");
+      setTimeInfo("Ongoing");
     } else if (state === "Completed") {
-        // ... (Twoja logika completed)
-        setTimeInfo("Ended");
+      setTimeInfo("Ended");
     }
   }, [state, startDate, safeEndDate]);
 
   return (
     <>
-      {/* KAFELEK NA GŁÓWNEJ STRONIE - BEZ ZMIAN */}
+      {/* TILE ON MAIN PAGE */}
       <div className={styles.container} onClick={handleOpenModal}>
         <div className={styles.bannerWrapper}>
           <img
@@ -120,15 +125,24 @@ function MainPageContent(props) {
           <h3 className={styles.title}>{title}</h3>
           <div className={styles.timeInfo}>{timeInfo}</div>
           <ul className={styles.list}>
-            <li><strong>Location:</strong> <span>{location}</span></li>
-            <li><strong>Max Participants:</strong> <span>{maxParticipants}</span></li>
-            <li><strong>Registration Type:</strong> <span>{registrationType}</span></li>
-            <li><strong>State:</strong> <span>{state}</span></li>
+            <li>
+              <strong>Location:</strong> <span>{location}</span>
+            </li>
+            <li>
+              <strong>Max Participants:</strong> <span>{maxParticipants}</span>
+            </li>
+            <li>
+              <strong>Registration Type:</strong>{" "}
+              <span>{registrationType}</span>
+            </li>
+            <li>
+              <strong>State:</strong> <span>{state}</span>
+            </li>
           </ul>
         </div>
       </div>
 
-      {/* MODAL - WYGLĄD ZACHOWANY, DODANA TYLKO FUNKCJA ONCLICK */}
+      {/* MODAL */}
       {isModalOpen && (
         <Modal onClose={handleCloseModal}>
           <h2 className={styles.modalTitle}>{title}</h2>
@@ -142,36 +156,55 @@ function MainPageContent(props) {
           </p>
 
           <ul className={styles.modalList}>
-            <li><strong>Localization:</strong> <span>{location}</span></li>
-            <li><strong>Start Date:</strong> <span>{new Date(startDate).toLocaleDateString()}</span></li>
-            <li><strong>End Date:</strong> <span>{endDate ? new Date(endDate).toLocaleDateString() : "TBA"}</span></li>
-            <li><strong>Rules:</strong> <span>{rules || "Standard rules apply."}</span></li>
+            <li>
+              <strong>Localization:</strong> <span>{location}</span>
+            </li>
+            <li>
+              <strong>Start Date:</strong>{" "}
+              <span>{new Date(startDate).toLocaleDateString()}</span>
+            </li>
+            <li>
+              <strong>End Date:</strong>{" "}
+              <span>
+                {endDate ? new Date(endDate).toLocaleDateString() : "TBA"}
+              </span>
+            </li>
+            <li>
+              <strong>Rules:</strong>{" "}
+              <span>{rules || "Standard rules apply."}</span>
+            </li>
             <li>
               <strong>Participants:</strong>{" "}
               <span>
                 {currentParticipants} / {maxParticipants}
               </span>
             </li>
-            
             <li>
-                <strong>Registration Type:</strong> <span>{props.registrationType}</span>
+              <strong>Registration Type:</strong>{" "}
+              <span>{registrationType}</span>
             </li>
-            <li><strong>Registration Type:</strong> <span>{registrationType}</span></li>
-            <li><strong>Tournament Type:</strong> <span>{tournamentType}</span></li>
-            <li><strong>State:</strong> <span>{state}</span></li>
+            <li>
+              <strong>Tournament Type:</strong> <span>{tournamentType}</span>
+            </li>
+            <li>
+              <strong>State:</strong> <span>{state}</span>
+            </li>
           </ul>
 
           <div className={styles.modalActions}>
-            <Button 
-                // Zachowujemy małą literę 'registration' tak jak na Twoim screenie
-                name={isRegistering ? "registering..." : "registration"} 
-                className={styles.registrationButton}
-                
-                // PODPINAMY LOGIKĘ
-                onClick={handleRegister}
-                
-                // Opcjonalnie: zablokuj przycisk jeśli turniej zakończony
-                disabled={isRegistering || state === "Completed"} 
+            {/* REGISTER BUTTON */}
+            <Button
+              name={isRegistering ? "registering..." : "registration"}
+              className={styles.registrationButton}
+              onClick={handleRegister}
+              disabled={isRegistering || state === "Completed"}
+            />
+
+            {/* 3. ADDED BRACKET BUTTON */}
+            <Button
+              name="See Bracket"
+              className={styles.registrationButton} // Uses the same style class for consistency
+              onClick={() => navigate(`/tournament/${tournamentId}/bracket`)}
             />
           </div>
         </Modal>

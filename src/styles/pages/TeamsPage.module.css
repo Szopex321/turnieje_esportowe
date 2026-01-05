@@ -194,7 +194,7 @@
   /* ⚠️ GLOW LOGO: DYNAMICZNY KOLOR */
   box-shadow: 0 0 15px var(--team-color, var(--accent-gold));
   overflow: hidden;
-  background: black;
+  background: var(--team-color);
   margin-bottom: 15px;
   display: flex;
   justify-content: center;

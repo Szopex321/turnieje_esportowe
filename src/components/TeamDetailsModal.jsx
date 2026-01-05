@@ -1,14 +1,14 @@
-/* eslint-disable no-irregular-whitespace */
-// Ostateczna wersja TeamDetailsModal.jsx (Czysta i funkcjonalna)
 import React, { useMemo, useState } from "react";
 import styles from "../styles/components/TeamDetailsModal.module.css";
 import TeamInvitationModal from "./TeamInvitationModal";
 import TeamAvatarSelectionModal from "./TeamAvatarSelectionModal";
+import defaultAvatar from "../assets/deafultAvatar.jpg";
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
 
-const getCurrentUser = () => {
+// Funkcja fallback do pobierania usera z localStorage
+const getCurrentUserFallback = () => {
   try {
     const savedUserJSON = localStorage.getItem("currentUser");
     const jwtToken = localStorage.getItem("jwt_token");
@@ -32,9 +32,13 @@ const PlayerItem = ({ player, isCaptain, onKick }) => (
   <div className={styles.playerItem}>
     <div className={styles.playerAvatarContainer}>
       <img
-        src={player.avatarUrl || `https://i.pravatar.cc/150?u=${player.userId}`}
+        src={player.avatarUrl || defaultAvatar}
         alt={player.username}
         className={styles.playerAvatar}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = defaultAvatar;
+        }}
       />
       {player.isCaptain && (
         <div className={styles.captainIndicator} title="Captain">
@@ -71,12 +75,22 @@ const TeamDetailsModal = ({
   onJoin,
   onRefresh,
   onNotificationsRefresh,
+  currentUserOverride,
 }) => {
   const [error, setError] = useState(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-  const [localLogo, setLocalLogo] = useState(team.logo);
-  const currentUser = useMemo(() => getCurrentUser(), []);
+
+  // Backend może zwracać "logo" lub "logoUrl" w zależności od modelu C#.
+  // Bierzemy to co jest dostępne.
+  const initialLogo = team.logo || team.logoUrl;
+  const [localLogo, setLocalLogo] = useState(initialLogo);
+
+  const currentUser = useMemo(() => {
+    if (currentUserOverride) return currentUserOverride;
+    return getCurrentUserFallback();
+  }, [currentUserOverride]);
+
   const isLogged = !!currentUser;
 
   const userInTeam = useMemo(() => {
@@ -88,9 +102,7 @@ const TeamDetailsModal = ({
 
   const userRole = useMemo(() => {
     if (!currentUser) return "None";
-
     if (currentUser.userId === parseInt(team.captainId, 10)) return "Captain";
-
     if (userInTeam) {
       if (userInTeam.status === "Member") return "Member";
       if (userInTeam.status === "Pending") return "Pending";
@@ -119,8 +131,50 @@ const TeamDetailsModal = ({
     console.log("Success:", successMessage);
     if (onNotificationsRefresh) onNotificationsRefresh();
     if (onRefresh) onRefresh();
-    onClose();
+    onClose(localLogo);
   };
+
+  // --- LOGIKA ZMIANY LOGA (Dopasowana do nowego Backendu) ---
+  const handleLogoSelected = async (newUrl) => {
+    setError(null);
+
+    // 1. Wysyłamy żądanie PUT na endpoint /teams/{id}/logo
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${team.id}/logo`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        // WAŻNE: Klucz "logoUrl" musi pasować do pola w klasie UpdateTeamLogoDto w C#
+        body: JSON.stringify({ logoUrl: newUrl }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to update team logo");
+      }
+
+      // 2. Sukces - Backend zapisał zmianę.
+      // Teraz wymuszamy odświeżenie obrazka w przeglądarce dodając timestamp (?v=...)
+      const separator = newUrl.includes("?") ? "&" : "?";
+      const timestamp = new Date().getTime();
+      const refreshedUrl = `${newUrl}${separator}v=${timestamp}`;
+
+      console.log("Logo updated via PUT. Local refresh:", refreshedUrl);
+
+      // Aktualizujemy stan lokalny, żeby użytkownik od razu widział zmianę
+      setLocalLogo(refreshedUrl);
+      setShowAvatarModal(false);
+
+      // Odświeżamy listę drużyn "pod spodem"
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error("Update logo error:", err);
+      setError(err.message || "Wystąpił błąd podczas aktualizacji logo.");
+    }
+  };
+  // --------------------------------------------------------
 
   const handleJoin = () => {
     setError(null);
@@ -130,12 +184,8 @@ const TeamDetailsModal = ({
     }
     onJoin(team.id);
     onClose();
-    if (onRefresh) {
-      setTimeout(onRefresh, 500);
-    }
-    if (onNotificationsRefresh) {
-      setTimeout(onNotificationsRefresh, 500);
-    }
+    if (onRefresh) setTimeout(onRefresh, 500);
+    if (onNotificationsRefresh) setTimeout(onNotificationsRefresh, 500);
   };
 
   const handleDisbandTeam = async () => {
@@ -288,6 +338,9 @@ const TeamDetailsModal = ({
           <div className={styles.teamHeader}>
             <div className={styles.logoContainer}>
               <img
+                key={
+                  localLogo
+                } /* Zmiana klucza wymusza na Reactcie przerysowanie */
                 src={localLogo}
                 alt={`${team.name} logo`}
                 className={styles.teamLogo}
@@ -448,11 +501,7 @@ const TeamDetailsModal = ({
           teamId={team.id}
           currentLogoUrl={localLogo}
           onClose={() => setShowAvatarModal(false)}
-          onLogoSelected={(newUrl) => {
-            setLocalLogo(newUrl);
-            setShowAvatarModal(false);
-            setError("-----");
-          }}
+          onLogoSelected={handleLogoSelected}
         />
       )}
     </>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styles from "../styles/components/TeamInvitationModal.module.css";
+import defaultAvatar from "../assets/deafultAvatar.jpg"; // Upewnij się, że ścieżka jest poprawna
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
 
 const getCurrentUser = () => {
@@ -16,10 +17,7 @@ const getCurrentUser = () => {
         userId: parseInt(currentUserIdString, 10),
         username: user.username,
         token: jwtToken,
-        avatarUrl:
-          user.avatar ||
-          user.avatarUrl ||
-          `https://i.pravatar.cc/150?u=${currentUserIdString}`,
+        avatarUrl: user.avatar || user.avatarUrl, // Bez fallbacku do pravatar
       };
     }
   } catch (e) {
@@ -47,12 +45,12 @@ const UserListItem = ({
     title={isDisabled ? "Cannot select" : "Click to select/unselect"}
   >
     <img
-      src={user.avatarUrl || `https://i.pravatar.cc/150?u=${user.userId}`}
+      src={user.avatarUrl || defaultAvatar}
       alt={user.username}
       className={styles["invitationModal-userAvatar"]}
       onError={(e) => {
         e.target.onerror = null;
-        e.target.src = `https://i.pravatar.cc/150?u=${user.userId}`;
+        e.target.src = defaultAvatar;
       }}
     />
     <span className={styles["invitationModal-userName"]}>{user.username}</span>
@@ -100,7 +98,7 @@ const TeamInvitationModal = ({
         .map((f) => ({
           userId: Number(f.userId),
           username: f.username,
-          avatarUrl: f.avatarUrl || `https://i.pravatar.cc/150?u=${f.userId}`,
+          avatarUrl: f.avatarUrl, // Bierzemy URL bezpośrednio z API
         }))
         .filter((f) => !existingTeamPlayerIds.has(f.userId));
 
@@ -173,7 +171,9 @@ const TeamInvitationModal = ({
     if (onInviteSent) onInviteSent();
     onClose();
     if (successfulUserIds.length > 0) {
-      alert(`✅ Sent ${successfulUserIds.length} invitation(s).`);
+      // Usunąłem alert zgodnie z prośbą o usuwanie alertów,
+      // ale jeśli chcesz potwierdzenie, możesz użyć console.log lub toast
+      console.log(`✅ Sent ${successfulUserIds.length} invitation(s).`);
     }
   };
 

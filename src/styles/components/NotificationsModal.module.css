@@ -6,13 +6,13 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  justify-content: flex-end; /* Pozycja modalu po prawej stronie */
+  justify-content: flex-end;
   z-index: 1000;
 }
 
 .modal {
-  background-color: #212529; /* Ciemne tło */
-  width: 400px; /* Szerokość modalu */
+  background-color: #212529;
+  width: 400px;
   height: 98%;
   padding: 20px;
   box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
@@ -32,7 +32,7 @@
 
 .header h2 {
   margin: 0;
-  color: #ffc107; /* Żółty kolor tytułu */
+  color: #ffc107;
 }
 
 .closeBtn {
@@ -45,34 +45,64 @@
 
 .content {
   flex-grow: 1;
-  overflow-y: auto; /* Przewijanie listy powiadomień */
+  overflow-y: auto;
 }
 
 .controls {
   display: flex;
   justify-content: space-between;
+  gap: 10px; /* Odstęp między przyciskami w nagłówku */
   margin-bottom: 15px;
 }
 
 .markAllReadButton,
-.refreshButton {
-  padding: 5px 10px;
+.refreshButton,
+.clearAllButton {
+  padding: 8px 12px;
   border: 1px solid #495057;
-  background-color: #343a40;
   color: #fff;
   cursor: pointer;
   border-radius: 4px;
-  transition: background-color 0.2s;
+  font-size: 0.85em;
+  transition: all 0.2s;
+  flex: 1; /* Przyciski rozłożą się równo */
+  text-align: center;
 }
 
-.markAllReadButton:hover:not(:disabled),
+/* Styl dla Mark All Read */
+.markAllReadButton {
+  background-color: #343a40;
+}
+.markAllReadButton:hover:not(:disabled) {
+  background-color: #495057;
+}
+
+/* Styl dla Refresh */
+.refreshButton {
+  background-color: #343a40;
+  max-width: 40px; /* Refresh może być węższy */
+}
 .refreshButton:hover {
   background-color: #495057;
 }
 
+/* NOWY STYL DLA CLEAR ALL */
+.clearAllButton {
+  background-color: #dc3545; /* Czerwony kolor */
+  border-color: #dc3545;
+  font-weight: 500;
+}
+
+.clearAllButton:hover:not(:disabled) {
+  background-color: #bb2d3b; /* Ciemniejszy czerwony */
+}
+
+.clearAllButton:disabled,
 .markAllReadButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background-color: #343a40; /* Szary dla nieaktywnych */
+  border-color: #495057;
 }
 
 .notificationsList {
@@ -88,6 +118,7 @@
   background-color: #2c3034;
   transition: background-color 0.2s, border-left-color 0.2s;
   cursor: pointer;
+  position: relative;
 }
 
 .notificationItem:hover {
@@ -95,7 +126,7 @@
 }
 
 .unread {
-  border-left-color: #ffc107; /* Żółty pasek dla nieprzeczytanych */
+  border-left-color: #ffc107;
   background-color: #383e44;
 }
 
@@ -114,16 +145,20 @@
   font-weight: bold;
   color: #ffc107;
   margin: 0;
+  margin-right: 10px;
+  flex: 1;
 }
 
 .notificationMessage {
   margin: 5px 0;
   font-size: 0.9em;
+  word-wrap: break-word;
 }
 
 .time {
   font-size: 0.75em;
   color: #adb5bd;
+  white-space: nowrap;
 }
 
 .actions {
@@ -143,12 +178,12 @@
 }
 
 .acceptButton {
-  background-color: #28a745; /* Zielony */
+  background-color: #28a745;
   color: white;
 }
 
 .rejectButton {
-  background-color: #dc3545; /* Czerwony */
+  background-color: #dc3545;
   color: white;
 }
 
@@ -161,19 +196,4 @@
   text-align: center;
   color: #adb5bd;
   margin-top: 50px;
-}
-
-.footer {
-  padding-top: 15px;
-  border-top: 1px solid #343a40;
-  text-align: right;
-}
-
-.closeFooterButton {
-  padding: 8px 15px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
 }

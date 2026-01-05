@@ -2,7 +2,7 @@ import React from "react";
 import styles from "../styles/components/MyTeamsModal.module.css";
 
 const MyTeamsModal = ({ teams, currentUserId, onClose, onSelectTeam }) => {
-  // Filtrowanie drużyn, w których jesteś członkiem lub kapitanem
+  // Filter teams where you are a member or captain
   const myTeams = teams.filter((team) =>
     team.players.some((p) => p.userId === currentUserId)
   );
@@ -11,7 +11,7 @@ const MyTeamsModal = ({ teams, currentUserId, onClose, onSelectTeam }) => {
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2>MOJE DRUŻYNY</h2>
+          <h2>MY TEAMS</h2>
           <button className={styles.closeBtn} onClick={onClose}>
             ✕
           </button>
@@ -19,9 +19,7 @@ const MyTeamsModal = ({ teams, currentUserId, onClose, onSelectTeam }) => {
 
         <div className={styles.content}>
           {myTeams.length === 0 ? (
-            <p className={styles.empty}>
-              Nie należysz jeszcze do żadnej drużyny.
-            </p>
+            <p className={styles.empty}>You don't belong to any team yet.</p>
           ) : (
             myTeams.map((team) => (
               <div
@@ -37,12 +35,12 @@ const MyTeamsModal = ({ teams, currentUserId, onClose, onSelectTeam }) => {
                   <span className={styles.teamName}>{team.name}</span>
                   <span className={styles.roleText}>
                     {team.captainId === currentUserId
-                      ? "👑 Kapitan"
-                      : "👤 Członek"}
+                      ? "👑 Captain"
+                      : "👤 Member"}
                   </span>
                 </div>
                 <div className={styles.memberCount}>
-                  {team.activePlayers.length} graczy
+                  {team.activePlayers.length} players
                 </div>
               </div>
             ))
