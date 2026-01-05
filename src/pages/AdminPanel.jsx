@@ -50,7 +50,7 @@ const AdminPanel = () => {
   const fetchTournaments = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/tournaments");
+      const response = await fetch("/api/Tournaments");
       if (response.ok) {
         const data = await response.json();
         setTournamentsList(data);
@@ -162,7 +162,7 @@ const AdminPanel = () => {
     }
   };
 
-  // --- ZAPISYWANIE (POST/PUT) ---
+  // --- 4. ZAPISYWANIE (POST/PUT) ---
   const handleSaveTournament = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("jwt_token");
@@ -171,6 +171,7 @@ const AdminPanel = () => {
         ? new Date(tournamentForm.startDate).toISOString() 
         : new Date().toISOString();
 
+    // 1. Tworzymy podstawowy obiekt
     const payload = {
         TournamentName: tournamentForm.title,
         GameId: parseInt(tournamentForm.gameId),
@@ -178,8 +179,16 @@ const AdminPanel = () => {
         Description: tournamentForm.description,
         MaxParticipants: parseInt(tournamentForm.maxParticipants),
         StartDate: formattedDate,
-        ImageUrl: tournamentForm.imageUrl // <--- WYSYŁAMY LINK DO BACKENDU
+        ImageUrl: tournamentForm.imageUrl
     };
+
+    // 2. WAŻNE: Jeśli edytujemy, musimy dodać ID do payloadu!
+    if (isEditing) {
+        // Backend oczekuje, że ID w ciele będzie takie samo jak w URL
+        // Używamy nazwy 'TournamentId' lub 'Id' (zależnie od Twojego backendu, zazwyczaj TournamentId)
+        payload.TournamentId = parseInt(editingId); 
+        // payload.Id = parseInt(editingId); // Odkomentuj to, jeśli backend używa pola "Id" zamiast "TournamentId"
+    }
 
     const url = isEditing 
         ? `/api/tournaments/${editingId}`
@@ -201,12 +210,15 @@ const AdminPanel = () => {
         alert(isEditing ? "Zaktualizowano turniej!" : "Utworzono turniej!");
         resetForm();
         setActiveTab("tournaments");
-        fetchTournaments();
+        fetchTournaments(); // Odśwież listę
       } else {
         const text = await response.text();
+        // Często backend zwraca szczegóły błędu jako text/json
+        console.error("Błąd API:", text);
         alert(`Błąd: ${text}`);
       }
     } catch (err) {
+      console.error(err);
       alert("Błąd połączenia.");
     }
   };
@@ -217,7 +229,7 @@ const AdminPanel = () => {
     
     const token = localStorage.getItem("jwt_token");
     try {
-        const response = await fetch(`/api/tournaments/${id}`, {
+        const response = await fetch(`/api/Tournaments/${id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` }
         });
