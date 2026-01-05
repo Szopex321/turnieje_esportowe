@@ -1,129 +1,286 @@
-.mainContainer {
-  display: flex;
-  /* ZMIANA: Używamy zmiennej globalnej, tak jak w TeamsPage */
-  background-color: rgba(255, 255, 255, 0.05);
-  min-height: 100vh;
-  color: #fff;
-  font-family: "Roboto", sans-serif;
-}
+/* RESZTA STYLÓW ZOSTAJE BEZ ZMIAN - DODAJEMY TYLKO TO CO PONIŻEJ */
 
-.content {
-  flex: 1;
-  padding: 20px;
-  overflow-x: auto; /* Przewijanie poziome dla szerokich drabinek */
-}
-
-.header {
-  border-bottom: 1px solid #333;
-  margin-bottom: 30px;
-  padding-bottom: 15px;
-}
-
-.header h1 {
-  color: #facc15; /* Złoty kolor */
-  margin: 0;
-  font-size: 2rem;
-}
-
-/* Kontener całej drabinki - Rundy obok siebie */
-.bracketContainer {
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: 60px; /* Odstęp między kolumnami rund */
-  padding: 20px 0;
-  min-width: 100%;
-}
-
-/* Kolumna pojedynczej rundy */
-.roundColumn {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around; /* To centruje mecze w pionie - kluczowe dla wyglądu drzewka */
-  gap: 20px;
-  min-width: 260px;
-}
-
-.roundTitle {
-  text-align: center;
-  color: #888;
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  font-size: 0.9rem;
-  margin-bottom: 10px;
-}
-
-/* Karta Meczu */
+/* Match Card - STYL WYBLAKŁY CZARNY + ŻÓŁTY GRADIENT */
 .matchCard {
-  background-color: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  position: relative;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s, border-color 0.2s;
+  /* Zmiana: Tło to teraz ciemny grafit przechodzący w bardzo ciemne złoto/brąz */
+  background: linear-gradient(145deg, #1a1a1a, #292718);
+  border: 2px solid #333;
+  border-radius: 12px;
+  padding: 0;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease;
+  overflow: hidden;
 }
 
 .matchCard:hover {
-  border-color: #facc15;
-  transform: scale(1.02);
+  transform: translateY(-3px);
+  /* Zmiana: Mocniejsza żółta poświata przy hover */
+  box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
 }
 
-/* Linie łączące (wizualny łącznik między rundami) */
-.roundColumn:not(:last-child) .matchCard::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: -30px; /* Połowa odstępu między rundami */
-  width: 30px;
-  height: 2px;
-  background-color: #444;
-  z-index: 0;
+/* Match Header */
+.matchHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  /* Zmiana: Wyblakły czarny nagłówek z lekkim ciepłym tintem */
+  background: linear-gradient(90deg, #252525, #202015);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
 }
 
-/* Wiersz uczestnika (Gracz lub Drużyna) */
+.matchNumber {
+  color: #ffd700;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+.completedBadge {
+  background: #ffd700;
+  color: #121212; /* Ciemny tekst na żółtym tle */
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Match Body */
+.matchBody {
+  padding: 15px;
+  /* Zmiana: Nie czysty czarny, ale "faded black" (#121212) */
+  background-color: #121212;
+}
+
+/* Participant Row */
 .participantRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 6px 10px;
-  background-color: #2a2a2a;
-  border-radius: 4px;
+  padding: 12px 15px;
+  margin-bottom: 8px;
+  /* Zmiana: Jaśniejszy grafit dla wierszy */
+  background: #1f1f1f;
+  border-radius: 8px;
+  border: 1px solid #333;
+  transition: all 0.2s ease;
 }
 
-/* Styl dla zwycięzcy */
-.winner {
-  background-color: rgba(250, 204, 21, 0.2);
-  border: 1px solid rgba(250, 204, 21, 0.5);
-  color: #fff;
-  font-weight: bold;
+.participantRow:hover {
+  background: #2a2a2a;
+  border-color: #ffd700;
 }
 
-.participantName {
+.participantRow.winnerRow {
+  /* Zmiana: Więcej żółtego w gradiencie zwycięzcy */
+  background: linear-gradient(
+    90deg,
+    rgba(255, 215, 0, 0.25),
+    rgba(255, 215, 0, 0.05)
+  );
+  border: 1px solid #ffd700;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.15);
+}
+
+.participantInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.iconNormal {
+  color: #777;
+}
+
+.iconWinner {
+  color: #ffd700;
+}
+
+.textNormal {
+  color: #ddd; /* Jaśniejszy tekst dla lepszego kontrastu na faded black */
+  font-size: 0.95rem;
   font-weight: 500;
-  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  max-width: 140px;
 }
 
-.score {
-  font-weight: bold;
-  color: #facc15;
-  margin-left: 10px;
+.textWinner {
+  color: #ffd700;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.trophyIcon {
+  color: #ffd700;
+  margin-left: 5px;
+}
+
+.scoreBox {
+  background: #2a2a2a;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: "Courier New", monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  min-width: 35px;
+  text-align: center;
+  transition: all 0.2s ease;
+  border: 1px solid #444;
+}
+
+.scoreWinner {
+  background: linear-gradient(135deg, #ffd700, #d4b000);
+  color: #121212;
+  border-color: #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+/* VS Separator */
+.vsSeparator {
+  text-align: center;
+  margin: 10px 0;
+  color: #777;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  position: relative;
+}
+
+.vsSeparator::before,
+.vsSeparator::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #333;
+}
+
+.vsSeparator::before {
+  left: 0;
+}
+
+.vsSeparator::after {
+  right: 0;
+}
+
+/* Match Footer */
+.matchFooter {
+  padding: 10px 15px;
+  /* Zmiana: Stopka też faded black z lekkim ciepłym odcieniem */
+  background: linear-gradient(90deg, #202015, #121212);
+  border-top: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.winnerInfo {
+  color: #ffd700;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  letter-spacing: 0.5px;
+}
+
+/* Empty Row */
+.emptyRow {
+  background: rgba(40, 40, 40, 0.3);
+  border: 1px dashed #444;
+}
+
+.emptyRow .participantInfo {
+  justify-content: center;
+}
+
+.placeholderText {
+  color: #666;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+.dash {
+  color: #666;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Reszta istniejących styli pozostaje bez zmian */
+.mainContent {
+  display: flex;
+  min-height: 100vh;
+  color: #fff;
+}
+
+.mainContainer {
+  display: flex;
+  flex: 1;
+}
+
+.content {
+  flex: 1;
+  padding: 30px;
+  overflow-x: auto;
+}
+
+.header h1 {
+  color: #ccc;
+  border-bottom: 2px solid #333;
+  padding-bottom: 15px;
+  margin-bottom: 30px;
 }
 
 .loading,
-.error,
 .empty {
-  text-align: center;
-  margin-top: 50px;
-  font-size: 1.2rem;
   color: #888;
+  font-size: 1.2rem;
+  margin-top: 20px;
+}
+
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  margin-top: 50px;
+}
+
+.errorMessage {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 15px 25px;
+  border-radius: 8px;
+  font-weight: bold;
+}
+
+.bracketContainer {
+  display: flex;
+  gap: 60px;
+  padding-bottom: 50px;
+}
+
+.roundColumn {
+  display: flex;
+  flex-direction: column;
+  min-width: 250px;
+}
+
+.roundTitle {
+  text-align: center;
+  font-weight: bold;
+  color: #888;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.matchesList {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex-grow: 1;
+  gap: 25px;
 }

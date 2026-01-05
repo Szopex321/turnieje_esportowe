@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "../styles/components/AddTeamModal.module.css";
+// Importujemy domyślny awatar, aby zachować spójność z TitleBar i TeamDetails
+import defaultAvatar from "../assets/deafultAvatar.jpg";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
@@ -16,10 +18,8 @@ const getCurrentUser = () => {
         userId: parseInt(currentUserIdString, 10),
         username: user.username,
         token: jwtToken,
-        avatarUrl:
-          user.avatar ||
-          user.avatarUrl ||
-          `https://i.pravatar.cc/150?u=${currentUserIdString}`,
+        // Jeśli brak awatara, używamy lokalnego defaultAvatar
+        avatarUrl: user.avatar || user.avatarUrl || defaultAvatar,
       };
     }
   } catch (e) {
@@ -53,12 +53,12 @@ const UserListItem = ({
     }}
   >
     <img
-      src={user.avatarUrl || `https://i.pravatar.cc/150?u=${user.userId}`}
+      src={user.avatarUrl || defaultAvatar}
       alt={user.username}
       className={styles.userAvatar}
       onError={(e) => {
         e.target.onerror = null;
-        e.target.src = `https://i.pravatar.cc/150?u=${user.userId}`;
+        e.target.src = defaultAvatar;
       }}
     />
     <span className={styles.userName}>
@@ -80,7 +80,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Funkcja pobierająca listę dostępnych awatarów drużyn
+  // Funkcja pobierająca listę dostępnych awatarów drużyn z bazy
   const fetchAvatars = async (token) => {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -91,6 +91,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
 
       if (response.ok) {
         const data = await response.json();
+        // Zapisujemy dane z API (oczekiwany format: [{ teamAvatarId: 1, url: "..." }, ...])
         setAvatars(data);
       } else {
         console.warn(
@@ -120,9 +121,8 @@ const AddTeamModal = ({ onClose, onSave }) => {
       const friendList = data.map((friend) => ({
         userId: parseInt(friend.userId || friend.id, 10),
         username: friend.username,
-        avatarUrl:
-          friend.avatarUrl ||
-          `https://i.pravatar.cc/150?u=${friend.userId || friend.id}`,
+        // Używamy defaultAvatar jeśli backend zwróci null/pusty string
+        avatarUrl: friend.avatarUrl || defaultAvatar,
       }));
       setFriends(friendList);
     } catch (error) {
@@ -162,6 +162,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
       fetchFriends(user.token);
     } else {
       setIsLoading(false);
+      // Próba pobrania awatarów nawet bez logowania (jeśli endpoint jest publiczny)
       fetchAvatars(null);
     }
   }, []);
@@ -215,6 +216,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
 
     if (avatars.length > 0) {
       const randomIndex = Math.floor(Math.random() * avatars.length);
+      // Używamy właściwości .url (zgodnie z Twoim API)
       randomAvatarUrl = avatars[randomIndex].url;
       console.log("🎲 Wylosowano z bazy:", randomAvatarUrl);
     } else {
@@ -224,7 +226,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
     }
 
     const teamData = {
-      TeamName: name,
+      TeamName: name.trim(), // Usuwamy zbędne spacje, co pomaga przy walidacji duplikatów
       Description: description,
       LogoUrl: randomAvatarUrl,
     };
@@ -239,24 +241,24 @@ const AddTeamModal = ({ onClose, onSave }) => {
         body: JSON.stringify(teamData),
       });
 
-      // --- ZMIANA: LEPSZA OBSŁUGA BŁĘDÓW (NP. ZAJĘTEJ NAZWY) ---
+      // --- OBSŁUGA BŁĘDÓW (NP. ZAJĘTA NAZWA) ---
       if (!response.ok) {
-        // 1. Najpierw pobieramy odpowiedź jako tekst
+        // Pobieramy treść błędu (tekst lub JSON)
         const errorText = await response.text();
         let errorMsg = `Error ${response.status}: Failed to create team.`;
 
-        // 2. Próbujemy sparsować to jako JSON (jeśli backend zwraca obiekt)
         try {
+          // Próbujemy sparsować jako JSON
           const errorJson = JSON.parse(errorText);
           errorMsg = errorJson.message || errorJson.title || errorText;
         } catch {
-          // 3. Jeśli to nie JSON, wyświetlamy czysty tekst (np. "Drużyna o takiej nazwie już istnieje.")
+          // Jeśli to zwykły tekst (np. z return BadRequest("...")), używamy go bezpośrednio
           if (errorText) errorMsg = errorText;
         }
 
         throw new Error(errorMsg);
       }
-      // ---------------------------------------------------------
+      // ------------------------------------------
 
       const newTeamFromBackend = await response.json();
       const teamId = newTeamFromBackend.teamId;
@@ -274,7 +276,7 @@ const AddTeamModal = ({ onClose, onSave }) => {
       if (onSave) onSave();
     } catch (error) {
       console.error("Error creating team:", error);
-      // Wyświetlamy użytkownikowi dokładny komunikat błędu (np. o zajętej nazwie)
+      // Wyświetlamy użytkownikowi dokładny komunikat błędu z backendu
       setErrorMessage(error.message);
     } finally {
       setIsSaving(false);
