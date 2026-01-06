@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import styles from "../styles/components/NotificationsModal.module.css";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -36,8 +36,6 @@ const handleMarkAsRead = async (notificationId, onRefresh) => {
     );
     if (response.ok) {
       onRefresh();
-    } else {
-      console.error("Failed to mark notification as read:", response.status);
     }
   } catch (e) {
     console.error("Error marking as read:", e);
@@ -46,10 +44,7 @@ const handleMarkAsRead = async (notificationId, onRefresh) => {
 
 const handleAcceptInvite = async (teamId, notificationId, onRefresh) => {
   const token = getCurrentToken();
-  if (!token) {
-    console.error("No authentication token.");
-    return;
-  }
+  if (!token) return;
   try {
     const response = await fetch(`${API_BASE_URL}/teams/${teamId}/join`, {
       method: "POST",
@@ -61,11 +56,7 @@ const handleAcceptInvite = async (teamId, notificationId, onRefresh) => {
     if (response.ok) {
       handleMarkAsRead(notificationId, onRefresh);
     } else {
-      const errorData = await response.json().catch(() => ({}));
-      console.error(
-        "Error accepting invitation:",
-        errorData.message || `Error ${response.status} while joining team.`
-      );
+      console.error("Error accepting invitation");
     }
   } catch (error) {
     console.error("Error accepting invitation (Fetch Error):", error);
@@ -79,10 +70,8 @@ const handleAcceptJoinRequest = async (
   onRefresh
 ) => {
   const currentUser = getCurrentUser();
-  if (!currentUser || !currentUser.token) {
-    console.error("You must be logged in");
-    return;
-  }
+  if (!currentUser || !currentUser.token) return;
+
   try {
     const response = await fetch(
       `${API_BASE_URL}/teams/${teamId}/approve/${userIdToApprove}`,
@@ -95,15 +84,9 @@ const handleAcceptJoinRequest = async (
     );
     if (response.ok) {
       handleMarkAsRead(notificationId, onRefresh);
-    } else {
-      const errorData = await response.json().catch(() => ({}));
-      console.error(
-        "Error accepting player:",
-        errorData.message || "Error accepting player"
-      );
     }
   } catch (error) {
-    console.error("Error accepting join request (Fetch Error):", error);
+    console.error("Error accepting join request:", error);
   }
 };
 
@@ -113,14 +96,10 @@ const handleRejectJoinRequest = async (
   notificationId,
   onRefresh
 ) => {
-  console.log(
-    `❌ Join request from player ID: ${userIdToReject} rejected (marked as read).`
-  );
   handleMarkAsRead(notificationId, onRefresh);
 };
 
 const handleRejectInvite = async (teamId, notificationId, onRefresh) => {
-  console.log(`❌ Team invitation ID: ${teamId} rejected (marked as read).`);
   handleMarkAsRead(notificationId, onRefresh);
 };
 
@@ -132,7 +111,10 @@ const NotificationItem = ({ notification, onRefresh }) => {
     notification.relatedId;
   const teamId = notification.relatedId;
   const notificationId = notification.notificationId;
-  const userId = notification.relatedUserId;
+  const targetUserId = notification.relatedUserId;
+
+  // Wyświetlamy dokładnie to, co przysłał backend.
+  const displayMessage = notification.message;
 
   const handleAcceptInviteClick = (e) => {
     e.stopPropagation();
@@ -146,22 +128,18 @@ const NotificationItem = ({ notification, onRefresh }) => {
 
   const handleAcceptJoinRequestClick = (e) => {
     e.stopPropagation();
-    if (userId) {
-      handleAcceptJoinRequest(teamId, userId, notificationId, onRefresh);
+    if (targetUserId) {
+      handleAcceptJoinRequest(teamId, targetUserId, notificationId, onRefresh);
     } else {
-      console.error(
-        "Error: Cannot identify player ID for acceptance (missing RelatedUserId)."
-      );
       handleMarkAsRead(notificationId, onRefresh);
     }
   };
 
   const handleRejectJoinRequestClick = (e) => {
     e.stopPropagation();
-    if (userId) {
-      handleRejectJoinRequest(teamId, userId, notificationId, onRefresh);
+    if (targetUserId) {
+      handleRejectJoinRequest(teamId, targetUserId, notificationId, onRefresh);
     } else {
-      console.error("Error: Cannot identify player ID for rejection.");
       handleMarkAsRead(notificationId, onRefresh);
     }
   };
@@ -174,7 +152,6 @@ const NotificationItem = ({ notification, onRefresh }) => {
 
   return (
     <div
-      key={notificationId}
       className={`${styles.notificationItem} ${
         !notification.isRead ? styles.unread : ""
       }`}
@@ -186,7 +163,7 @@ const NotificationItem = ({ notification, onRefresh }) => {
           {new Date(notification.createdAt).toLocaleString()}
         </span>
       </div>
-      <p className={styles.notificationMessage}>{notification.message}</p>
+      <p className={styles.notificationMessage}>{displayMessage}</p>
 
       {isTeamInvite && !notification.isRead && (
         <div className={styles.actions}>
@@ -194,13 +171,13 @@ const NotificationItem = ({ notification, onRefresh }) => {
             className={styles.acceptButton}
             onClick={handleAcceptInviteClick}
           >
-            ✅ Accept Invitation
+            ✅ Accept
           </button>
           <button
             className={styles.rejectButton}
             onClick={handleRejectInviteClick}
           >
-            ❌ Reject Invitation
+            ❌ Reject
           </button>
         </div>
       )}
@@ -210,30 +187,18 @@ const NotificationItem = ({ notification, onRefresh }) => {
           <button
             className={styles.acceptButton}
             onClick={handleAcceptJoinRequestClick}
-            disabled={!userId}
+            disabled={!targetUserId}
           >
-            ✅ Accept Player
+            ✅ Accept
           </button>
           <button
             className={styles.rejectButton}
             onClick={handleRejectJoinRequestClick}
-            disabled={!userId}
+            disabled={!targetUserId}
           >
-            ❌ Reject Request
+            ❌ Reject
           </button>
         </div>
-      )}
-
-      {!isTeamInvite && !isJoinRequest && !notification.isRead && (
-        <button
-          className={styles.markReadButton}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleMarkAsRead(notificationId, onRefresh);
-          }}
-        >
-          ✓ Mark as Read
-        </button>
       )}
     </div>
   );
@@ -263,7 +228,29 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
     }
   };
 
+  // --- FUNKCJA USUWANIA WSZYSTKIEGO BEZ ALERTU ---
+  const handleClearAll = async () => {
+    if (sortedNotifications.length === 0) return;
+
+    const token = getCurrentToken();
+    if (!token) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications/clear`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        onRefresh(); // Natychmiastowe odświeżenie listy
+      } else {
+        console.error("Failed to clear notifications");
+      }
+    } catch (e) {
+      console.error("Error clearing notifications:", e);
+    }
+  };
+
   const hasUnread = sortedNotifications.some((n) => !n.isRead);
+  const hasNotifications = sortedNotifications.length > 0;
 
   return (
     <div className={styles.overlay} onClick={onClose}>
@@ -277,15 +264,28 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
 
         <div className={styles.content}>
           <div className={styles.controls}>
+            {/* Przycisk Mark as Read */}
             <button
               onClick={handleMarkAllAsRead}
               disabled={!hasUnread}
               className={styles.markAllReadButton}
             >
-              Mark All as Read
+              Mark All Read
             </button>
+
+            {/* Przycisk Clear All (bez alertu) */}
+            <button
+              onClick={handleClearAll}
+              disabled={!hasNotifications}
+              className={styles.clearAllButton}
+              title="Usuń wszystkie powiadomienia"
+            >
+              Clear History
+            </button>
+
+            {/* Przycisk Refresh */}
             <button onClick={onRefresh} className={styles.refreshButton}>
-              Refresh
+              ↻
             </button>
           </div>
 
@@ -302,12 +302,6 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
               ))}
             </div>
           )}
-        </div>
-
-        <div className={styles.footer}>
-          <button onClick={onClose} className={styles.closeFooterButton}>
-            Close
-          </button>
         </div>
       </div>
     </div>

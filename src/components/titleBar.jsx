@@ -6,9 +6,11 @@ import logo from "../assets/logo.png";
 import defaultAvatar from "../assets/deafultAvatar.jpg";
 import { useNavigate } from "react-router-dom";
 import FriendsModal from "./FriendsModal";
-import friendsIcon from "../assets/friendsIcon.png";
 import NotificationsModal from "./NotificationsModal";
-import { Bell } from "lucide-react";
+import MyTeamsModal from "./MyTeamsModal";
+import TeamDetailsModal from "./TeamDetailsModal";
+// IMPORTY IKON Z LUCIDE-REACT
+import { Bell, Users, Flag } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
@@ -18,11 +20,62 @@ function TitleBar() {
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState(null);
   const [userId, setUserId] = useState(null);
+
+  // Stany Modali
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] =
     useState(false);
+  const [isMyTeamsModalOpen, setIsMyTeamsModalOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedTeamForDetails, setSelectedTeamForDetails] = useState(null);
+
+  const [teams, setTeams] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
+
+  const getValidAvatar = useCallback((url) => {
+    if (!url || url === "string" || url.includes("pravatar.cc")) {
+      return defaultAvatar;
+    }
+    return url;
+  }, []);
+
+  const fetchAllTeams = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams`);
+      if (response.ok) {
+        const data = await response.json();
+        const mappedTeams = data.map((team) => ({
+          id: team.teamId,
+          name: team.teamName,
+          description: team.description,
+          captainId: team.captainId,
+          logo:
+            team.logoUrl ||
+            `https://placehold.co/150/999999/FFFFFF?text=${(
+              team.teamName || "T"
+            )
+              .substring(0, 2)
+              .toUpperCase()}`,
+          players: team.teamMembers
+            ? team.teamMembers.map((m) => ({
+                userId: m.user?.userId || m.userId,
+                username: m.user?.username || "Gracz",
+                avatarUrl: getValidAvatar(m.user?.avatarUrl),
+                status: m.status,
+              }))
+            : [],
+          activePlayers: team.teamMembers
+            ? team.teamMembers.filter((m) => m.status === "Member")
+            : [],
+        }));
+        setTeams(mappedTeams);
+      }
+    } catch (error) {
+      console.error("Błąd pobierania drużyn:", error);
+    }
+  }, [getValidAvatar]);
+
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return;
@@ -44,6 +97,7 @@ function TitleBar() {
       console.error("Błąd pobierania powiadomień:", error);
     }
   }, []);
+
   useEffect(() => {
     const savedUserJSON = localStorage.getItem("currentUser");
     const token = localStorage.getItem("jwt_token");
@@ -59,6 +113,7 @@ function TitleBar() {
             setUserId(parseInt(savedUserId, 10));
           }
           fetchNotifications();
+          fetchAllTeams();
           const interval = setInterval(fetchNotifications, 30000);
           return () => clearInterval(interval);
         }
@@ -69,16 +124,24 @@ function TitleBar() {
         localStorage.removeItem("currentUserId");
       }
     }
-  }, [fetchNotifications]);
+  }, [fetchNotifications, fetchAllTeams]);
+
   const goToProfile = () => {
     navigate("/profile");
   };
+
+  const goToMyTeams = () => {
+    setIsMyTeamsModalOpen(true);
+  };
+
   const toggleFriendsModal = () => {
     setIsFriendsModalOpen((prev) => !prev);
   };
+
   const toggleNotificationsModal = () => {
     setIsNotificationsModalOpen((prev) => !prev);
   };
+
   const handleLogout = () => {
     localStorage.removeItem("jwt_token");
     localStorage.removeItem("currentUser");
@@ -91,114 +154,109 @@ function TitleBar() {
     setUnreadNotifications(0);
     navigate("/login");
   };
+
   const handleRefreshNotifications = () => {
     fetchNotifications();
   };
+
+  const handleSelectTeamFromList = (team) => {
+    setSelectedTeamForDetails(team);
+    setIsDetailsModalOpen(true);
+    setIsMyTeamsModalOpen(false);
+  };
+
   return (
     <>
-           {" "}
       <header className={styles.header}>
-               {" "}
         <div className={styles.titleSection}>
-                   {" "}
-          <div className={styles.logo}>
-                       {" "}
-            <img src={logo} alt="logo" className={styles.logoImage} />         {" "}
+          <div
+            className={styles.logo}
+            onClick={() => navigate("/")}
+            style={{ cursor: "pointer" }}
+          >
+            <img src={logo} alt="logo" className={styles.logoImage} />
           </div>
-                   {" "}
           <div className={styles.title}>
-                        <h2>eSports Tournament organizer</h2>         {" "}
+            <h2>eSports Tournament organizer</h2>
           </div>
-                 {" "}
         </div>
-               {" "}
+
         <div className={styles.headerRight}>
-                   {" "}
           {isLoggedIn ? (
             <div className={styles.userInfoContainer}>
-                           {" "}
+              {/* IKONA DRUŻYNY - FLAGA */}
+              <button
+                onClick={goToMyTeams}
+                className={styles.iconButton}
+                title="My Teams"
+              >
+                <Flag size={24} className={styles.teamIcon} />
+              </button>
+
+              {/* IKONA POWIADOMIEŃ - DZWONEK */}
               <button
                 onClick={toggleNotificationsModal}
                 className={styles.notificationButton}
                 title="Notifications"
               >
-                               {" "}
-                <Bell size={24} className={styles.notificationIcon} />         
-                     {" "}
+                <Bell size={24} className={styles.notificationIcon} />
                 {unreadNotifications > 0 && (
                   <span className={styles.notificationBadge}>
-                                       {" "}
-                    {unreadNotifications > 9 ? "9+" : unreadNotifications}     
-                               {" "}
+                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
                   </span>
                 )}
-                             {" "}
               </button>
-                           {" "}
+
+              {/* IKONA ZNAJOMYCH - UŻYTKOWNICY */}
               <button
                 onClick={toggleFriendsModal}
                 className={styles.friendsIconButton}
                 title="Friends"
               >
-                               {" "}
-                <img
-                  src={friendsIcon}
-                  alt="Friends Icon"
-                  className={styles.friendsIcon}
-                />
-                             {" "}
+                <Users size={24} className={styles.friendsIcon} />
               </button>
-                           {" "}
+
               <div
                 className={styles.userProfile}
                 onClick={goToProfile}
                 style={{ cursor: "pointer" }}
                 title="Go to profile"
               >
-                               {" "}
                 <span className={styles.welcomeText}>
-                                    Welcome, <strong>{username}</strong>       
-                         {" "}
+                  Welcome, <strong>{username}</strong>
                 </span>
-                               {" "}
                 <img
                   src={avatar || defaultAvatar}
                   alt="User Avatar"
                   className={styles.userAvatar}
                 />
-                             {" "}
               </div>
-                           {" "}
+
               <Button
                 name="Log Out"
                 onClick={handleLogout}
                 className={styles.logoutButton}
               />
-                         {" "}
             </div>
           ) : (
             <div className={styles.authButtons}>
-                           {" "}
               <Button
                 name="log in"
                 onClick={() => navigate("/login")}
                 className={styles.logInButton}
               />
-                           {" "}
               <Button
                 name="sign up"
                 onClick={() => navigate("/signup")}
                 className={styles.signUpButton}
               />
-                         {" "}
             </div>
           )}
-                 {" "}
         </div>
-             {" "}
       </header>
-           {" "}
-      {isFriendsModalOpen && <FriendsModal onClose={toggleFriendsModal} />}     {" "}
+
+      {isFriendsModalOpen && <FriendsModal onClose={toggleFriendsModal} />}
+
       {isNotificationsModalOpen && (
         <NotificationsModal
           notifications={notifications}
@@ -206,8 +264,26 @@ function TitleBar() {
           onRefresh={handleRefreshNotifications}
         />
       )}
-         {" "}
+
+      {isMyTeamsModalOpen && (
+        <MyTeamsModal
+          teams={teams}
+          currentUserId={userId}
+          onClose={() => setIsMyTeamsModalOpen(false)}
+          onSelectTeam={handleSelectTeamFromList}
+        />
+      )}
+
+      {isDetailsModalOpen && selectedTeamForDetails && (
+        <TeamDetailsModal
+          team={selectedTeamForDetails}
+          onClose={() => setIsDetailsModalOpen(false)}
+          onRefresh={fetchAllTeams}
+          onNotificationsRefresh={handleRefreshNotifications}
+        />
+      )}
     </>
   );
 }
+
 export default TitleBar;

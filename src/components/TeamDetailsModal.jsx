@@ -1,12 +1,14 @@
-/* eslint-disable no-irregular-whitespace */
 import React, { useMemo, useState } from "react";
 import styles from "../styles/components/TeamDetailsModal.module.css";
 import TeamInvitationModal from "./TeamInvitationModal";
+import TeamAvatarSelectionModal from "./TeamAvatarSelectionModal";
+import defaultAvatar from "../assets/deafultAvatar.jpg";
 
-const API_BASE_URL = "/api";
+const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
 
-const getCurrentUser = () => {
+// Funkcja fallback do pobierania usera z localStorage
+const getCurrentUserFallback = () => {
   try {
     const savedUserJSON = localStorage.getItem("currentUser");
     const jwtToken = localStorage.getItem("jwt_token");
@@ -28,29 +30,42 @@ const getCurrentUser = () => {
 
 const PlayerItem = ({ player, isCaptain, onKick }) => (
   <div className={styles.playerItem}>
-       {" "}
-    <img
-      src={player.avatarUrl || `https://i.pravatar.cc/150?u=${player.userId}`}
-      alt={player.username}
-      className={styles.playerAvatar}
-    />
-        <span className={styles.playerName}>{player.username}</span>   {" "}
-    {player.isCaptain && <span className={styles.captainTag}>👑 Captain</span>} 
-     {" "}
-    {player.status === "Pending" && (
-      <span className={styles.pendingTag}>⏳ Pending</span>
-    )}
-       {" "}
+    <div className={styles.playerAvatarContainer}>
+      <img
+        src={player.avatarUrl || defaultAvatar}
+        alt={player.username}
+        className={styles.playerAvatar}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = defaultAvatar;
+        }}
+      />
+      {player.isCaptain && (
+        <div className={styles.captainIndicator} title="Captain">
+          👑
+        </div>
+      )}
+    </div>
+
+    <div className={styles.playerInfo}>
+      <span className={styles.playerName}>{player.username}</span>
+      <div className={styles.playerTags}>
+        {player.isCaptain && <span className={styles.captainTag}>Captain</span>}
+        {player.status === "Pending" && (
+          <span className={styles.pendingTag}>Pending</span>
+        )}
+      </div>
+    </div>
+
     {isCaptain && !player.isCaptain && (
       <button
         className={styles.kickButton}
         onClick={() => onKick(player.userId, player.username)}
         title={`Kick ${player.username} from team`}
       >
-                ❌ Kick      {" "}
+        Remove
       </button>
     )}
-     {" "}
   </div>
 );
 
@@ -60,10 +75,22 @@ const TeamDetailsModal = ({
   onJoin,
   onRefresh,
   onNotificationsRefresh,
+  currentUserOverride,
 }) => {
   const [error, setError] = useState(null);
-  const [showInviteModal, setShowInviteModal] = useState(false); // const [showAvatarModal, setShowAvatarModal] = useState(false); // USUNIĘTY
-  const currentUser = useMemo(() => getCurrentUser(), []);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+
+  // Backend może zwracać "logo" lub "logoUrl" w zależności od modelu C#.
+  // Bierzemy to co jest dostępne.
+  const initialLogo = team.logo || team.logoUrl;
+  const [localLogo, setLocalLogo] = useState(initialLogo);
+
+  const currentUser = useMemo(() => {
+    if (currentUserOverride) return currentUserOverride;
+    return getCurrentUserFallback();
+  }, [currentUserOverride]);
+
   const isLogged = !!currentUser;
 
   const userInTeam = useMemo(() => {
@@ -75,9 +102,7 @@ const TeamDetailsModal = ({
 
   const userRole = useMemo(() => {
     if (!currentUser) return "None";
-
     if (currentUser.userId === parseInt(team.captainId, 10)) return "Captain";
-
     if (userInTeam) {
       if (userInTeam.status === "Member") return "Member";
       if (userInTeam.status === "Pending") return "Pending";
@@ -106,8 +131,50 @@ const TeamDetailsModal = ({
     console.log("Success:", successMessage);
     if (onNotificationsRefresh) onNotificationsRefresh();
     if (onRefresh) onRefresh();
-    onClose();
+    onClose(localLogo);
   };
+
+  // --- LOGIKA ZMIANY LOGA (Dopasowana do nowego Backendu) ---
+  const handleLogoSelected = async (newUrl) => {
+    setError(null);
+
+    // 1. Wysyłamy żądanie PUT na endpoint /teams/{id}/logo
+    try {
+      const response = await fetch(`${API_BASE_URL}/teams/${team.id}/logo`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${currentUser.token}`,
+        },
+        // WAŻNE: Klucz "logoUrl" musi pasować do pola w klasie UpdateTeamLogoDto w C#
+        body: JSON.stringify({ logoUrl: newUrl }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || "Failed to update team logo");
+      }
+
+      // 2. Sukces - Backend zapisał zmianę.
+      // Teraz wymuszamy odświeżenie obrazka w przeglądarce dodając timestamp (?v=...)
+      const separator = newUrl.includes("?") ? "&" : "?";
+      const timestamp = new Date().getTime();
+      const refreshedUrl = `${newUrl}${separator}v=${timestamp}`;
+
+      console.log("Logo updated via PUT. Local refresh:", refreshedUrl);
+
+      // Aktualizujemy stan lokalny, żeby użytkownik od razu widział zmianę
+      setLocalLogo(refreshedUrl);
+      setShowAvatarModal(false);
+
+      // Odświeżamy listę drużyn "pod spodem"
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error("Update logo error:", err);
+      setError(err.message || "Wystąpił błąd podczas aktualizacji logo.");
+    }
+  };
+  // --------------------------------------------------------
 
   const handleJoin = () => {
     setError(null);
@@ -117,12 +184,8 @@ const TeamDetailsModal = ({
     }
     onJoin(team.id);
     onClose();
-    if (onRefresh) {
-      setTimeout(onRefresh, 500);
-    }
-    if (onNotificationsRefresh) {
-      setTimeout(onNotificationsRefresh, 500);
-    }
+    if (onRefresh) setTimeout(onRefresh, 500);
+    if (onNotificationsRefresh) setTimeout(onNotificationsRefresh, 500);
   };
 
   const handleDisbandTeam = async () => {
@@ -187,10 +250,8 @@ const TeamDetailsModal = ({
   };
 
   const handleUpdateLogo = () => {
-    // Funkcjonalność zmiany logo jest WYŁĄCZONA
-    setError(
-      "Funkcja zmiany logo jest tymczasowo niedostępna z powodu błędu serwera (405)."
-    );
+    setError(null);
+    setShowAvatarModal(true);
   };
 
   const handleKickPlayer = async (userIdToKick, username) => {
@@ -254,154 +315,179 @@ const TeamDetailsModal = ({
 
   return (
     <>
-           {" "}
-      <div className={styles.modalOverlay} onClick={onClose}>
-               {" "}
+      <div className={styles.modalOverlay} onClick={() => onClose(localLogo)}>
         <div
           className={styles.modalContent}
           onClick={(e) => e.stopPropagation()}
         >
-                    {error && <p className={styles.errorText}>❌ {error}</p>}   
-               {" "}
-          <img
-            src={team.logo}
-            alt={`${team.name} logo`}
-            className={styles.teamLogo}
-            onError={(e) => {
-              e.target.onerror = null;
-              e.target.src = `https://placehold.co/150/999999/FFFFFF?text=${(
-                team.name || "T"
-              )
-                .substring(0, 2)
-                .toUpperCase()}`;
-            }}
-          />
-                    <h2>{team.name}</h2>         {" "}
-          <p className={styles.description}>{team.description}</p>
-                    <hr className={styles.divider} />         {" "}
-          <div className={styles.section}>
-                       {" "}
-            <h3>
-                            🧑‍🤝‍🧑 Team Members ({visiblePlayers.length}/
-              {MAX_PLAYERS})            {" "}
-            </h3>
-                       {" "}
-            <div className={styles.playersList}>
-                           {" "}
-              {visiblePlayers.map((player) => (
-                <PlayerItem
-                  key={player.userId}
-                  player={{
-                    ...player,
-                    isCaptain:
-                      parseInt(player.userId, 10) ===
-                      parseInt(team.captainId, 10),
-                  }}
-                  isCaptain={isCaptain}
-                  onKick={handleKickPlayer}
-                />
-              ))}
-                         {" "}
+          <button
+            className={styles.closeModalBtn}
+            onClick={() => onClose(localLogo)}
+            aria-label="Close"
+          >
+            ×
+          </button>
+
+          {error && (
+            <div className={styles.errorMessage}>
+              <div className={styles.errorIcon}>!</div>
+              <p className={styles.errorText}>{error}</p>
             </div>
-                     {" "}
+          )}
+
+          <div className={styles.teamHeader}>
+            <div className={styles.logoContainer}>
+              <img
+                key={
+                  localLogo
+                } /* Zmiana klucza wymusza na Reactcie przerysowanie */
+                src={localLogo}
+                alt={`${team.name} logo`}
+                className={styles.teamLogo}
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = `https://placehold.co/150/2c3e50/ecf0f1?text=${(
+                    team.name || "T"
+                  )
+                    .substring(0, 2)
+                    .toUpperCase()}`;
+                }}
+              />
+            </div>
+            <div className={styles.teamInfo}>
+              <h2 className={styles.teamName}>{team.name}</h2>
+              <p className={styles.teamDescription}>{team.description}</p>
+              <div className={styles.teamStats}>
+                <span className={styles.statBadge}>
+                  {visiblePlayers.length}/{MAX_PLAYERS} members
+                </span>
+                {isCaptain && <span className={styles.roleBadge}>Captain</span>}
+              </div>
+            </div>
           </div>
-                   {" "}
-          {isCaptain && pendingPlayers.length > 0 && (
+
+          <div className={styles.contentSections}>
             <div className={styles.section}>
-                           {" "}
-              <h3 className={styles.pendingHeader}>
-                                📨 Pending Requests ({pendingPlayers.length})  
-                           {" "}
-              </h3>
-                           {" "}
+              <div className={styles.sectionHeader}>
+                <h3>Team Members</h3>
+                <span className={styles.sectionSubtitle}>
+                  {visiblePlayers.length} of {MAX_PLAYERS}
+                </span>
+              </div>
               <div className={styles.playersList}>
-                               {" "}
-                {pendingPlayers.map((player) => (
+                {visiblePlayers.map((player) => (
                   <PlayerItem
                     key={player.userId}
-                    player={player}
+                    player={{
+                      ...player,
+                      isCaptain:
+                        parseInt(player.userId, 10) ===
+                        parseInt(team.captainId, 10),
+                    }}
                     isCaptain={isCaptain}
                     onKick={handleKickPlayer}
                   />
                 ))}
-                             {" "}
               </div>
-                         {" "}
             </div>
-          )}
-                    <hr className={styles.divider} />         {" "}
-          <div className={styles.actions}>
-                       {" "}
+
+            {isCaptain && pendingPlayers.length > 0 && (
+              <div className={styles.section}>
+                <div className={styles.sectionHeader}>
+                  <h3>Pending Requests</h3>
+                  <span className={styles.pendingCount}>
+                    {pendingPlayers.length}
+                  </span>
+                </div>
+                <div className={`${styles.playersList} ${styles.pendingList}`}>
+                  {pendingPlayers.map((player) => (
+                    <PlayerItem
+                      key={player.userId}
+                      player={player}
+                      isCaptain={isCaptain}
+                      onKick={handleKickPlayer}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.actionSection}>
             {isCaptain ? (
-              <>
-                               {" "}
+              <div className={styles.captainActions}>
+                <div className={styles.actionRow}>
+                  <button
+                    className={`${styles.actionButton} ${styles.inviteButton}`}
+                    onClick={handleOpenInviteModal}
+                    disabled={visiblePlayers.length >= MAX_PLAYERS}
+                    title={
+                      visiblePlayers.length >= MAX_PLAYERS
+                        ? "Drużyna osiągnęła maksymalną liczbę graczy"
+                        : "Zaproś nowego gracza"
+                    }
+                  >
+                    <span className={styles.buttonIcon}>📨</span>
+                    Invite Player
+                  </button>
+                  <button
+                    className={`${styles.actionButton} ${styles.secondaryButton}`}
+                    onClick={handleUpdateLogo}
+                  >
+                    <span className={styles.buttonIcon}>🖼️</span>
+                    Change Logo
+                  </button>
+                </div>
                 <button
-                  className={`${styles.manageButton} ${styles.inviteButton}`}
-                  onClick={handleOpenInviteModal}
-                  disabled={visiblePlayers.length >= MAX_PLAYERS}
-                  title={
-                    visiblePlayers.length >= MAX_PLAYERS
-                      ? "Drużyna osiągnęła maksymalną liczbę graczy"
-                      : "Zaproś nowego gracza"
-                  }
-                >
-                                    📨 Zaproś (Invites)                {" "}
-                </button>
-                               {" "}
-                <button
-                  className={styles.manageButton}
-                  onClick={handleUpdateLogo}
-                >
-                                    🖼️ Zmień Logo (Update Logo)                {" "}
-                </button>
-                               {" "}
-                <button
-                  className={`${styles.manageButton} ${styles.disbandButton}`}
+                  className={`${styles.actionButton} ${styles.dangerButton}`}
                   onClick={handleDisbandTeam}
                   disabled={!canDisband}
                   title={disbandTitle}
                 >
-                                    💥 Rozwiąż Drużynę (Disband Team)          
-                       {" "}
+                  <span className={styles.buttonIcon}>💥</span>
+                  Disband Team
                 </button>
-                             {" "}
-              </>
+              </div>
             ) : isMember ? (
-              <button className={styles.leaveButton} onClick={handleLeaveTeam}>
-                                🚪 Leave Team              {" "}
+              <button
+                className={`${styles.actionButton} ${styles.dangerButton} ${styles.fullWidth}`}
+                onClick={handleLeaveTeam}
+              >
+                <span className={styles.buttonIcon}>🚪</span>
+                Leave Team
               </button>
             ) : isPending ? (
-              <p className={styles.infoText}>
-                                ⏳ Twoja prośba/zaproszenie oczekuje na
-                akceptację kapitana.              {" "}
-              </p>
+              <div className={styles.statusMessage}>
+                <div className={styles.statusIcon}>⏳</div>
+                <div>
+                  <p className={styles.statusTitle}>Request Pending</p>
+                  <p className={styles.statusSubtitle}>
+                    Your request is waiting for captain's approval
+                  </p>
+                </div>
+              </div>
             ) : isLogged && !isInTeam ? (
-              <button className={styles.joinButton} onClick={handleJoin}>
-                                ➕ Request to Join              {" "}
+              <button
+                className={`${styles.actionButton} ${styles.primaryButton} ${styles.fullWidth}`}
+                onClick={handleJoin}
+              >
+                <span className={styles.buttonIcon}>➕</span>
+                Request to Join
               </button>
             ) : (
-              <p className={styles.infoText}>
-                                Zaloguj się, aby móc poprosić o dołączenie do
-                tej drużyny.              {" "}
-              </p>
+              <div className={styles.statusMessage}>
+                <div className={styles.statusIcon}>🔒</div>
+                <p>Log in to request joining this team</p>
+              </div>
             )}
-                       {" "}
-            <button className={styles.closeButton} onClick={onClose}>
-                            Zamknij            {" "}
-            </button>
-                     {" "}
           </div>
-                 {" "}
         </div>
-             {" "}
       </div>
-           {" "}
+
       {showInviteModal && (
         <TeamInvitationModal
           teamId={team.id}
-          currentTeamMembers={team.players.filter(
-            (p) => p.status === "Member" || p.isCaptain
-          )}
+          currentTeamMembers={team.players}
           onClose={() => setShowInviteModal(false)}
           onInviteSent={() => {
             if (onRefresh) onRefresh();
@@ -409,7 +495,15 @@ const TeamDetailsModal = ({
           }}
         />
       )}
-         {" "}
+
+      {showAvatarModal && (
+        <TeamAvatarSelectionModal
+          teamId={team.id}
+          currentLogoUrl={localLogo}
+          onClose={() => setShowAvatarModal(false)}
+          onLogoSelected={handleLogoSelected}
+        />
+      )}
     </>
   );
 };

@@ -1,9 +1,13 @@
+/* eslint-disable no-irregular-whitespace */
 import React, { useState, useEffect } from "react";
 import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
 import styles from "../styles/pages/TeamsPage.module.css";
 import AddTeamModal from "../components/AddTeamModal";
 import TeamDetailsModal from "../components/TeamDetailsModal";
+
+// IMPORT TWOJEGO AWATARA Z ASSETS
+import defaultAvatar from "../assets/deafultAvatar.jpg";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
@@ -27,6 +31,14 @@ function TeamsPage({ user, onNotificationsRefresh }) {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Funkcja pomocnicza do sprawdzania czy URL awatara jest poprawny
+  const getValidAvatar = (url) => {
+    if (!url || url === "string" || url.includes("pravatar.cc")) {
+      return defaultAvatar;
+    }
+    return url;
+  };
+
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/users`);
@@ -35,7 +47,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
       const simplifiedUsers = data.map((user) => ({
         userId: user.userId,
         username: user.username,
-        avatarUrl: user.avatarUrl,
+        avatarUrl: getValidAvatar(user.avatarUrl),
       }));
       setAvailableUsers(simplifiedUsers);
     } catch (error) {
@@ -54,16 +66,18 @@ function TeamsPage({ user, onNotificationsRefresh }) {
       const mappedTeams = allTeamsData.map((team, index) => {
         const allPlayers = [];
         const addedUserIds = new Set();
+
         if (team.captain) {
           allPlayers.push({
             userId: team.captain.userId,
             username: team.captain.username || "Nieznany",
-            avatarUrl: team.captain.avatarUrl,
+            avatarUrl: getValidAvatar(team.captain.avatarUrl),
             isCaptain: true,
             status: "Member",
           });
           addedUserIds.add(team.captain.userId);
         }
+
         const membersList = team.teamMembers || [];
         if (Array.isArray(membersList)) {
           membersList.forEach((member) => {
@@ -72,7 +86,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
               allPlayers.push({
                 userId: userData.userId,
                 username: userData.username || "Brak nicku",
-                avatarUrl: userData.avatarUrl,
+                avatarUrl: getValidAvatar(userData.avatarUrl),
                 isCaptain: false,
                 status: member.status,
               });
@@ -80,6 +94,11 @@ function TeamsPage({ user, onNotificationsRefresh }) {
             }
           });
         }
+
+        const activeMembers = allPlayers.filter(
+          (p) => p.isCaptain || p.status === "Member"
+        );
+
         return {
           id: team.teamId,
           name: team.teamName,
@@ -94,6 +113,8 @@ function TeamsPage({ user, onNotificationsRefresh }) {
               .substring(0, 2)
               .toUpperCase()}`,
           players: allPlayers,
+          activePlayers: activeMembers,
+          activeMembersCount: activeMembers.length,
         };
       });
       setTeams(mappedTeams);
@@ -101,6 +122,20 @@ function TeamsPage({ user, onNotificationsRefresh }) {
       console.error("Błąd podczas pobierania drużyn:", error);
       setTeams([]);
     }
+  };
+
+  const handleUpdateTeamLogo = (teamId, newLogoUrl) => {
+    setTeams((prevTeams) =>
+      prevTeams.map((team) =>
+        team.id === teamId ? { ...team, logo: newLogoUrl } : team
+      )
+    );
+    setSelectedTeam((prevSelectedTeam) => {
+      if (prevSelectedTeam && prevSelectedTeam.id === teamId) {
+        return { ...prevSelectedTeam, logo: newLogoUrl };
+      }
+      return prevSelectedTeam;
+    });
   };
 
   useEffect(() => {
@@ -131,9 +166,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
     try {
       const response = await fetch(`${API_BASE_URL}/teams/${teamId}/join`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
         alert("✅ Prośba o dołączenie wysłana! Czekaj na akceptację kapitana.");
@@ -182,15 +215,15 @@ function TeamsPage({ user, onNotificationsRefresh }) {
               </button>
             </div>
           </div>
+
           <div className={styles.teamGrid}>
             {filteredTeams.map((team, index) => (
               <div
-                key={index}
+                key={team.id || index}
                 className={styles.cardWrapper}
                 onClick={() => handleOpenTeamDetails(team)}
                 style={{
-                  "--team-color":
-                    team.teamColor || TEAM_COLORS[index % TEAM_COLORS.length],
+                  "--team-color": team.teamColor,
                 }}
               >
                 <div className={styles.teamCard}>
@@ -217,24 +250,34 @@ function TeamsPage({ user, onNotificationsRefresh }) {
                     </p>
                   </div>
                 </div>
+
                 <div className={styles.playersSidebar}>
-                  {team.players.slice(0, 6).map((player, pIndex) => (
-                    <div key={pIndex} className={styles.playerAvatar}>
-                      <img
-                        src={
-                          player.avatarUrl ||
-                          `https://i.pravatar.cc/150?u=${player.userId}`
-                        }
-                        alt={player.username}
-                      />
+                  {team.activePlayers && team.activePlayers.length > 0 ? (
+                    team.activePlayers.slice(0, 6).map((player, pIndex) => (
+                      <div key={pIndex} className={styles.playerAvatar}>
+                        <img
+                          src={getValidAvatar(player.avatarUrl)}
+                          alt={player.username}
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = defaultAvatar;
+                          }}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    // Fallback dla kapitana jeśli lista aktywnych jest pusta
+                    <div className={styles.playerAvatar}>
+                      <img src={defaultAvatar} alt="No players" />
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             ))}
           </div>
         </div>
       </div>
+
       {isModalOpen && (
         <AddTeamModal
           onClose={() => setIsModalOpen(false)}
@@ -246,16 +289,22 @@ function TeamsPage({ user, onNotificationsRefresh }) {
           availableUsers={availableUsers}
         />
       )}
+
       {isDetailsModalOpen && selectedTeam && (
         <TeamDetailsModal
           team={selectedTeam}
-          onClose={() => {
+          onClose={(newLogoUrl) => {
             setIsDetailsModalOpen(false);
-            fetchAllTeams();
+            if (newLogoUrl && newLogoUrl !== selectedTeam.logo) {
+              handleUpdateTeamLogo(selectedTeam.id, newLogoUrl);
+            } else {
+              fetchAllTeams();
+            }
           }}
           onJoin={handleJoinTeam}
           onRefresh={fetchAllTeams}
           onNotificationsRefresh={onNotificationsRefresh}
+          onLogoUpdate={handleUpdateTeamLogo}
         />
       )}
     </>

@@ -6,6 +6,7 @@ import SignUp from "./pages/singUp.jsx";
 import UserProfile from "./pages/userProfile.jsx";
 import TeamsPage from "./pages/TeamsPage.jsx";
 import AdminPanel from "./pages/AdminPanel";
+import TournamentBracketPage from "./pages/TournamentBracketPage.jsx";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
@@ -66,6 +67,10 @@ function App() {
 
         <Route path="/profile" element={<UserProfile />} />
         <Route path="/admin" element={<AdminPanel />} />
+        <Route
+          path="/tournament/:tournamentId/bracket"
+          element={<TournamentBracketPage />}
+        />
       </Routes>
     </>
   );
