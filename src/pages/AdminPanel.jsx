@@ -41,6 +41,23 @@ const AdminPanel = () => {
     }
   };
 
+  // Wewnątrz AdminPanel.jsx na początku
+useEffect(() => {
+    const token = localStorage.getItem("jwt_token");
+    const userJson = localStorage.getItem("currentUser");
+    
+    let isUserAdmin = false;
+    if (userJson) {
+        const user = JSON.parse(userJson);
+        if (user.role === 'admin' || user.role === 'Admin') isUserAdmin = true;
+    }
+
+    // Jeśli brak tokenu lub to nie admin -> wyrzuć na stronę główną
+    if (!token || !isUserAdmin) {
+        window.location.href = "/"; 
+    }
+}, []);
+
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     return new Date(dateString).toISOString().slice(0, 16);
@@ -61,6 +78,8 @@ const AdminPanel = () => {
       setLoading(false);
     }
   };
+
+  
 
   const fetchGames = async () => {
     try {

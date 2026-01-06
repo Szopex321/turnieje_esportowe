@@ -7,10 +7,12 @@ function Nav() {
 
   // Funkcja sprawdzająca uprawnienia
   const checkAdminRole = () => {
-    // 1. Pobieramy obiekt currentUser (nie sam token!)
+    // 1. Pobieramy TOKEN oraz dane użytkownika
+    const token = localStorage.getItem("jwt_token");
     const userJson = localStorage.getItem("currentUser");
 
-    if (!userJson) {
+    // Jeśli brakuje tokenu LUB danych użytkownika -> na pewno nie jest adminem
+    if (!token || !userJson) {
       setIsAdmin(false);
       return;
     }
@@ -18,7 +20,7 @@ function Nav() {
     try {
       const user = JSON.parse(userJson);
       
-      // 2. Sprawdzamy czy rola to admin (z małej lub dużej litery dla pewności)
+      // 2. Sprawdzamy rolę
       if (user.role === "admin" || user.role === "Admin") {
         setIsAdmin(true);
       } else {
@@ -34,11 +36,12 @@ function Nav() {
     // Sprawdź przy wejściu na stronę
     checkAdminRole();
 
-    // Nasłuchuj na zdarzenie logowania (żeby przycisk pojawił się od razu)
+    // Nasłuchuj na zdarzenie logowania/wylogowania
+    // (Upewnij się, że w Login.jsx i funkcji Logout wywołujesz to zdarzenie)
     const handleAuthChange = () => checkAdminRole();
     window.addEventListener("authChange", handleAuthChange);
     
-    // Nasłuchuj na zmiany w pamięci (opcjonalne, dla innych kart)
+    // Nasłuchuj na zmiany w localStorage (np. wylogowanie w innej karcie)
     window.addEventListener("storage", handleAuthChange);
 
     return () => {
@@ -57,10 +60,8 @@ function Nav() {
         <li>
           <NavButton name="Teams" path="/teams" />
         </li>
-        <li>
-          <NavButton name="Top Players/Teams" />
-        </li>
 
+        {/* Renderuj ten przycisk TYLKO jeśli isAdmin === true */}
         {isAdmin && (
           <li style={{ marginTop: "20px", borderTop: "1px solid #444", paddingTop: "10px" }}>
             <NavButton name="Admin Panel" path="/admin" />
