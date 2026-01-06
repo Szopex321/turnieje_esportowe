@@ -91,18 +91,34 @@ useEffect(() => {
   const fetchMatches = async (tournamentId) => {
     setMatchesLoading(true);
     const token = localStorage.getItem("jwt_token");
+    
+    // Używamy tego samego adresu co na stronie publicznej (bez /matches na końcu)
+    const url = `/api/brackets/${tournamentId}`; 
+
     try {
-        const response = await fetch(`/api/brackets/${tournamentId}/matches`, {
+        console.log("Pobieranie meczów z URL:", url); // LOG DIAGNOSTYCZNY
+
+        const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` }
         });
+
         if (response.ok) {
             const data = await response.json();
-            setTournamentMatches(data);
+            console.log("Pobrane mecze:", data); // ZOBACZ CZY TU SĄ DANE
+            
+            // Zabezpieczenie: czasem API zwraca obiekt { matches: [] } zamiast samej tablicy []
+            // Jeśli data jest tablicą, użyj jej. Jeśli nie, spróbuj data.matches lub pustą tablicę.
+            const matchesArray = Array.isArray(data) ? data : (data.matches || []);
+            
+            setTournamentMatches(matchesArray);
         } else {
+            console.error("Błąd API:", response.status, response.statusText);
+            // Jeśli API zwróci 404 (brak drabinki), czyścimy tablicę
             setTournamentMatches([]); 
         }
     } catch (err) {
-        console.error("Błąd pobierania meczów:", err);
+        console.error("Błąd sieci podczas pobierania meczów:", err);
+        setTournamentMatches([]);
     } finally {
         setMatchesLoading(false);
     }
@@ -426,7 +442,7 @@ useEffect(() => {
             <div className={styles.modalInnerContent}>
                 <h2 className={styles.detailsTitle}>{selectedTournament.tournamentName}</h2>
                 
-                {/* ZDJĘCIE W MODALU - JEŚLI JEST */}
+                {/* ZDJĘCIE W MODALU */}
                 {selectedTournament.imageUrl && (
                     <div style={{marginBottom: '20px', textAlign: 'center'}}>
                         <img 
@@ -445,62 +461,83 @@ useEffect(() => {
                 <div className={styles.bracketSection}>
                     <h3>Zarządzanie Rozgrywkami</h3>
                     
-                    {tournamentMatches.length === 0 && (
-                        <div className={styles.generateBox}>
-                            <p>Turniej nie ma jeszcze wygenerowanej drabinki.</p>
-                            <button className={styles.generateBtn} onClick={handleGenerateBracket}>
-                                ⚡ Wygeneruj Drabinkę
-                            </button>
-                        </div>
-                    )}
-
-                    {matchesLoading ? <p>Ładowanie meczów...</p> : (
-                        <div className={styles.matchesList}>
-                            {tournamentMatches.length > 0 && <h4>Ostatnie Aktywności:</h4>}
-                            
-                            {tournamentMatches
-                             .sort((a, b) => (b.matchStatus === 'disputed') - (a.matchStatus === 'disputed')) 
-                             .map(match => (
-                                <div key={match.matchId} className={styles.matchCard} style={{borderColor: getStatusColor(match.matchStatus)}}>
-                                    
-                                    <div className={styles.matchHeader}>
-                                        <span style={{color: getStatusColor(match.matchStatus), fontWeight: 'bold', textTransform: 'uppercase'}}>
-                                            {match.matchStatus}
-                                        </span>
-                                        <span className={styles.matchId}>Mecz #{match.matchId}</span>
-                                    </div>
-
-                                    <div className={styles.matchTeams}>
-                                        <div className={match.winnerId === match.teamAId ? styles.winner : ''}>
-                                            {match.teamAName || "Drużyna A"} 
-                                            {match.scoreA !== null && <span className={styles.score}>{match.scoreA}</span>}
-                                        </div>
-                                        <span>vs</span>
-                                        <div className={match.winnerId === match.teamBId ? styles.winner : ''}>
-                                            {match.teamBName || "Drużyna B"}
-                                            {match.scoreB !== null && <span className={styles.score}>{match.scoreB}</span>}
-                                        </div>
-                                    </div>
-
-                                    {match.matchStatus === 'disputed' && (
-                                        <div className={styles.disputeControls}>
-                                            <p>⚠️ Wymagana interwencja! Kto wygrał?</p>
-                                            <div className={styles.disputeButtons}>
-                                                <button onClick={() => handleResolveDispute(match.matchId, match.teamAId)} className={styles.winBtn}>
-                                                    Win {match.teamAName || "A"}
-                                                </button>
-                                                <button onClick={() => handleResolveDispute(match.matchId, match.teamBId)} className={styles.winBtn}>
-                                                    Win {match.teamBName || "B"}
-                                                </button>
-                                            </div>
-                                            {match.screenshotUrl && (
-                                                <a href={match.screenshotUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>Zobacz dowód</a>
-                                            )}
-                                        </div>
-                                    )}
+                    {matchesLoading ? (
+                        <p style={{textAlign: 'center', color: '#888'}}>Ładowanie meczów...</p>
+                    ) : (
+                        <>
+                            {/* --- WARUNEK 1: BRAK DRABINKI --- */}
+                            {tournamentMatches.length === 0 ? (
+                                <div className={styles.generateBox}>
+                                    <p>Turniej nie ma jeszcze wygenerowanej drabinki.</p>
+                                    <button className={styles.generateBtn} onClick={handleGenerateBracket}>
+                                        ⚡ Wygeneruj Drabinkę
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
+                            ) : (
+                                /* --- WARUNEK 2: DRABINKA GOTOWA --- */
+                                <>
+                                    <div style={{
+                                        padding: '10px', 
+                                        backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                                        border: '1px solid #10b981', 
+                                        borderRadius: '6px', 
+                                        color: '#10b981', 
+                                        marginBottom: '15px', 
+                                        textAlign: 'center', 
+                                        fontWeight: 'bold'
+                                    }}>
+                                        ✅ Drabinka jest gotowa
+                                    </div>
+
+                                    <div className={styles.matchesList}>
+                                        <h4>Ostatnie Aktywności:</h4>
+                                        
+                                        {tournamentMatches
+                                         .sort((a, b) => (b.matchStatus === 'disputed') - (a.matchStatus === 'disputed')) 
+                                         .map(match => (
+                                            <div key={match.matchId} className={styles.matchCard} style={{borderColor: getStatusColor(match.matchStatus)}}>
+                                                
+                                                <div className={styles.matchHeader}>
+                                                    <span style={{color: getStatusColor(match.matchStatus), fontWeight: 'bold', textTransform: 'uppercase'}}>
+                                                        {match.matchStatus}
+                                                    </span>
+                                                    <span className={styles.matchId}>Mecz #{match.matchId}</span>
+                                                </div>
+
+                                                <div className={styles.matchTeams}>
+                                                    <div className={match.winnerId === match.teamAId ? styles.winner : ''}>
+                                                        {match.teamAName || "Drużyna A"} 
+                                                        {match.scoreA !== null && <span className={styles.score}>{match.scoreA}</span>}
+                                                    </div>
+                                                    <span>vs</span>
+                                                    <div className={match.winnerId === match.teamBId ? styles.winner : ''}>
+                                                        {match.teamBName || "Drużyna B"}
+                                                        {match.scoreB !== null && <span className={styles.score}>{match.scoreB}</span>}
+                                                    </div>
+                                                </div>
+
+                                                {match.matchStatus === 'disputed' && (
+                                                    <div className={styles.disputeControls}>
+                                                        <p>⚠️ Wymagana interwencja! Kto wygrał?</p>
+                                                        <div className={styles.disputeButtons}>
+                                                            <button onClick={() => handleResolveDispute(match.matchId, match.teamAId)} className={styles.winBtn}>
+                                                                Win {match.teamAName || "A"}
+                                                            </button>
+                                                            <button onClick={() => handleResolveDispute(match.matchId, match.teamBId)} className={styles.winBtn}>
+                                                                Win {match.teamBName || "B"}
+                                                            </button>
+                                                        </div>
+                                                        {match.screenshotUrl && (
+                                                            <a href={match.screenshotUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>Zobacz dowód</a>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </>
                     )}
                 </div>
 
