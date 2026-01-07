@@ -2,10 +2,11 @@ import React from "react";
 import styles from "../styles/components/MyTeamsModal.module.css";
 
 const MyTeamsModal = ({ teams, currentUserId, onClose, onSelectTeam }) => {
-  // Filter teams where you are a member or captain
-  const myTeams = teams.filter((team) =>
-    team.players.some((p) => p.userId === currentUserId)
-  );
+  const myTeams = teams.filter((team) => {
+    const userInTeam = team.players.find((p) => p.userId === currentUserId);
+    if (!userInTeam) return false;
+    return userInTeam.status !== "Pending";
+  });
 
   return (
     <div className={styles.overlay} onClick={onClose}>
