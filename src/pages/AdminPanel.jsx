@@ -20,9 +20,10 @@ const AdminPanel = () => {
   const [tournamentMatches, setTournamentMatches] = useState([]); 
   const [matchesLoading, setMatchesLoading] = useState(false);
 
-  // Formularz - DODANO: imageUrl
+  // Formularz
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  
   const [tournamentForm, setTournamentForm] = useState({
     title: "", 
     gameId: "", 
@@ -30,7 +31,9 @@ const AdminPanel = () => {
     maxParticipants: 16, 
     startDate: "", 
     description: "",
-    imageUrl: "" // <--- NOWE POLE
+    imageUrl: "",
+    registrationType: "individual", // domyślnie individual
+    maxTeamSize: 1                  // domyślnie 1
   });
 
   const parseJwt = (token) => {
@@ -41,8 +44,7 @@ const AdminPanel = () => {
     }
   };
 
-  // Wewnątrz AdminPanel.jsx na początku
-useEffect(() => {
+  useEffect(() => {
     const token = localStorage.getItem("jwt_token");
     const userJson = localStorage.getItem("currentUser");
     
@@ -56,7 +58,7 @@ useEffect(() => {
     if (!token || !isUserAdmin) {
         window.location.href = "/"; 
     }
-}, []);
+  }, []);
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
@@ -79,8 +81,6 @@ useEffect(() => {
     }
   };
 
-  
-
   const fetchGames = async () => {
     try {
       const response = await fetch('/api/games');
@@ -91,33 +91,23 @@ useEffect(() => {
   const fetchMatches = async (tournamentId) => {
     setMatchesLoading(true);
     const token = localStorage.getItem("jwt_token");
-    
-    // Używamy tego samego adresu co na stronie publicznej (bez /matches na końcu)
     const url = `/api/brackets/${tournamentId}`; 
 
     try {
-        console.log("Pobieranie meczów z URL:", url); // LOG DIAGNOSTYCZNY
-
         const response = await fetch(url, {
             headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.ok) {
             const data = await response.json();
-            console.log("Pobrane mecze:", data); // ZOBACZ CZY TU SĄ DANE
-            
             // Zabezpieczenie: czasem API zwraca obiekt { matches: [] } zamiast samej tablicy []
-            // Jeśli data jest tablicą, użyj jej. Jeśli nie, spróbuj data.matches lub pustą tablicę.
             const matchesArray = Array.isArray(data) ? data : (data.matches || []);
-            
             setTournamentMatches(matchesArray);
         } else {
-            console.error("Błąd API:", response.status, response.statusText);
-            // Jeśli API zwróci 404 (brak drabinki), czyścimy tablicę
             setTournamentMatches([]); 
         }
     } catch (err) {
-        console.error("Błąd sieci podczas pobierania meczów:", err);
+        console.error("Network error while fetching matches:", err);
         setTournamentMatches([]);
     } finally {
         setMatchesLoading(false);
@@ -160,20 +150,20 @@ useEffect(() => {
         });
 
         if (response.ok) {
-            alert("Drabinka została wygenerowana!");
+            alert("Bracket generated successfully!");
             fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
         } else {
             const txt = await response.text();
-            alert(`Błąd: ${txt}`);
+            alert(`Error: ${txt}`);
         }
     } catch (err) {
-        alert("Błąd sieci podczas generowania.");
+        alert("Network error while generating.");
     }
   };
 
   // --- ROZWIĄZYWANIE SPORU ---
   const handleResolveDispute = async (matchId, winnerTeamId) => {
-    if (!window.confirm("Czy na pewno chcesz przyznać zwycięstwo tej drużynie?")) return;
+    if (!window.confirm("Are you sure you want to award victory to this team?")) return;
     const token = localStorage.getItem("jwt_token");
 
     try {
@@ -187,13 +177,13 @@ useEffect(() => {
         });
 
         if (response.ok) {
-            alert("Spór rozwiązany.");
+            alert("Dispute resolved.");
             fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
         } else {
-            alert("Nie udało się rozwiązać sporu.");
+            alert("Failed to resolve dispute.");
         }
     } catch (err) {
-        alert("Błąd sieci.");
+        alert("Network error.");
     }
   };
 
@@ -214,15 +204,14 @@ useEffect(() => {
         Description: tournamentForm.description,
         MaxParticipants: parseInt(tournamentForm.maxParticipants),
         StartDate: formattedDate,
-        ImageUrl: tournamentForm.imageUrl
+        ImageUrl: tournamentForm.imageUrl,
+        RegistrationType: tournamentForm.registrationType,
+        MaxTeamSize: parseInt(tournamentForm.maxTeamSize)
     };
 
     // 2. WAŻNE: Jeśli edytujemy, musimy dodać ID do payloadu!
     if (isEditing) {
-        // Backend oczekuje, że ID w ciele będzie takie samo jak w URL
-        // Używamy nazwy 'TournamentId' lub 'Id' (zależnie od Twojego backendu, zazwyczaj TournamentId)
         payload.TournamentId = parseInt(editingId); 
-        // payload.Id = parseInt(editingId); // Odkomentuj to, jeśli backend używa pola "Id" zamiast "TournamentId"
     }
 
     const url = isEditing 
@@ -242,25 +231,24 @@ useEffect(() => {
       });
 
       if (response.ok) {
-        alert(isEditing ? "Zaktualizowano turniej!" : "Utworzono turniej!");
+        alert(isEditing ? "Tournament updated!" : "Tournament created!");
         resetForm();
         setActiveTab("tournaments");
         fetchTournaments(); // Odśwież listę
       } else {
         const text = await response.text();
-        // Często backend zwraca szczegóły błędu jako text/json
-        console.error("Błąd API:", text);
-        alert(`Błąd: ${text}`);
+        console.error("API Error:", text);
+        alert(`Error: ${text}`);
       }
     } catch (err) {
       console.error(err);
-      alert("Błąd połączenia.");
+      alert("Connection error.");
     }
   };
 
   // --- USUWANIE ---
   const handleDeleteTournament = async (id) => {
-    if (!window.confirm("Czy na pewno usunąć ten turniej?")) return;
+    if (!window.confirm("Are you sure you want to delete this tournament?")) return;
     
     const token = localStorage.getItem("jwt_token");
     try {
@@ -270,14 +258,14 @@ useEffect(() => {
         });
 
         if (response.ok) {
-            alert("Usunięto pomyślnie.");
+            alert("Deleted successfully.");
             setSelectedTournament(null);
             fetchTournaments();
         } else {
-            alert("Błąd usuwania.");
+            alert("Delete failed.");
         }
     } catch (err) {
-        alert("Błąd sieci.");
+        alert("Network error.");
     }
   };
 
@@ -290,7 +278,9 @@ useEffect(() => {
         maxParticipants: tournament.maxParticipants,
         startDate: formatDateForInput(tournament.startDate),
         description: tournament.description || "",
-        imageUrl: tournament.imageUrl || "" // <--- WCZYTUJEMY LINK (jeśli istnieje)
+        imageUrl: tournament.imageUrl || "",
+        registrationType: tournament.registrationType || "individual",
+        maxTeamSize: tournament.maxTeamSize || 1
     });
     setEditingId(tournament.tournamentId || tournament.id);
     setIsEditing(true);
@@ -307,7 +297,9 @@ useEffect(() => {
         maxParticipants: 16, 
         startDate: "", 
         description: "",
-        imageUrl: "" // <--- RESETUJEMY LINK
+        imageUrl: "",
+        registrationType: "individual", // Reset
+        maxTeamSize: 1                  // Reset
     });
     setIsEditing(false);
     setEditingId(null);
@@ -323,33 +315,43 @@ useEffect(() => {
       }
   };
 
+  // --- OBSŁUGA ZMIANY TYPU REJESTRACJI ---
+  const handleRegistrationTypeChange = (e) => {
+      const type = e.target.value;
+      setTournamentForm(prev => ({
+          ...prev,
+          registrationType: type,
+          // Jeśli zmieniono na individual -> zablokuj team size na 1
+          maxTeamSize: type === 'individual' ? 1 : prev.maxTeamSize
+      }));
+  };
+
   // --- WIDOK FORMULARZA ---
   const renderForm = () => (
     <div className={styles.tabContent}>
-      <h2>{isEditing ? "Edytuj turniej" : "Stwórz nowy turniej"}</h2>
+      <h2>{isEditing ? "Edit Tournament" : "Create New Tournament"}</h2>
       <form onSubmit={handleSaveTournament}>
         <div className={styles.formGroup}>
-          <label>Nazwa Turnieju</label>
+          <label>Tournament Name</label>
           <input type="text" className={styles.input} required value={tournamentForm.title} onChange={e => setTournamentForm({...tournamentForm, title: e.target.value})} />
         </div>
         
-        {/* --- NOWE POLE: ZDJĘCIE (URL) --- */}
         <div className={styles.formGroup}>
-          <label>Zdjęcie Turnieju (URL)</label>
+          <label>Tournament Image (URL)</label>
           <input 
             type="text" 
             className={styles.input} 
-            placeholder="https://przyklad.com/obrazek.jpg"
+            placeholder="https://example.com/image.jpg"
             value={tournamentForm.imageUrl} 
             onChange={e => setTournamentForm({...tournamentForm, imageUrl: e.target.value})} 
           />
           {/* PODGLĄD ZDJĘCIA */}
           {tournamentForm.imageUrl && (
             <div style={{marginTop: '10px'}}>
-                <p style={{fontSize: '0.8rem', color: '#888', marginBottom: '5px'}}>Podgląd:</p>
+                <p style={{fontSize: '0.8rem', color: '#888', marginBottom: '5px'}}>Preview:</p>
                 <img 
                     src={tournamentForm.imageUrl} 
-                    alt="Podgląd" 
+                    alt="Preview" 
                     style={{maxWidth: '200px', maxHeight: '150px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #444'}} 
                     onError={(e) => {e.target.style.display = 'none'}} // Ukryj jeśli link jest zły
                 />
@@ -358,27 +360,57 @@ useEffect(() => {
         </div>
 
         <div className={styles.formGroup}>
-          <label>Gra</label>
+          <label>Game</label>
           <select className={styles.select} required value={tournamentForm.gameId} onChange={e => setTournamentForm({...tournamentForm, gameId: e.target.value})}>
-            <option value="">-- Wybierz Grę --</option>
+            <option value="">-- Select Game --</option>
             {gamesList.map(g => <option key={g.gameId} value={g.gameId}>{g.gameName}</option>)}
           </select>
         </div>
+
+        {/* --- TYP REJESTRACJI --- */}
+        <div style={{display: 'flex', gap: '20px'}}>
+            <div className={styles.formGroup} style={{flex: 1}}>
+                <label>Tournament Type</label>
+                <select 
+                    className={styles.select} 
+                    value={tournamentForm.registrationType} 
+                    onChange={handleRegistrationTypeChange}
+                >
+                    <option value="individual">Individual (1vs1)</option>
+                    <option value="team">Team Based</option>
+                </select>
+            </div>
+
+            <div className={styles.formGroup} style={{flex: 1}}>
+                <label>Team Size</label>
+                <input 
+                    type="number" 
+                    className={styles.input} 
+                    min="1"
+                    value={tournamentForm.maxTeamSize} 
+                    onChange={e => setTournamentForm({...tournamentForm, maxTeamSize: e.target.value})}
+                    // Jeśli Individual, blokujemy edycję
+                    disabled={tournamentForm.registrationType === 'individual'}
+                    style={tournamentForm.registrationType === 'individual' ? {backgroundColor: '#333', color: '#666'} : {}}
+                />
+            </div>
+        </div>
+
         <div className={styles.formGroup}>
-          <label>Opis</label>
+          <label>Description</label>
           <textarea className={styles.textarea} value={tournamentForm.description} onChange={e => setTournamentForm({...tournamentForm, description: e.target.value})} />
         </div>
         <div className={styles.formGroup}>
-          <label>Max Graczy</label>
+          <label>Max Participants (Bracket Slots)</label>
           <input type="number" className={styles.input} value={tournamentForm.maxParticipants} onChange={e => setTournamentForm({...tournamentForm, maxParticipants: e.target.value})} />
         </div>
         <div className={styles.formGroup}>
-            <label>Data Startu</label>
+            <label>Start Date</label>
             <input type="datetime-local" className={styles.input} value={tournamentForm.startDate} onChange={e => setTournamentForm({...tournamentForm, startDate: e.target.value})} />
         </div>
         <div className={styles.buttonGroup}>
-            <button type="submit" className={styles.createBtn}>{isEditing ? "Zapisz Zmiany" : "Utwórz Turniej"}</button>
-            {isEditing && <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setActiveTab("tournaments"); }}>Anuluj</button>}
+            <button type="submit" className={styles.createBtn}>{isEditing ? "Save Changes" : "Create Tournament"}</button>
+            {isEditing && <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setActiveTab("tournaments"); }}>Cancel</button>}
         </div>
       </form>
     </div>
@@ -390,7 +422,6 @@ useEffect(() => {
         {tournamentsList.map(t => (
             <div key={t.id || t.tournamentId} className={styles.tournamentItem} onClick={() => setSelectedTournament(t)}>
                 <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                    {/* Miniaturka na liście (opcjonalnie) */}
                     {t.imageUrl && (
                         <img 
                             src={t.imageUrl} 
@@ -400,10 +431,22 @@ useEffect(() => {
                     )}
                     <div>
                         <strong className={styles.itemTitle}>{t.tournamentName}</strong>
-                        <div className={styles.itemSubtitle}>Start: {new Date(t.startDate).toLocaleDateString()}</div>
+                        <div className={styles.itemSubtitle}>
+                            <span style={{
+                                textTransform: 'uppercase', 
+                                fontSize: '0.7rem', 
+                                background: t.registrationType === 'team' ? '#4f46e5' : '#2563eb',
+                                padding: '2px 6px',
+                                borderRadius: '4px',
+                                marginRight: '8px'
+                            }}>
+                                {t.registrationType === 'team' ? 'TEAM' : 'SOLO'}
+                            </span>
+                            Start: {new Date(t.startDate).toLocaleDateString()}
+                        </div>
                     </div>
                 </div>
-                <div className={styles.arrowIcon}>Szczegóły &rsaquo;</div>
+                <div className={styles.arrowIcon}>Details &rsaquo;</div>
             </div>
         ))}
     </div>
@@ -421,13 +464,13 @@ useEffect(() => {
                     className={`${styles.tab} ${activeTab === 'tournaments' ? styles.active : ''}`}
                     onClick={() => setActiveTab('tournaments')}
                 >
-                    Lista Turniejów
+                    Tournament List
                 </button>
                 <button 
                     className={`${styles.tab} ${activeTab === 'create' ? styles.active : ''}`}
                     onClick={() => { resetForm(); setActiveTab('create'); }}
                 >
-                    {isEditing ? "Edycja Turnieju" : "Dodaj Turniej"}
+                    {isEditing ? "Edit Tournament" : "Add Tournament"}
                 </button>
             </div>
 
@@ -442,7 +485,6 @@ useEffect(() => {
             <div className={styles.modalInnerContent}>
                 <h2 className={styles.detailsTitle}>{selectedTournament.tournamentName}</h2>
                 
-                {/* ZDJĘCIE W MODALU */}
                 {selectedTournament.imageUrl && (
                     <div style={{marginBottom: '20px', textAlign: 'center'}}>
                         <img 
@@ -454,23 +496,24 @@ useEffect(() => {
                 )}
 
                 <div className={styles.detailsGrid}>
-                    <div><span>Max Graczy:</span> <strong>{selectedTournament.maxParticipants}</strong></div>
-                    <div><span>Data:</span> <strong>{new Date(selectedTournament.startDate).toLocaleString()}</strong></div>
+                    <div><span>Type:</span> <strong>{selectedTournament.registrationType === 'team' ? 'Team' : 'Individual'}</strong></div>
+                    <div><span>Max Participants:</span> <strong>{selectedTournament.maxParticipants}</strong></div>
+                    <div><span>Date:</span> <strong>{new Date(selectedTournament.startDate).toLocaleString()}</strong></div>
                 </div>
 
                 <div className={styles.bracketSection}>
-                    <h3>Zarządzanie Rozgrywkami</h3>
+                    <h3>Bracket Management</h3>
                     
                     {matchesLoading ? (
-                        <p style={{textAlign: 'center', color: '#888'}}>Ładowanie meczów...</p>
+                        <p style={{textAlign: 'center', color: '#888'}}>Loading matches...</p>
                     ) : (
                         <>
                             {/* --- WARUNEK 1: BRAK DRABINKI --- */}
                             {tournamentMatches.length === 0 ? (
                                 <div className={styles.generateBox}>
-                                    <p>Turniej nie ma jeszcze wygenerowanej drabinki.</p>
+                                    <p>Tournament does not have a bracket generated yet.</p>
                                     <button className={styles.generateBtn} onClick={handleGenerateBracket}>
-                                        ⚡ Wygeneruj Drabinkę
+                                        ⚡ Generate Bracket
                                     </button>
                                 </div>
                             ) : (
@@ -486,11 +529,11 @@ useEffect(() => {
                                         textAlign: 'center', 
                                         fontWeight: 'bold'
                                     }}>
-                                        ✅ Drabinka jest gotowa
+                                        ✅ Bracket is ready
                                     </div>
 
                                     <div className={styles.matchesList}>
-                                        <h4>Ostatnie Aktywności:</h4>
+                                        <h4>Recent Activity:</h4>
                                         
                                         {tournamentMatches
                                          .sort((a, b) => (b.matchStatus === 'disputed') - (a.matchStatus === 'disputed')) 
@@ -501,24 +544,24 @@ useEffect(() => {
                                                     <span style={{color: getStatusColor(match.matchStatus), fontWeight: 'bold', textTransform: 'uppercase'}}>
                                                         {match.matchStatus}
                                                     </span>
-                                                    <span className={styles.matchId}>Mecz #{match.matchId}</span>
+                                                    <span className={styles.matchId}>Match #{match.matchId}</span>
                                                 </div>
 
                                                 <div className={styles.matchTeams}>
                                                     <div className={match.winnerId === match.teamAId ? styles.winner : ''}>
-                                                        {match.teamAName || "Drużyna A"} 
+                                                        {match.teamAName || "Team A"} 
                                                         {match.scoreA !== null && <span className={styles.score}>{match.scoreA}</span>}
                                                     </div>
                                                     <span>vs</span>
                                                     <div className={match.winnerId === match.teamBId ? styles.winner : ''}>
-                                                        {match.teamBName || "Drużyna B"}
+                                                        {match.teamBName || "Team B"}
                                                         {match.scoreB !== null && <span className={styles.score}>{match.scoreB}</span>}
                                                     </div>
                                                 </div>
 
                                                 {match.matchStatus === 'disputed' && (
                                                     <div className={styles.disputeControls}>
-                                                        <p>⚠️ Wymagana interwencja! Kto wygrał?</p>
+                                                        <p>⚠️ Intervention required! Who won?</p>
                                                         <div className={styles.disputeButtons}>
                                                             <button onClick={() => handleResolveDispute(match.matchId, match.teamAId)} className={styles.winBtn}>
                                                                 Win {match.teamAName || "A"}
@@ -528,7 +571,7 @@ useEffect(() => {
                                                             </button>
                                                         </div>
                                                         {match.screenshotUrl && (
-                                                            <a href={match.screenshotUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>Zobacz dowód</a>
+                                                            <a href={match.screenshotUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>View Proof</a>
                                                         )}
                                                     </div>
                                                 )}
@@ -542,8 +585,8 @@ useEffect(() => {
                 </div>
 
                 <div className={styles.adminActions}>
-                    <button className={styles.editBtn} onClick={() => handleEditClick(selectedTournament)}>Edytuj</button>
-                    <button className={styles.deleteBtn} onClick={() => handleDeleteTournament(selectedTournament.tournamentId || selectedTournament.id)}>Usuń</button>
+                    <button className={styles.editBtn} onClick={() => handleEditClick(selectedTournament)}>Edit</button>
+                    <button className={styles.deleteBtn} onClick={() => handleDeleteTournament(selectedTournament.tournamentId || selectedTournament.id)}>Delete</button>
                 </div>
             </div>
         </Modal>
