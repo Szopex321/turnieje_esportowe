@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import styles from "../styles/components/mainPageContent.module.css";
 import Modal from "./modal";
 import Button from "./Button";
-import MyTeamsModal from "./MyTeamsModal"; // Upewnij się, że ścieżka importu jest poprawna
+import MyTeamsModal from "./MyTeamsModal";
 
-// ADRES BACKENDU - Używamy pełnego adresu, aby uniknąć błędów 404 na localhost
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
 function MainPageContent(props) {
@@ -21,7 +20,7 @@ function MainPageContent(props) {
     location,
     rules,
     maxParticipants,
-    registrationType, // To pole decyduje czy rejestracja jest "team" czy inna
+    registrationType,
     tournamentType,
     currentParticipants,
   } = props;
@@ -31,15 +30,13 @@ function MainPageContent(props) {
   const [timeInfo, setTimeInfo] = useState("");
   
   // Modale
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false); // Modal ze szczegółami turnieju
-  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);       // Modal wyboru drużyny
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
 
   // Logika
   const [isRegistering, setIsRegistering] = useState(false);
   const [myTeams, setMyTeams] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
-
-  const safeEndDate = endDate ? endDate : startDate;
 
   // 1. Pobranie ID zalogowanego użytkownika
   useEffect(() => {
@@ -53,7 +50,7 @@ function MainPageContent(props) {
   const handleOpenDetailsModal = () => setIsDetailsModalOpen(true);
   const handleCloseDetailsModal = () => setIsDetailsModalOpen(false);
 
-  // --- FUNKCJA 1: POBIERANIE DRUŻYN (Dla rejestracji zespołowej) ---
+  // --- FUNKCJA 1: POBIERANIE DRUŻYN ---
   const fetchAndFilterUserTeams = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/teams`);
@@ -67,8 +64,6 @@ function MainPageContent(props) {
 
       const mappedTeams = allTeamsData.map((team) => {
         const allPlayers = [];
-        
-        // Dodaj kapitana
         if (team.captain) {
           allPlayers.push({
             userId: team.captain.userId,
@@ -76,39 +71,30 @@ function MainPageContent(props) {
             status: "Member",
           });
         }
-        
-        // Dodaj członków
         if (Array.isArray(team.teamMembers)) {
             team.teamMembers.forEach(member => {
                 if(member.user) {
                     allPlayers.push({
                         userId: member.user.userId,
                         username: member.user.username,
-                        status: member.status // np. "Pending", "Member"
+                        status: member.status
                     });
                 }
             });
         }
 
-        // --- TU BYŁ PROBLEM ---
-        // Twój MyTeamsModal prawdopodobnie szuka pola 'members' lub 'teamMembers'
-        // Przekazujemy tablicę pod kilkoma nazwami, żeby na pewno zadziałało
         return {
           id: team.teamId,
           name: team.teamName,
           captainId: parseInt(team.captainId, 10),
           logo: team.logoUrl || "https://placehold.co/150",
-          
-          players: allPlayers,      // Nazwa używana w poprzednim kodzie
-          members: allPlayers,      // Częsta nazwa w modalach
-          teamMembers: allPlayers,  // Oryginalna nazwa z backendu
-          
-          // Dodatkowe zabezpieczenie: filtrowanie tylko aktywnych członków
+          players: allPlayers,
+          members: allPlayers,
+          teamMembers: allPlayers,
           activePlayers: allPlayers.filter(p => p.status === "Member") 
         };
       });
 
-      // Filtrowanie drużyn użytkownika
       const userTeams = mappedTeams.filter(t => 
         t.players.some(p => p.userId === myId)
       );
@@ -130,15 +116,11 @@ function MainPageContent(props) {
       return;
     }
 
-    // Sprawdzamy typ rejestracji (ignorując wielkość liter)
     const type = String(registrationType || "").toLowerCase();
-    console.log("Typ rejestracji:", type);
 
     if (type === "team") {
-        // Ścieżka drużynowa: Pobierz drużyny -> Wyświetl modal
         await fetchAndFilterUserTeams();
     } else {
-        // Ścieżka indywidualna: Rejestruj od razu
         registerUserToTournament();
     }
   };
@@ -149,7 +131,7 @@ function MainPageContent(props) {
     const token = localStorage.getItem("jwt_token");
     try {
       const response = await fetch(
-        `${API_BASE_URL}/TournamentRegistration/${tournamentId}`, // Pełny URL
+        `${API_BASE_URL}/TournamentRegistration/${tournamentId}`,
         {
           method: "POST",
           headers: {
@@ -160,7 +142,7 @@ function MainPageContent(props) {
         }
       );
 
-      const responseText = await response.text(); // Czytamy raz jako tekst
+      const responseText = await response.text();
 
       if (response.ok) {
         alert("Success! You have been registered.");
@@ -189,9 +171,6 @@ function MainPageContent(props) {
   const registerTeamToTournament = async (teamId) => {
     setIsRegistering(true);
     const token = localStorage.getItem("jwt_token");
-    
-    // Budujemy nowy URL zgodnie z instrukcją:
-    // /api/TeamTournamentRegistration/register/{tournamentId}/{teamId}
     const url = `${API_BASE_URL}/TeamTournamentRegistration/register/${tournamentId}/${teamId}`;
 
     try {
@@ -201,13 +180,10 @@ function MainPageContent(props) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          // Body może być puste, bo dane są w URL, ale wysyłamy pusty obiekt {}
-          // żeby nagłówek Content-Type: application/json nie sprawiał problemów.
           body: JSON.stringify({}),
         }
       );
 
-      // Czytamy odpowiedź (tekst lub json)
       const responseText = await response.text();
 
       if (response.ok) {
@@ -215,13 +191,11 @@ function MainPageContent(props) {
         setIsTeamModalOpen(false);
         handleCloseDetailsModal();
       } else {
-        // Obsługa błędów (np. "Brak miejsc", "Nie jesteś kapitanem")
         let errorMsg = responseText;
         try {
             const errData = JSON.parse(responseText);
             errorMsg = errData.message || errData.detail || errorMsg;
-        } catch(e) { /* to nie był JSON */ }
-
+        } catch(e) { }
         alert(`❌ Błąd rejestracji: ${errorMsg}`);
       }
     } catch (error) {
@@ -232,41 +206,57 @@ function MainPageContent(props) {
     }
   };
 
-  // --- DATY I STATUSY ---
+  // --- DATY I STATUSY (Zmieniona logika) ---
+  useEffect(() => {
+    if (!startDate) return;
+    
+    // Normalizacja daty dzisiejszej (tylko rok-miesiąc-dzień)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Normalizacja daty startu turnieju
+    const tournamentStartDate = new Date(startDate);
+    tournamentStartDate.setHours(0, 0, 0, 0);
+
+    // LOGIKA: 
+    // Data startu > dzisiaj -> Upcoming
+    // Data startu == dzisiaj -> Ongoing
+    // Data startu < dzisiaj -> Completed (Ended)
+    // EndDate jest całkowicie ignorowany dla statusu.
+
+    if (tournamentStartDate > today) {
+      setState("Upcoming");
+    } else if (tournamentStartDate.getTime() === today.getTime()) {
+      setState("Ongoing");
+    } else {
+      setState("Completed");
+    }
+  }, [startDate]);
+
+  // Ustawienie etykiety czasu
   useEffect(() => {
     if (!startDate) return;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    
     const tournamentStartDate = new Date(startDate);
-    const tournamentEndDate = new Date(safeEndDate);
-
-    if (tournamentStartDate > today) {
-      setState("Upcoming");
-    } else if (tournamentEndDate < today) {
-      setState("Completed");
-    } else {
-      setState("Ongoing");
-    }
-  }, [startDate, safeEndDate]);
-
-  useEffect(() => {
-    if (!startDate) return;
-    const today = new Date();
+    tournamentStartDate.setHours(0, 0, 0, 0);
 
     if (state === "Upcoming") {
-      const diffTime = new Date(startDate) - today;
+      const diffTime = tournamentStartDate - today;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays <= 0) setTimeInfo("Launches Today");
-      else if (diffDays === 1) setTimeInfo("Launches Tomorrow");
+      
+      if (diffDays <= 1) setTimeInfo("Launches Tomorrow"); // Jeśli różnica to 1 dzień
       else if (diffDays <= 31) setTimeInfo(`Launches in ${diffDays} days`);
-      else
-        setTimeInfo(`Launches at ${new Date(startDate).toLocaleDateString()}`);
-    } else if (state === "Ongoing") {
-      setTimeInfo("Ongoing");
-    } else if (state === "Completed") {
+      else setTimeInfo(`Launches at ${new Date(startDate).toLocaleDateString()}`);
+    } 
+    else if (state === "Ongoing") {
+      setTimeInfo("Happening Today!");
+    } 
+    else if (state === "Completed") {
       setTimeInfo("Ended");
     }
-  }, [state, startDate, safeEndDate]);
+  }, [state, startDate]);
 
   return (
     <>
@@ -351,15 +341,12 @@ function MainPageContent(props) {
           </ul>
 
           <div className={styles.modalActions}>
-            {/* REGISTER BUTTON */}
             <Button
               name={isRegistering ? "Processing..." : "Register"}
               className={styles.registrationButton}
               onClick={handleRegisterClick}
               disabled={isRegistering || state === "Completed"}
             />
-
-            {/* BRACKET BUTTON */}
             <Button
               name="See Bracket"
               className={styles.registrationButton}
