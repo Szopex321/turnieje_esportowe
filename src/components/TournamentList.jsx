@@ -61,7 +61,7 @@ const TournamentList = () => {
                 <MainPageContent
                     key={t.tournamentId}
                     tournamentId={t.tournamentId}
-                    currentParticipants={t.currentParticipants || 0}
+                    currentParticipants={t.participantsCount || 0}
                     title={t.tournamentName}
                     description={t.description}
                     baner={t.imageUrl}
