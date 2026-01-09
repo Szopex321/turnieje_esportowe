@@ -15,9 +15,180 @@ import {
 } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
+const DEFAULT_AVATAR = "https://placehold.co/150/2c3e50/ecf0f1?text=USER";
 
 // =========================================================================
-// 1. MODAL: REPORT RESULT
+// 1. MODAL: READ ONLY TEAM DETAILS
+// =========================================================================
+const ReadOnlyTeamModal = ({ teamId, onClose }) => {
+  const [team, setTeam] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teams/${teamId}`);
+        if (!response.ok)
+          throw new Error("Nie udało się pobrać danych drużyny.");
+
+        const data = await response.json();
+        setTeam(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (teamId) fetchTeam();
+  }, [teamId]);
+
+  if (!team && loading)
+    return (
+      <div className={styles.modalOverlay}>
+        <div className={styles.modalContent}>Loading...</div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className={styles.modalOverlay}>
+        <div className={styles.modalContent}>
+          <h3>Błąd</h3>
+          <p>{error}</p>
+          <Button name="Zamknij" onClick={onClose} />
+        </div>
+      </div>
+    );
+
+  // --- BEZPIECZNE POBIERANIE DANYCH ---
+  const tName = team.teamName || team.name || "Bez nazwy";
+  const tDesc = team.description || "Brak opisu.";
+  const tLogo = team.logoUrl || team.logo || null;
+
+  const rawPlayers = team.teamMembers || team.players || [];
+  const captainId = parseInt(team.captainId || 0);
+
+  // Sortowanie: Kapitan pierwszy
+  const sortedPlayers = [...rawPlayers].sort((a, b) => {
+    const idA = a.userId || a.id;
+    const idB = b.userId || b.id;
+    if (idA === captainId) return -1;
+    if (idB === captainId) return 1;
+    return 0;
+  });
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={styles.modalContent}
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: "500px", cursor: "default" }}
+      >
+        <div
+          className={styles.teamHeaderCenter}
+          style={{ textAlign: "center", marginBottom: "20px" }}
+        >
+          <img
+            src={
+              tLogo ||
+              `https://placehold.co/150/2c3e50/ecf0f1?text=${tName
+                .substring(0, 2)
+                .toUpperCase()}`
+            }
+            alt={tName}
+            style={{
+              width: "80px",
+              height: "80px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              marginBottom: "10px",
+            }}
+          />
+          <h2 style={{ margin: "5px 0" }}>{tName}</h2>
+          <p style={{ color: "#888", fontSize: "0.9rem" }}>{tDesc}</p>
+        </div>
+
+        <h3
+          style={{
+            borderBottom: "1px solid #333",
+            paddingBottom: "10px",
+            marginBottom: "15px",
+          }}
+        >
+          Skład drużyny ({sortedPlayers.length})
+        </h3>
+
+        <div
+          className={styles.playersList}
+          style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+        >
+          {sortedPlayers.length > 0 ? (
+            sortedPlayers.map((player) => {
+              // Mapowanie usera zagnieżdżonego w obiekcie lub bezpośrednio
+              const userData = player.user || player;
+
+              const pUsername = userData.username || "Nieznany";
+              const pAvatar = userData.avatarUrl || DEFAULT_AVATAR;
+              const pId = player.userId || userData.id;
+
+              return (
+                <div
+                  key={pId || Math.random()}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    backgroundColor: "#2a2a2a",
+                    padding: "10px",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <img
+                    src={pAvatar}
+                    alt={pUsername}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                      marginRight: "15px",
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontWeight: "bold", display: "block" }}>
+                      {pUsername}
+                    </span>
+                    {pId === captainId && (
+                      <span style={{ fontSize: "0.8rem", color: "#f1c40f" }}>
+                        👑 Kapitan
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p style={{ textAlign: "center", color: "#666" }}>
+              Brak widocznych graczy.
+            </p>
+          )}
+        </div>
+
+        <div className={styles.modalActions} style={{ marginTop: "20px" }}>
+          <Button
+            name="Zamknij"
+            onClick={onClose}
+            className={styles.cancelBtn}
+            type="button"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =========================================================================
+// 2. MODAL: REPORT RESULT
 // =========================================================================
 const ReportResultModal = ({
   match,
@@ -71,7 +242,6 @@ const ReportResultModal = ({
               />
             </div>
           </div>
-
           <div className={styles.modalActions}>
             <Button
               name="Cancel"
@@ -93,7 +263,7 @@ const ReportResultModal = ({
 };
 
 // =========================================================================
-// 2. MODAL: REPORT DISPUTE
+// 3. MODAL: REPORT DISPUTE
 // =========================================================================
 const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
   const [reason, setReason] = useState("");
@@ -156,7 +326,7 @@ const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
 };
 
 // =========================================================================
-// 3. MATCH CARD
+// 4. MATCH CARD
 // =========================================================================
 const MatchCard = ({
   match,
@@ -164,20 +334,21 @@ const MatchCard = ({
   onReportClick,
   onAcceptClick,
   onDisputeClick,
+  onTeamClick,
 }) => {
   const p1Winner = match.winnerId && match.winnerId === match.participant1Id;
   const p2Winner = match.winnerId && match.winnerId === match.participant2Id;
 
-  // 1. RESULT DATA
-  const pendingResult = match.pendingResult || match.PendingResult || null;
+  const p1Id = match.participant1Id || match.Participant1Id;
+  const p1Name = match.participant1Name || match.Participant1Name || "TBA";
 
-  // 2. SET STATUS (Force 'pending' if result data exists)
+  const p2Id = match.participant2Id || match.Participant2Id;
+  const p2Name = match.participant2Name || match.Participant2Name || "TBA";
+
+  const pendingResult = match.pendingResult || match.PendingResult || null;
   const statusRaw = match.matchStatus || match.MatchStatus || "";
   let status = statusRaw.toLowerCase();
-
-  if (pendingResult) {
-    status = "pending";
-  }
+  if (pendingResult) status = "pending";
 
   const isScheduled = status === "scheduled";
   const isPending = status === "pending";
@@ -185,30 +356,26 @@ const MatchCard = ({
   const isFinished =
     status === "finished" || status === "completed" || !!match.winnerId;
 
-  // --- 3. CHECK IF CAPTAIN ---
   const captain1Id = match.participant1CaptainId || match.Participant1CaptainId;
   const captain2Id = match.participant2CaptainId || match.Participant2CaptainId;
-
   const isParticipant =
     currentUserId &&
     (currentUserId == captain1Id || currentUserId == captain2Id);
-  // -------------------------------------
 
-  // 4. EXTRACT RESULT DATA
-  let reporterId = null;
-  let resultId = null;
-  let scoreA = "?";
-  let scoreB = "?";
+  let reporterId = null,
+    resultId = null,
+    pendingScoreA = "?",
+    pendingScoreB = "?";
 
   if (pendingResult) {
     reporterId = pendingResult.reportedBy || pendingResult.ReportedBy;
     resultId = pendingResult.resultId || pendingResult.ResultId;
-    scoreA =
+    pendingScoreA =
       pendingResult.scoreA ??
       pendingResult.ScoreA ??
       pendingResult.participant1Score ??
       "?";
-    scoreB =
+    pendingScoreB =
       pendingResult.scoreB ??
       pendingResult.ScoreB ??
       pendingResult.participant2Score ??
@@ -216,6 +383,31 @@ const MatchCard = ({
   }
 
   const iAmReporter = pendingResult && reporterId == currentUserId;
+
+  let displayScore1 = "-",
+    displayScore2 = "-";
+  if (isPending && pendingResult) {
+    displayScore1 = pendingScoreA;
+    displayScore2 = pendingScoreB;
+  } else {
+    displayScore1 =
+      match.participant1Score ?? match.score1 ?? match.Score1 ?? "-";
+    displayScore2 =
+      match.participant2Score ?? match.score2 ?? match.Score2 ?? "-";
+  }
+
+  // Funkcja kliknięcia
+  const handleRowClick = (e, id, name) => {
+    e.stopPropagation();
+    if (name === "TBA" || name === "BYE" || !id) return;
+    if (onTeamClick) onTeamClick(id);
+  };
+
+  // Styl dla wiersza
+  const rowStyle = (name) => ({
+    cursor: name !== "TBA" && name !== "BYE" ? "pointer" : "default",
+    transition: "background-color 0.2s",
+  });
 
   return (
     <div
@@ -227,17 +419,17 @@ const MatchCard = ({
         <span className={styles.matchNumber}>Match {match.matchNumber}</span>
         <div className={styles.statusIcons}>
           {isFinished && (
-            <span className={styles.badgeFinished} title="Finished">
+            <span className={styles.badgeFinished}>
               <CheckCircle size={14} />
             </span>
           )}
           {isDisputed && (
-            <span className={styles.badgeDisputed} title="Dispute">
+            <span className={styles.badgeDisputed}>
               <AlertTriangle size={14} /> DISPUTE
             </span>
           )}
           {isPending && (
-            <span className={styles.badgePending} title="Pending">
+            <span className={styles.badgePending}>
               <Clock size={14} />
             </span>
           )}
@@ -245,25 +437,46 @@ const MatchCard = ({
       </div>
 
       <div className={styles.matchBody}>
+        {/* DRUŻYNA 1 */}
         <div
           className={`${styles.participantRow} ${
             p1Winner ? styles.winnerRow : ""
           }`}
+          onClick={(e) => handleRowClick(e, p1Id, p1Name)}
+          style={rowStyle(p1Name)}
+          title={p1Name !== "TBA" ? "Zobacz szczegóły" : ""}
         >
-          <span className={styles.pName}>
-            {match.participant1Name || "TBA"}
+          <span
+            className={styles.pName}
+            style={{
+              textDecoration: p1Name !== "TBA" ? "underline" : "none",
+              textDecorationColor: "transparent",
+            }}
+          >
+            {p1Name}
           </span>
-          <span className={styles.pScore}>{match.score1 ?? "-"}</span>
+          <span className={styles.pScore}>{displayScore1}</span>
         </div>
+
+        {/* DRUŻYNA 2 */}
         <div
           className={`${styles.participantRow} ${
             p2Winner ? styles.winnerRow : ""
           }`}
+          onClick={(e) => handleRowClick(e, p2Id, p2Name)}
+          style={rowStyle(p2Name)}
+          title={p2Name !== "TBA" ? "Zobacz szczegóły" : ""}
         >
-          <span className={styles.pName}>
-            {match.participant2Name || "TBA"}
+          <span
+            className={styles.pName}
+            style={{
+              textDecoration: p2Name !== "TBA" ? "underline" : "none",
+              textDecorationColor: "transparent",
+            }}
+          >
+            {p2Name}
           </span>
-          <span className={styles.pScore}>{match.score2 ?? "-"}</span>
+          <span className={styles.pScore}>{displayScore2}</span>
         </div>
       </div>
 
@@ -277,43 +490,33 @@ const MatchCard = ({
               <Edit3 size={14} /> Report Result
             </button>
           )}
-
           {isPending &&
             pendingResult &&
             (iAmReporter ? (
               <div className={styles.statusMsg}>
-                ⏳ Waiting for approval...
-                <div className={styles.miniScore}>
-                  Your proposal: {scoreA}:{scoreB}
-                </div>
+                ⏳ Waiting... {pendingScoreA}:{pendingScoreB}
               </div>
             ) : (
               <div className={styles.decisionBox}>
-                <div className={styles.proposalText}>
-                  Result:{" "}
-                  <strong>
-                    {scoreA}:{scoreB}
-                  </strong>
-                </div>
+                <strong>
+                  {pendingScoreA}:{pendingScoreB}
+                </strong>
                 <div className={styles.btnGroup}>
                   <button
                     className={styles.btnAccept}
                     onClick={() => onAcceptClick(resultId)}
-                    title="Confirm"
                   >
                     <CheckCircle size={16} />
                   </button>
                   <button
                     className={styles.btnDispute}
                     onClick={() => onDisputeClick(resultId)}
-                    title="Report Issue"
                   >
                     <XCircle size={16} />
                   </button>
                 </div>
               </div>
             ))}
-
           {isDisputed && (
             <div className={styles.disputeMsg}>⛔ Admin Review</div>
           )}
@@ -324,7 +527,7 @@ const MatchCard = ({
 };
 
 // =========================================================================
-// 4. MAIN PAGE
+// 5. MAIN PAGE
 // =========================================================================
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -334,6 +537,8 @@ const TournamentBracketPage = () => {
 
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [disputeData, setDisputeData] = useState(null);
+  const [viewTeamId, setViewTeamId] = useState(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reportError, setReportError] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -352,7 +557,6 @@ const TournamentBracketPage = () => {
         return;
       }
       if (!response.ok) throw new Error("Fetch error");
-
       const matches = await response.json();
       setBracketData(matches);
       setLoading(false);
@@ -381,12 +585,10 @@ const TournamentBracketPage = () => {
     return grouped;
   }, [bracketData]);
 
-  // --- WINNER LOGIC ---
   const champion = useMemo(() => {
     if (!bracketData || bracketData.length === 0) return null;
     const maxRound = Math.max(...bracketData.map((m) => m.roundNumber));
     const finalMatch = bracketData.find((m) => m.roundNumber === maxRound);
-
     if (finalMatch) {
       const status = (
         finalMatch.matchStatus ||
@@ -406,15 +608,12 @@ const TournamentBracketPage = () => {
     return null;
   }, [bracketData]);
 
-  // --- ROUND NAMES LOGIC ---
   const getRoundName = (roundNum, allRoundsCount) => {
     const current = parseInt(roundNum);
     const total = parseInt(allRoundsCount);
-
     if (current === total) return "🏆 GRAND FINAL";
     if (current === total - 1) return "🔥 SEMI-FINAL";
     if (current === total - 2) return "⚔️ QUARTER-FINAL";
-
     return `ROUND ${current}`;
   };
 
@@ -423,7 +622,6 @@ const TournamentBracketPage = () => {
       ? Math.max(...Object.keys(rounds).map(Number))
       : 0;
 
-  // --- API HANDLERS ---
   const handleReportSubmit = async (matchId, scoreA, scoreB) => {
     setIsSubmitting(true);
     setReportError(null);
@@ -526,10 +724,8 @@ const TournamentBracketPage = () => {
           <div className={styles.header}>
             <h1>Tournament Bracket</h1>
           </div>
-
           {loading && <div className={styles.loading}>Loading...</div>}
           {error && <div className={styles.errorMessage}>{error}</div>}
-
           {!loading && !error && Object.keys(rounds).length > 0 && (
             <div className={styles.bracketContainer}>
               {Object.keys(rounds).map((roundNum) => (
@@ -546,6 +742,7 @@ const TournamentBracketPage = () => {
                         onReportClick={setSelectedMatch}
                         onAcceptClick={handleAcceptResult}
                         onDisputeClick={openDisputeModal}
+                        onTeamClick={setViewTeamId}
                       />
                     ))}
                   </div>
@@ -556,8 +753,6 @@ const TournamentBracketPage = () => {
           {!loading && !error && Object.keys(rounds).length === 0 && (
             <div className={styles.empty}>No matches found.</div>
           )}
-
-          {/* --- WINNER BANNER --- */}
           {champion && (
             <div className={styles.footerWinner}>
               <div className={styles.championBanner}>
@@ -571,7 +766,6 @@ const TournamentBracketPage = () => {
               </div>
             </div>
           )}
-          {/* ------------------- */}
         </div>
       </div>
       {selectedMatch && (
@@ -590,6 +784,12 @@ const TournamentBracketPage = () => {
           onSubmit={submitDispute}
           isSubmitting={isSubmitting}
           error={reportError}
+        />
+      )}
+      {viewTeamId && (
+        <ReadOnlyTeamModal
+          teamId={viewTeamId}
+          onClose={() => setViewTeamId(null)}
         />
       )}
     </>
