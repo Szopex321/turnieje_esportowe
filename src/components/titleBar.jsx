@@ -1,4 +1,3 @@
-/* eslint-disable no-irregular-whitespace */
 import React, { useState, useEffect, useCallback } from "react";
 import styles from "../styles/components/titleBar.module.css";
 import Button from "./Button";
@@ -9,7 +8,6 @@ import FriendsModal from "./FriendsModal";
 import NotificationsModal from "./NotificationsModal";
 import MyTeamsModal from "./MyTeamsModal";
 import TeamDetailsModal from "./TeamDetailsModal";
-// IMPORTY IKON Z LUCIDE-REACT
 import { Bell, Users, Flag } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -23,8 +21,7 @@ function TitleBar() {
 
   // Stany Modali
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
-  const [isNotificationsModalOpen, setIsNotificationsModalOpen] =
-    useState(false);
+  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isMyTeamsModalOpen, setIsMyTeamsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedTeamForDetails, setSelectedTeamForDetails] = useState(null);
@@ -50,13 +47,7 @@ function TitleBar() {
           name: team.teamName,
           description: team.description,
           captainId: team.captainId,
-          logo:
-            team.logoUrl ||
-            `https://placehold.co/150/999999/FFFFFF?text=${(
-              team.teamName || "T"
-            )
-              .substring(0, 2)
-              .toUpperCase()}`,
+          logo: team.logoUrl || `https://placehold.co/150/999999/FFFFFF?text=${(team.teamName || "T").substring(0, 2).toUpperCase()}`,
           players: team.teamMembers
             ? team.teamMembers.map((m) => ({
                 userId: m.user?.userId || m.userId,
@@ -88,9 +79,7 @@ function TitleBar() {
       if (response.ok) {
         const data = await response.json();
         setNotifications(data);
-        const unreadCount = data.filter(
-          (notification) => !notification.isRead
-        ).length;
+        const unreadCount = data.filter((notification) => !notification.isRead).length;
         setUnreadNotifications(unreadCount);
       }
     } catch (error) {
@@ -126,21 +115,10 @@ function TitleBar() {
     }
   }, [fetchNotifications, fetchAllTeams]);
 
-  const goToProfile = () => {
-    navigate("/profile");
-  };
-
-  const goToMyTeams = () => {
-    setIsMyTeamsModalOpen(true);
-  };
-
-  const toggleFriendsModal = () => {
-    setIsFriendsModalOpen((prev) => !prev);
-  };
-
-  const toggleNotificationsModal = () => {
-    setIsNotificationsModalOpen((prev) => !prev);
-  };
+  const goToProfile = () => navigate("/profile");
+  const goToMyTeams = () => setIsMyTeamsModalOpen(true);
+  const toggleFriendsModal = () => setIsFriendsModalOpen((prev) => !prev);
+  const toggleNotificationsModal = () => setIsNotificationsModalOpen((prev) => !prev);
 
   const handleLogout = () => {
     localStorage.removeItem("jwt_token");
@@ -155,9 +133,7 @@ function TitleBar() {
     navigate("/login");
   };
 
-  const handleRefreshNotifications = () => {
-    fetchNotifications();
-  };
+  const handleRefreshNotifications = () => fetchNotifications();
 
   const handleSelectTeamFromList = (team) => {
     setSelectedTeamForDetails(team);
@@ -169,11 +145,7 @@ function TitleBar() {
     <>
       <header className={styles.header}>
         <div className={styles.titleSection}>
-          <div
-            className={styles.logo}
-            onClick={() => navigate("/")}
-            style={{ cursor: "pointer" }}
-          >
+          <div className={styles.logo} onClick={() => navigate("/")}>
             <img src={logo} alt="logo" className={styles.logoImage} />
           </div>
           <div className={styles.title}>
@@ -184,21 +156,11 @@ function TitleBar() {
         <div className={styles.headerRight}>
           {isLoggedIn ? (
             <div className={styles.userInfoContainer}>
-              {/* IKONA DRUŻYNY - FLAGA */}
-              <button
-                onClick={goToMyTeams}
-                className={styles.iconButton}
-                title="My Teams"
-              >
+              <button onClick={goToMyTeams} className={styles.iconButton} title="My Teams">
                 <Flag size={24} className={styles.teamIcon} />
               </button>
 
-              {/* IKONA POWIADOMIEŃ - DZWONEK */}
-              <button
-                onClick={toggleNotificationsModal}
-                className={styles.notificationButton}
-                title="Notifications"
-              >
+              <button onClick={toggleNotificationsModal} className={styles.notificationButton} title="Notifications">
                 <Bell size={24} className={styles.notificationIcon} />
                 {unreadNotifications > 0 && (
                   <span className={styles.notificationBadge}>
@@ -207,56 +169,30 @@ function TitleBar() {
                 )}
               </button>
 
-              {/* IKONA ZNAJOMYCH - UŻYTKOWNICY */}
-              <button
-                onClick={toggleFriendsModal}
-                className={styles.friendsIconButton}
-                title="Friends"
-              >
+              <button onClick={toggleFriendsModal} className={styles.friendsIconButton} title="Friends">
                 <Users size={24} className={styles.friendsIcon} />
               </button>
 
-              <div
-                className={styles.userProfile}
-                onClick={goToProfile}
-                style={{ cursor: "pointer" }}
-                title="Go to profile"
-              >
+              <div className={styles.userProfile} onClick={goToProfile} title="Go to profile">
                 <span className={styles.welcomeText}>
                   Welcome, <strong>{username}</strong>
                 </span>
-                <img
-                  src={avatar || defaultAvatar}
-                  alt="User Avatar"
-                  className={styles.userAvatar}
-                />
+                <img src={avatar || defaultAvatar} alt="User Avatar" className={styles.userAvatar} />
               </div>
 
-              <Button
-                name="Log Out"
-                onClick={handleLogout}
-                className={styles.logoutButton}
-              />
+              <Button name="Log Out" onClick={handleLogout} className={styles.logoutButton} />
             </div>
           ) : (
             <div className={styles.authButtons}>
-              <Button
-                name="log in"
-                onClick={() => navigate("/login")}
-                className={styles.logInButton}
-              />
-              <Button
-                name="sign up"
-                onClick={() => navigate("/signup")}
-                className={styles.signUpButton}
-              />
+              <Button name="log in" onClick={() => navigate("/login")} className={styles.logInButton} />
+              <Button name="sign up" onClick={() => navigate("/signup")} className={styles.signUpButton} />
             </div>
           )}
         </div>
       </header>
 
       {isFriendsModalOpen && <FriendsModal onClose={toggleFriendsModal} />}
-
+      
       {isNotificationsModalOpen && (
         <NotificationsModal
           notifications={notifications}

@@ -1,17 +1,24 @@
 import React, { useEffect, useState } from "react";
 import styles from "../styles/components/nav.module.css";
 import NavButton from "./navButton";
+import { Menu, X } from "lucide-react"; // Używamy ikon z lucide-react (masz je już w projekcie)
+
+import rocketIcon from "../assets/rocket.svg";
+import teamIcon from "../assets/team.svg";
 
 function Nav() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // Stan otwarcia menu mobilnego
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
 
   // Funkcja sprawdzająca uprawnienia
   const checkAdminRole = () => {
-    // 1. Pobieramy TOKEN oraz dane użytkownika
     const token = localStorage.getItem("jwt_token");
     const userJson = localStorage.getItem("currentUser");
 
-    // Jeśli brakuje tokenu LUB danych użytkownika -> na pewno nie jest adminem
     if (!token || !userJson) {
       setIsAdmin(false);
       return;
@@ -19,8 +26,6 @@ function Nav() {
 
     try {
       const user = JSON.parse(userJson);
-      
-      // 2. Sprawdzamy rolę
       if (user.role === "admin" || user.role === "Admin") {
         setIsAdmin(true);
       } else {
@@ -33,15 +38,9 @@ function Nav() {
   };
 
   useEffect(() => {
-    // Sprawdź przy wejściu na stronę
     checkAdminRole();
-
-    // Nasłuchuj na zdarzenie logowania/wylogowania
-    // (Upewnij się, że w Login.jsx i funkcji Logout wywołujesz to zdarzenie)
     const handleAuthChange = () => checkAdminRole();
     window.addEventListener("authChange", handleAuthChange);
-    
-    // Nasłuchuj na zmiany w localStorage (np. wylogowanie w innej karcie)
     window.addEventListener("storage", handleAuthChange);
 
     return () => {
@@ -51,24 +50,41 @@ function Nav() {
   }, []);
 
   return (
-    <aside className={styles.sidebar}>
-      <h2>Menu</h2>
-      <ul>
-        <li>
-          <NavButton name="Tournaments" path="/" />
-        </li>
-        <li>
-          <NavButton name="Teams" path="/teams" />
-        </li>
+    <>
+      {/* Przycisk Burger Menu (widoczny tylko na mobile) */}
+      <button 
+        className={styles.burgerBtn} 
+        onClick={toggleMenu}
+        aria-label="Toggle menu"
+      >
+        {isOpen ? <X size={28} color="#ffffff" /> : <Menu size={28} color="#ffffff" />}
+      </button>
 
-        {/* Renderuj ten przycisk TYLKO jeśli isAdmin === true */}
-        {isAdmin && (
-          <li style={{ marginTop: "20px", borderTop: "1px solid #444", paddingTop: "10px" }}>
-            <NavButton name="Admin Panel" path="/admin" />
+      {/* Tło (overlay) przyciemniające resztę strony, gdy menu jest otwarte */}
+      <div 
+        className={`${styles.overlay} ${isOpen ? styles.overlayVisible : ''}`} 
+        onClick={() => setIsOpen(false)}
+      />
+
+      {/* Sidebar - dodajemy klasę 'open', jeśli stan isOpen === true */}
+      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
+        <h2>Menu</h2>
+        <ul>
+          <li onClick={() => setIsOpen(false)}> {/* Zamyka menu po kliknięciu w link */}
+            <NavButton name="Tournaments" path="/" icon={rocketIcon} />
           </li>
-        )}
-      </ul>
-    </aside>
+          <li onClick={() => setIsOpen(false)}>
+            <NavButton name="Teams" path="/teams" icon={teamIcon} />
+          </li>
+
+          {isAdmin && (
+            <li className={styles.adminSeparator} onClick={() => setIsOpen(false)}>
+              <NavButton name="Admin Panel" path="/admin" />
+            </li>
+          )}
+        </ul>
+      </aside>
+    </>
   );
 }
 

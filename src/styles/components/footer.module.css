@@ -1,0 +1,49 @@
+.footer {
+  width: 100%;
+  padding: 30px 20px;
+  margin-top: auto;
+  box-sizing: border-box;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+  color: #7d8590;
+}
+
+.copyright {
+  font-size: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.links {
+  display: flex;
+  gap: 25px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.links a {
+  color: #7d8590;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.links a:hover {
+  color: #facc15; /* Złoty akcent, pasujący do reszty aplikacji */
+}
+
+/* Responsywność */
+@media (max-width: 600px) {
+  .footer {
+    padding: 20px;
+    margin-bottom: 60px; /* Opcjonalnie: miejsce na dole, by nie zasłaniać treści na mobile */
+  }
+}
