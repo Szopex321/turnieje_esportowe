@@ -1,4 +1,6 @@
-/* --- Desktop (Domyślny) --- */
+/* ==========================================================================
+   SIDEBAR (DESKTOP - DOMYŚLNY)
+   ========================================================================== */
 .sidebar {
   width: 250px;
   min-height: 100vh;
@@ -8,7 +10,10 @@
   flex-direction: column;
   border-right: 1px solid #2b2d3e;
   transition: transform 0.3s ease-in-out;
-  z-index: 1000; /* Sidebar musi być nad treścią na mobile */
+  
+  /* WAŻNE: Na desktopie niski index, żeby Modale mogły go przykryć */
+  z-index: 10; 
+  position: relative;
 }
 
 .sidebar h2 {
@@ -71,7 +76,9 @@
   padding-top: 20px;
 }
 
-/* --- Burger Button (Domyślnie ukryty na desktopie) --- */
+/* ==========================================================================
+   BURGER BUTTON & OVERLAY (Domyślnie ukryte na Desktopie)
+   ========================================================================== */
 .burgerBtn {
   display: none;
 }
@@ -80,43 +87,58 @@
   display: none;
 }
 
-/* --- Responsywność (Mobile & Tablet) --- */
+/* ==========================================================================
+   RESPONSYWNOŚĆ (MOBILE & TABLET - poniżej 900px)
+   ========================================================================== */
 @media (max-width: 900px) {
-  /* Przycisk Burgera - pojawia się w lewym górnym rogu */
+
+  /* 1. Przycisk Burgera - Przezroczysty i zawsze na wierzchu */
   .burgerBtn {
     display: flex;
     align-items: center;
     justify-content: center;
+    
     position: fixed;
-    top: 20px; /* Dopasuj do wysokości TitleBar */
-    left: 20px;
-    z-index: 1100; /* Musi być nad Sidebarem i TitleBarem */
-    background-color: #15171e;
-    border: 1px solid #2b2d3e;
-    border-radius: 8px;
-    padding: 8px;
+    top: 15px;
+    left: 15px;
+    z-index: 1200; /* Musi być najwyżej, żeby kliknąć nawet jak menu otwarte */
+    
+    background-color: transparent; /* Brak tła */
+    border: none;                  /* Brak ramki */
+    color: white;
+    
+    padding: 10px;
     cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    font-size: 24px;
+    transition: transform 0.2s;
   }
 
-  /* Sidebar zmienia się w panel wysuwany z lewej */
+  .burgerBtn:active {
+    transform: scale(0.95);
+  }
+
+  /* 2. Sidebar - Zmienia się w wysuwany panel */
   .sidebar {
     position: fixed;
     top: 0;
     left: 0;
     height: 100vh;
-    width: 280px; /* Szerszy na mobile dla wygody dotyku */
-    transform: translateX(-100%); /* Domyślnie ukryty poza ekranem */
+    width: 280px;
+    
+    transform: translateX(-100%); /* Ukryty poza lewą krawędzią */
     box-shadow: 4px 0 15px rgba(0,0,0,0.5);
-    padding-top: 80px; /* Miejsce na górze, żeby nie zasłaniać przycisku X */
+    padding-top: 80px; 
+    
+    /* WAŻNE: Na mobile musi być wysoko, żeby przykryć stronę po wysunięciu */
+    z-index: 1100; 
   }
 
-  /* Klasa dodawana przez React, gdy menu jest otwarte */
+  /* Klasa dodawana gdy menu jest otwarte */
   .sidebar.open {
     transform: translateX(0);
   }
 
-  /* Overlay - przyciemnione tło */
+  /* 3. Overlay - Przyciemnienie tła pod menu mobilnym */
   .overlay {
     display: block;
     position: fixed;
@@ -125,10 +147,11 @@
     width: 100vw;
     height: 100vh;
     background-color: rgba(0, 0, 0, 0.7);
-    z-index: 999; /* Pod sidebarem, nad resztą */
+    z-index: 1050; /* Pod sidebarem (1100), ale nad treścią strony */
     opacity: 0;
-    pointer-events: none; /* Nie klikać, gdy niewidoczne */
+    pointer-events: none;
     transition: opacity 0.3s ease;
+    backdrop-filter: blur(2px);
   }
 
   .overlayVisible {
