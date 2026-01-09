@@ -8,7 +8,9 @@ import defaultAvatar from "../assets/deafultAvatar.jpg";
 const UserProfile = () => {
   const navigate = useNavigate();
 
-  // --- STANY ---
+  // Upewnij się, że ten adres nie ma ukośnika na końcu
+  const API_BASE_URL = "https://projektturniej.onrender.com/api";
+
   const [user, setUser] = useState(null);
   
   const [formData, setFormData] = useState({
@@ -21,12 +23,10 @@ const UserProfile = () => {
 
   const [availableAvatars, setAvailableAvatars] = useState([]);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
-
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  // --- 1. POBIERANIE DANYCH ---
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
     if (!token) {
@@ -36,9 +36,9 @@ const UserProfile = () => {
 
     const fetchData = async () => {
       try {
-        // A. Pobranie danych usera (zakładam, że ten endpoint działa poprawnie, jeśli nie - sprawdź Swaggera czy to /api/User/profile czy /api/Auth/me)
-        // Wg Twojego screena GET też jest na /api/User/profile
-        const userRes = await fetch("/api/User/profile", { 
+        // POPRAWKA: Zmiana /User/profile na /user/profile (małe litery)
+        // Spróbuj też /users/profile jeśli to nie zadziała
+        const userRes = await fetch(`${API_BASE_URL}/users/profile`, { 
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -52,16 +52,15 @@ const UserProfile = () => {
             email: userData.email || "",
             avatarUrl: userData.avatarUrl || "" 
           });
+        } else {
+            // Logowanie błędu w konsoli, żebyś widział co jest nie tak
+            console.error("Błąd pobierania profilu. Status:", userRes.status);
         }
 
-        // B. Pobranie listy avatarów
-        const avatarsRes = await fetch("/api/avatars");
-        
+        const avatarsRes = await fetch(`${API_BASE_URL}/avatars`);
         if (avatarsRes.ok) {
             const avatarsData = await avatarsRes.json();
             setAvailableAvatars(avatarsData);
-        } else {
-            console.error("Błąd pobierania listy avatarów");
         }
 
       } catch (err) {
@@ -74,7 +73,6 @@ const UserProfile = () => {
     fetchData();
   }, [navigate]);
 
-  // --- 2. OBSŁUGA ZMIAN ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -85,14 +83,13 @@ const UserProfile = () => {
       setShowAvatarModal(false); 
   };
 
-  // --- 3. ZAPIS DANYCH (TUTAJ BYŁ BŁĄD) ---
   const handleSave = async () => {
     setMessage("");
     try {
       const token = localStorage.getItem("jwt_token");
       
-      // POPRAWKA: Adres zgodny ze Swaggerem. Bez ID, 'User' zamiast 'Users'.
-      const response = await fetch("/api/User/profile", {
+      // POPRAWKA: Tutaj też małe litery /user/profile
+      const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json",
@@ -104,18 +101,14 @@ const UserProfile = () => {
       if (response.ok) {
         setMessage("Profil zaktualizowany!");
         setIsEditing(false);
-        
         const updatedUser = { ...user, ...formData };
         setUser(updatedUser);
-        
         localStorage.setItem("currentUser", JSON.stringify({
            ...updatedUser,
            isLoggedIn: true
         }));
-        
         window.dispatchEvent(new Event("storage"));
       } else {
-        // Dodajmy logowanie błędu, żeby widzieć co zwrócił serwer
         const errorData = await response.json().catch(() => ({}));
         console.error("Błąd zapisu:", errorData);
         setMessage("Błąd aktualizacji profilu.");
@@ -130,19 +123,24 @@ const UserProfile = () => {
     setIsEditing(false);
     setShowAvatarModal(false);
     setMessage("");
-    setFormData({
-        firstName: user.firstName || "",
-        lastName: user.lastName || "",
-        username: user.username || "",
-        email: user.email || "",
-        avatarUrl: user.avatarUrl || ""
-    });
+    // Reset formularza
+    if (user) {
+        setFormData({
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            username: user.username || "",
+            email: user.email || "",
+            avatarUrl: user.avatarUrl || ""
+        });
+    }
   };
 
   const displayAvatarSrc = formData.avatarUrl || defaultAvatar;
 
   if (loading) return <div style={{ color: "white", padding: 20 }}>Ładowanie...</div>;
-  if (!user) return null;
+  
+  // Zabezpieczenie: jeśli user się nie załadował, nie renderuj reszty
+  if (!user) return <div style={{ color: "white", padding: 20 }}>Nie udało się pobrać danych użytkownika. Sprawdź konsolę (F12).</div>;
 
   return (
     <div className={styles.pageWrapper}>
@@ -152,7 +150,6 @@ const UserProfile = () => {
         <main className={styles.mainContent}>
           <div className={styles.profileCard}>
             
-            {/* --- HEADER --- */}
             <div className={styles.cardHeader}>
               <div 
                 className={styles.avatarContainer} 
@@ -189,7 +186,6 @@ const UserProfile = () => {
               </div>
             </div>
 
-            {/* --- MODAL AVATARÓW --- */}
             {showAvatarModal && (
                 <div style={{
                     marginBottom: '20px', padding: '15px', background: '#222', borderRadius: '8px', border: '1px solid #444'
@@ -225,14 +221,12 @@ const UserProfile = () => {
                 </div>
             )}
 
-            {/* Komunikaty */}
             {message && (
                 <div style={{ textAlign: 'center', color: message.includes("Profil") ? '#4ade80' : '#ff4d4d', margin: '10px 0' }}>
                     {message}
                 </div>
             )}
 
-            {/* --- FORMULARZ --- */}
             <div className={styles.detailsGrid}>
               <div className={styles.infoGroup}>
                 <label className={styles.label}>Imię</label>
@@ -275,7 +269,6 @@ const UserProfile = () => {
               </div>
             </div>
 
-            {/* PRZYCISKI AKCJI */}
             <div className={styles.actionButtonsContainer} style={{ marginTop: '30px', display: 'flex', gap: '15px' }}>
                 {isEditing ? (
                     <>

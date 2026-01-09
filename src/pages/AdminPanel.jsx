@@ -30,10 +30,11 @@ const AdminPanel = () => {
     organizerId: "", 
     maxParticipants: 16, 
     startDate: "", 
+    endDate: "",        // NOWE POLE: End Date
     description: "",
     imageUrl: "",
-    registrationType: "individual", // domyślnie individual
-    maxTeamSize: 1                  // domyślnie 1
+    registrationType: "individual",
+    // USUNIĘTO: maxTeamSize
   });
 
   const parseJwt = (token) => {
@@ -192,9 +193,14 @@ const AdminPanel = () => {
     e.preventDefault();
     const token = localStorage.getItem("jwt_token");
 
-    const formattedDate = tournamentForm.startDate 
+    const formattedStartDate = tournamentForm.startDate 
         ? new Date(tournamentForm.startDate).toISOString() 
         : new Date().toISOString();
+
+    // Obsługa EndDate: jeśli puste -> null, w przeciwnym razie ISOString
+    const formattedEndDate = tournamentForm.endDate 
+        ? new Date(tournamentForm.endDate).toISOString() 
+        : null;
 
     // 1. Tworzymy podstawowy obiekt
     const payload = {
@@ -203,10 +209,11 @@ const AdminPanel = () => {
         OrganizerId: parseInt(tournamentForm.organizerId || currentAdminId),
         Description: tournamentForm.description,
         MaxParticipants: parseInt(tournamentForm.maxParticipants),
-        StartDate: formattedDate,
+        StartDate: formattedStartDate,
+        EndDate: formattedEndDate, // DODANO DO PAYLOADU
         ImageUrl: tournamentForm.imageUrl,
         RegistrationType: tournamentForm.registrationType,
-        MaxTeamSize: parseInt(tournamentForm.maxTeamSize)
+        // USUNIĘTO: MaxTeamSize
     };
 
     // 2. WAŻNE: Jeśli edytujemy, musimy dodać ID do payloadu!
@@ -277,10 +284,11 @@ const AdminPanel = () => {
         organizerId: tournament.organizerId,
         maxParticipants: tournament.maxParticipants,
         startDate: formatDateForInput(tournament.startDate),
+        endDate: formatDateForInput(tournament.endDate), // DODANO ODCZYT DATY KOŃCA
         description: tournament.description || "",
         imageUrl: tournament.imageUrl || "",
         registrationType: tournament.registrationType || "individual",
-        maxTeamSize: tournament.maxTeamSize || 1
+        // USUNIĘTO: maxTeamSize
     });
     setEditingId(tournament.tournamentId || tournament.id);
     setIsEditing(true);
@@ -296,10 +304,11 @@ const AdminPanel = () => {
         organizerId: currentAdminId || "", 
         maxParticipants: 16, 
         startDate: "", 
+        endDate: "", // RESET END DATE
         description: "",
         imageUrl: "",
-        registrationType: "individual", // Reset
-        maxTeamSize: 1                  // Reset
+        registrationType: "individual",
+        // USUNIĘTO: maxTeamSize
     });
     setIsEditing(false);
     setEditingId(null);
@@ -320,9 +329,8 @@ const AdminPanel = () => {
       const type = e.target.value;
       setTournamentForm(prev => ({
           ...prev,
-          registrationType: type,
-          // Jeśli zmieniono na individual -> zablokuj team size na 1
-          maxTeamSize: type === 'individual' ? 1 : prev.maxTeamSize
+          registrationType: type
+          // USUNIĘTO logikę ustawiania maxTeamSize
       }));
   };
 
@@ -353,7 +361,7 @@ const AdminPanel = () => {
                     src={tournamentForm.imageUrl} 
                     alt="Preview" 
                     style={{maxWidth: '200px', maxHeight: '150px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #444'}} 
-                    onError={(e) => {e.target.style.display = 'none'}} // Ukryj jeśli link jest zły
+                    onError={(e) => {e.target.style.display = 'none'}} 
                 />
             </div>
           )}
@@ -367,33 +375,17 @@ const AdminPanel = () => {
           </select>
         </div>
 
-        {/* --- TYP REJESTRACJI --- */}
-        <div style={{display: 'flex', gap: '20px'}}>
-            <div className={styles.formGroup} style={{flex: 1}}>
-                <label>Tournament Type</label>
-                <select 
-                    className={styles.select} 
-                    value={tournamentForm.registrationType} 
-                    onChange={handleRegistrationTypeChange}
-                >
-                    <option value="individual">Individual (1vs1)</option>
-                    <option value="team">Team Based</option>
-                </select>
-            </div>
-
-            <div className={styles.formGroup} style={{flex: 1}}>
-                <label>Team Size</label>
-                <input 
-                    type="number" 
-                    className={styles.input} 
-                    min="1"
-                    value={tournamentForm.maxTeamSize} 
-                    onChange={e => setTournamentForm({...tournamentForm, maxTeamSize: e.target.value})}
-                    // Jeśli Individual, blokujemy edycję
-                    disabled={tournamentForm.registrationType === 'individual'}
-                    style={tournamentForm.registrationType === 'individual' ? {backgroundColor: '#333', color: '#666'} : {}}
-                />
-            </div>
+        {/* --- TYP REJESTRACJI (BEZ TEAM SIZE) --- */}
+        <div className={styles.formGroup}>
+            <label>Tournament Type</label>
+            <select 
+                className={styles.select} 
+                value={tournamentForm.registrationType} 
+                onChange={handleRegistrationTypeChange}
+            >
+                <option value="individual">Individual (1vs1)</option>
+                <option value="team">Team Based</option>
+            </select>
         </div>
 
         <div className={styles.formGroup}>
@@ -404,10 +396,29 @@ const AdminPanel = () => {
           <label>Max Participants (Bracket Slots)</label>
           <input type="number" className={styles.input} value={tournamentForm.maxParticipants} onChange={e => setTournamentForm({...tournamentForm, maxParticipants: e.target.value})} />
         </div>
-        <div className={styles.formGroup}>
-            <label>Start Date</label>
-            <input type="datetime-local" className={styles.input} value={tournamentForm.startDate} onChange={e => setTournamentForm({...tournamentForm, startDate: e.target.value})} />
+        
+        {/* DATY START I KONIEC */}
+        <div style={{display: 'flex', gap: '20px'}}>
+            <div className={styles.formGroup} style={{flex: 1}}>
+                <label>Start Date</label>
+                <input 
+                    type="datetime-local" 
+                    className={styles.input} 
+                    value={tournamentForm.startDate} 
+                    onChange={e => setTournamentForm({...tournamentForm, startDate: e.target.value})} 
+                />
+            </div>
+            <div className={styles.formGroup} style={{flex: 1}}>
+                <label>End Date (Optional)</label>
+                <input 
+                    type="datetime-local" 
+                    className={styles.input} 
+                    value={tournamentForm.endDate} 
+                    onChange={e => setTournamentForm({...tournamentForm, endDate: e.target.value})} 
+                />
+            </div>
         </div>
+
         <div className={styles.buttonGroup}>
             <button type="submit" className={styles.createBtn}>{isEditing ? "Save Changes" : "Create Tournament"}</button>
             {isEditing && <button type="button" className={styles.cancelBtn} onClick={() => { resetForm(); setActiveTab("tournaments"); }}>Cancel</button>}
@@ -498,7 +509,11 @@ const AdminPanel = () => {
                 <div className={styles.detailsGrid}>
                     <div><span>Type:</span> <strong>{selectedTournament.registrationType === 'team' ? 'Team' : 'Individual'}</strong></div>
                     <div><span>Max Participants:</span> <strong>{selectedTournament.maxParticipants}</strong></div>
-                    <div><span>Date:</span> <strong>{new Date(selectedTournament.startDate).toLocaleString()}</strong></div>
+                    <div><span>Start Date:</span> <strong>{new Date(selectedTournament.startDate).toLocaleString()}</strong></div>
+                    {/* WYŚWIETLANIE END DATE W MODALU JEŚLI ISTNIEJE */}
+                    {selectedTournament.endDate && (
+                        <div><span>End Date:</span> <strong>{new Date(selectedTournament.endDate).toLocaleString()}</strong></div>
+                    )}
                 </div>
 
                 <div className={styles.bracketSection}>
@@ -508,7 +523,6 @@ const AdminPanel = () => {
                         <p style={{textAlign: 'center', color: '#888'}}>Loading matches...</p>
                     ) : (
                         <>
-                            {/* --- WARUNEK 1: BRAK DRABINKI --- */}
                             {tournamentMatches.length === 0 ? (
                                 <div className={styles.generateBox}>
                                     <p>Tournament does not have a bracket generated yet.</p>
@@ -517,7 +531,6 @@ const AdminPanel = () => {
                                     </button>
                                 </div>
                             ) : (
-                                /* --- WARUNEK 2: DRABINKA GOTOWA --- */
                                 <>
                                     <div style={{
                                         padding: '10px', 

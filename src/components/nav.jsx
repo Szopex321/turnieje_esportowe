@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react"; // Używamy ikon z lucide-react (masz je
 
 import rocketIcon from "../assets/rocket.svg";
 import teamIcon from "../assets/team.svg";
+import moderator from "../assets/Moderator.png";  
 
 function Nav() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -79,7 +80,7 @@ function Nav() {
 
           {isAdmin && (
             <li className={styles.adminSeparator} onClick={() => setIsOpen(false)}>
-              <NavButton name="Admin Panel" path="/admin" />
+              <NavButton name="Admin Panel" path="/admin" icon={moderator} />
             </li>
           )}
         </ul>
