@@ -4,19 +4,20 @@ import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
 import Button from "../components/Button";
 import styles from "../styles/pages/TournamentBracketPage.module.css";
-// Ikony
+// Icons
 import {
   Edit3,
   CheckCircle,
   XCircle,
   AlertTriangle,
   Clock,
+  Trophy,
 } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
 // =========================================================================
-// 1. MODAL: WPISYWANIE WYNIKU (Report Result)
+// 1. MODAL: REPORT RESULT
 // =========================================================================
 const ReportResultModal = ({
   match,
@@ -27,17 +28,16 @@ const ReportResultModal = ({
 }) => {
   const [scoreA, setScoreA] = useState(0);
   const [scoreB, setScoreB] = useState(0);
-  const [screenshotUrl, setScreenshotUrl] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(match.matchId, parseInt(scoreA), parseInt(scoreB), screenshotUrl);
+    onSubmit(match.matchId, parseInt(scoreA), parseInt(scoreB));
   };
 
   return (
     <div className={styles.modalOverlay}>
       <div className={styles.modalContent}>
-        <h3>Zgłoś wynik meczu</h3>
+        <h3>Report Match Result</h3>
         <div className={styles.matchVersus}>
           <span className={styles.teamName}>
             {match.participant1Name || "Team A"}
@@ -51,7 +51,7 @@ const ReportResultModal = ({
         <form onSubmit={handleSubmit} className={styles.reportForm}>
           <div className={styles.scoreInputs}>
             <div className={styles.scoreField}>
-              <label>{match.participant1Name || "Wynik 1"}</label>
+              <label>{match.participant1Name || "Score 1"}</label>
               <input
                 type="number"
                 min="0"
@@ -61,7 +61,7 @@ const ReportResultModal = ({
               />
             </div>
             <div className={styles.scoreField}>
-              <label>{match.participant2Name || "Wynik 2"}</label>
+              <label>{match.participant2Name || "Score 2"}</label>
               <input
                 type="number"
                 min="0"
@@ -71,24 +71,16 @@ const ReportResultModal = ({
               />
             </div>
           </div>
-          <div className={styles.formGroup}>
-            <label>Link do screenshota (opcjonalne)</label>
-            <input
-              type="text"
-              placeholder="https://..."
-              value={screenshotUrl}
-              onChange={(e) => setScreenshotUrl(e.target.value)}
-            />
-          </div>
+
           <div className={styles.modalActions}>
             <Button
-              name="Anuluj"
+              name="Cancel"
               onClick={onClose}
               className={styles.cancelBtn}
               type="button"
             />
             <Button
-              name={isSubmitting ? "Wysyłanie..." : "Wyślij"}
+              name={isSubmitting ? "Sending..." : "Submit"}
               className={styles.submitBtn}
               type="submit"
               disabled={isSubmitting}
@@ -101,7 +93,7 @@ const ReportResultModal = ({
 };
 
 // =========================================================================
-// 2. MODAL: ZGŁASZANIE SPORU (Dispute)
+// 2. MODAL: REPORT DISPUTE
 // =========================================================================
 const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
   const [reason, setReason] = useState("");
@@ -116,26 +108,26 @@ const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
     <div className={styles.modalOverlay}>
       <div className={`${styles.modalContent} ${styles.disputeModal}`}>
         <div className={styles.modalHeader}>
-          <h3 className={styles.textDanger}>⚠️ Zgłoś Problem</h3>
+          <h3 className={styles.textDanger}>⚠️ Report Issue</h3>
         </div>
         <p className={styles.modalSubtitle}>
-          Jeśli wynik podany przez przeciwnika jest błędny, zgłoś to tutaj.
+          If the result reported by the opponent is incorrect, report it here.
         </p>
         {error && <div className={styles.modalError}>{error}</div>}
         <form onSubmit={handleSubmit} className={styles.reportForm}>
           <div className={styles.formGroup}>
-            <label>Powód zgłoszenia</label>
+            <label>Reason</label>
             <textarea
               className={styles.textarea}
               rows="3"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Opisz problem..."
+              placeholder="Describe the issue..."
               required
             />
           </div>
           <div className={styles.formGroup}>
-            <label>Dowód (Link do screenshota)</label>
+            <label>Proof (Screenshot link)</label>
             <input
               type="text"
               placeholder="https://..."
@@ -145,13 +137,13 @@ const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
           </div>
           <div className={styles.modalActions}>
             <Button
-              name="Anuluj"
+              name="Cancel"
               onClick={onClose}
               className={styles.cancelBtn}
               type="button"
             />
             <Button
-              name={isSubmitting ? "Wysyłanie..." : "Zgłoś Sprzeciw"}
+              name={isSubmitting ? "Sending..." : "Submit Dispute"}
               className={`${styles.submitBtn} ${styles.btnDanger}`}
               type="submit"
               disabled={isSubmitting}
@@ -164,7 +156,7 @@ const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
 };
 
 // =========================================================================
-// 3. KARTA MECZU (POPRAWIONA LOGIKA STATUSÓW)
+// 3. MATCH CARD
 // =========================================================================
 const MatchCard = ({
   match,
@@ -176,15 +168,15 @@ const MatchCard = ({
   const p1Winner = match.winnerId && match.winnerId === match.participant1Id;
   const p2Winner = match.winnerId && match.winnerId === match.participant2Id;
 
-  // 1. POBIERZ PENDING RESULT (Obsługa różnych wielkości liter z API)
+  // 1. RESULT DATA
   const pendingResult = match.pendingResult || match.PendingResult || null;
 
-  // 2. USTAL STATUS (Kluczowa poprawka: Wymuś 'pending' jeśli są dane wyniku!)
+  // 2. SET STATUS (Force 'pending' if result data exists)
   const statusRaw = match.matchStatus || match.MatchStatus || "";
   let status = statusRaw.toLowerCase();
 
   if (pendingResult) {
-    status = "pending"; // <--- TO NAPRAWIA PROBLEM BRAKUJĄCYCH PRZYCISKÓW
+    status = "pending";
   }
 
   const isScheduled = status === "scheduled";
@@ -193,10 +185,16 @@ const MatchCard = ({
   const isFinished =
     status === "finished" || status === "completed" || !!match.winnerId;
 
-  // 3. SPRAWDŹ UCZESTNICTWO (Dla testów true, backend i tak zablokuje niepowołanych)
-  const isParticipant = !!currentUserId;
+  // --- 3. CHECK IF CAPTAIN ---
+  const captain1Id = match.participant1CaptainId || match.Participant1CaptainId;
+  const captain2Id = match.participant2CaptainId || match.Participant2CaptainId;
 
-  // 4. WYCIĄGNIJ DANE Z WYNIKU
+  const isParticipant =
+    currentUserId &&
+    (currentUserId == captain1Id || currentUserId == captain2Id);
+  // -------------------------------------
+
+  // 4. EXTRACT RESULT DATA
   let reporterId = null;
   let resultId = null;
   let scoreA = "?";
@@ -217,7 +215,6 @@ const MatchCard = ({
       "?";
   }
 
-  // Czy to ja zgłosiłem wynik?
   const iAmReporter = pendingResult && reporterId == currentUserId;
 
   return (
@@ -227,20 +224,20 @@ const MatchCard = ({
       } ${isFinished ? styles.cardFinished : ""}`}
     >
       <div className={styles.matchHeader}>
-        <span className={styles.matchNumber}>Mecz {match.matchNumber}</span>
+        <span className={styles.matchNumber}>Match {match.matchNumber}</span>
         <div className={styles.statusIcons}>
           {isFinished && (
-            <span className={styles.badgeFinished} title="Zakończony">
+            <span className={styles.badgeFinished} title="Finished">
               <CheckCircle size={14} />
             </span>
           )}
           {isDisputed && (
-            <span className={styles.badgeDisputed} title="Spór">
-              <AlertTriangle size={14} /> SPÓR
+            <span className={styles.badgeDisputed} title="Dispute">
+              <AlertTriangle size={14} /> DISPUTE
             </span>
           )}
           {isPending && (
-            <span className={styles.badgePending} title="Oczekiwanie">
+            <span className={styles.badgePending} title="Pending">
               <Clock size={14} />
             </span>
           )}
@@ -272,32 +269,28 @@ const MatchCard = ({
 
       {isParticipant && !isFinished && (
         <div className={styles.matchActionsFooter}>
-          {/* A: ZGŁASZANIE (Tylko gdy status scheduled I nie ma pendingResult) */}
           {isScheduled && !isPending && (
             <button
               className={styles.actionBtnPrimary}
               onClick={() => onReportClick(match)}
             >
-              <Edit3 size={14} /> Zgłoś wynik
+              <Edit3 size={14} /> Report Result
             </button>
           )}
 
-          {/* B: AKCEPTACJA / OCZEKIWANIE (Gdy status pending LUB są dane wyniku) */}
           {isPending &&
             pendingResult &&
             (iAmReporter ? (
-              // B1: Widok dla zgłaszającego
               <div className={styles.statusMsg}>
-                ⏳ Czekanie na akceptację...
+                ⏳ Waiting for approval...
                 <div className={styles.miniScore}>
-                  Twoja propozycja: {scoreA}:{scoreB}
+                  Your proposal: {scoreA}:{scoreB}
                 </div>
               </div>
             ) : (
-              // B2: Widok dla przeciwnika (PRZYCISKI!)
               <div className={styles.decisionBox}>
                 <div className={styles.proposalText}>
-                  Wynik:{" "}
+                  Result:{" "}
                   <strong>
                     {scoreA}:{scoreB}
                   </strong>
@@ -306,14 +299,14 @@ const MatchCard = ({
                   <button
                     className={styles.btnAccept}
                     onClick={() => onAcceptClick(resultId)}
-                    title="Zatwierdź"
+                    title="Confirm"
                   >
                     <CheckCircle size={16} />
                   </button>
                   <button
                     className={styles.btnDispute}
                     onClick={() => onDisputeClick(resultId)}
-                    title="Zgłoś problem"
+                    title="Report Issue"
                   >
                     <XCircle size={16} />
                   </button>
@@ -321,9 +314,8 @@ const MatchCard = ({
               </div>
             ))}
 
-          {/* C: SPÓR */}
           {isDisputed && (
-            <div className={styles.disputeMsg}>⛔ Spór u admina</div>
+            <div className={styles.disputeMsg}>⛔ Admin Review</div>
           )}
         </div>
       )}
@@ -332,7 +324,7 @@ const MatchCard = ({
 };
 
 // =========================================================================
-// 4. GŁÓWNA STRONA
+// 4. MAIN PAGE
 // =========================================================================
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -355,19 +347,18 @@ const TournamentBracketPage = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/brackets/${tournamentId}`);
       if (response.status === 404) {
-        setError("Drabinka nie wygenerowana.");
+        setError("Bracket not generated.");
         setLoading(false);
         return;
       }
-      if (!response.ok) throw new Error("Błąd pobierania");
+      if (!response.ok) throw new Error("Fetch error");
 
       const matches = await response.json();
-      console.log("DANE Z API:", matches); // Debug w konsoli
       setBracketData(matches);
       setLoading(false);
     } catch (err) {
       console.error(err);
-      setError("Wystąpił błąd.");
+      setError("An error occurred.");
       setLoading(false);
     }
   };
@@ -390,8 +381,50 @@ const TournamentBracketPage = () => {
     return grouped;
   }, [bracketData]);
 
-  // --- API HANDLERY ---
-  const handleReportSubmit = async (matchId, scoreA, scoreB, screenshotUrl) => {
+  // --- WINNER LOGIC ---
+  const champion = useMemo(() => {
+    if (!bracketData || bracketData.length === 0) return null;
+    const maxRound = Math.max(...bracketData.map((m) => m.roundNumber));
+    const finalMatch = bracketData.find((m) => m.roundNumber === maxRound);
+
+    if (finalMatch) {
+      const status = (
+        finalMatch.matchStatus ||
+        finalMatch.MatchStatus ||
+        ""
+      ).toLowerCase();
+      if (
+        (status === "finished" || status === "completed") &&
+        finalMatch.winnerId
+      ) {
+        if (finalMatch.winnerId === finalMatch.participant1Id)
+          return finalMatch.participant1Name;
+        if (finalMatch.winnerId === finalMatch.participant2Id)
+          return finalMatch.participant2Name;
+      }
+    }
+    return null;
+  }, [bracketData]);
+
+  // --- ROUND NAMES LOGIC ---
+  const getRoundName = (roundNum, allRoundsCount) => {
+    const current = parseInt(roundNum);
+    const total = parseInt(allRoundsCount);
+
+    if (current === total) return "🏆 GRAND FINAL";
+    if (current === total - 1) return "🔥 SEMI-FINAL";
+    if (current === total - 2) return "⚔️ QUARTER-FINAL";
+
+    return `ROUND ${current}`;
+  };
+
+  const totalRoundsCount =
+    Object.keys(rounds).length > 0
+      ? Math.max(...Object.keys(rounds).map(Number))
+      : 0;
+
+  // --- API HANDLERS ---
+  const handleReportSubmit = async (matchId, scoreA, scoreB) => {
     setIsSubmitting(true);
     setReportError(null);
     const token = localStorage.getItem("jwt_token");
@@ -402,17 +435,17 @@ const TournamentBracketPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ matchId, scoreA, scoreB, screenshotUrl }),
+        body: JSON.stringify({ matchId, scoreA, scoreB, screenshotUrl: "" }),
       });
       if (!response.ok) {
         if (response.status === 403)
           throw new Error(
-            "⛔ Brak uprawnień! Tylko KAPITAN biorący udział w meczu może zgłosić wynik."
+            "⛔ Permission denied! Only the CAPTAIN can report the result."
           );
         const txt = await response.text();
-        throw new Error(txt || "Błąd zgłaszania.");
+        throw new Error(txt || "Reporting error.");
       }
-      alert("Wynik zgłoszony! Czekaj na akceptację.");
+      alert("Result reported! Waiting for approval.");
       setSelectedMatch(null);
       fetchBracket();
     } catch (err) {
@@ -423,7 +456,7 @@ const TournamentBracketPage = () => {
   };
 
   const handleAcceptResult = async (resultId) => {
-    if (!window.confirm("Zatwierdzić wynik? Mecz zostanie zakończony.")) return;
+    if (!window.confirm("Confirm result? The match will be finished.")) return;
     const token = localStorage.getItem("jwt_token");
     try {
       const response = await fetch(
@@ -434,17 +467,17 @@ const TournamentBracketPage = () => {
         }
       );
       if (response.ok) {
-        alert("Zatwierdzono!");
+        alert("Confirmed!");
         fetchBracket();
       } else {
         const txt = await response.text();
         if (response.status === 403)
-          alert("⛔ Tylko KAPITAN drużyny przeciwnej może zatwierdzić wynik.");
-        else alert("Błąd: " + txt);
+          alert("⛔ Only the opponent CAPTAIN can confirm the result.");
+        else alert("Error: " + txt);
       }
     } catch (e) {
       console.error(e);
-      alert("Błąd połączenia.");
+      alert("Connection error.");
     }
   };
 
@@ -470,12 +503,12 @@ const TournamentBracketPage = () => {
         }
       );
       if (response.ok) {
-        alert("Zgłoszono spór.");
+        alert("Dispute reported.");
         setDisputeData(null);
         fetchBracket();
       } else {
         const txt = await response.text();
-        throw new Error(txt || "Błąd.");
+        throw new Error(txt || "Error.");
       }
     } catch (e) {
       setReportError(e.message);
@@ -491,15 +524,19 @@ const TournamentBracketPage = () => {
         <Nav />
         <div className={styles.content}>
           <div className={styles.header}>
-            <h1>Drabinka Turniejowa</h1>
+            <h1>Tournament Bracket</h1>
           </div>
-          {loading && <div className={styles.loading}>Ładowanie...</div>}
+
+          {loading && <div className={styles.loading}>Loading...</div>}
           {error && <div className={styles.errorMessage}>{error}</div>}
+
           {!loading && !error && Object.keys(rounds).length > 0 && (
             <div className={styles.bracketContainer}>
               {Object.keys(rounds).map((roundNum) => (
                 <div key={roundNum} className={styles.roundColumn}>
-                  <div className={styles.roundTitle}>Runda {roundNum}</div>
+                  <div className={styles.roundTitle}>
+                    {getRoundName(roundNum, totalRoundsCount)}
+                  </div>
                   <div className={styles.matchesList}>
                     {rounds[roundNum].map((match) => (
                       <MatchCard
@@ -517,8 +554,24 @@ const TournamentBracketPage = () => {
             </div>
           )}
           {!loading && !error && Object.keys(rounds).length === 0 && (
-            <div className={styles.empty}>Brak meczów.</div>
+            <div className={styles.empty}>No matches found.</div>
           )}
+
+          {/* --- WINNER BANNER --- */}
+          {champion && (
+            <div className={styles.footerWinner}>
+              <div className={styles.championBanner}>
+                <div className={styles.trophyIcon}>
+                  <Trophy size={64} />
+                </div>
+                <div className={styles.championText}>
+                  <span className={styles.winnerText}>TOURNAMENT WINNER</span>
+                  <span className={styles.championName}>{champion}</span>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* ------------------- */}
         </div>
       </div>
       {selectedMatch && (
