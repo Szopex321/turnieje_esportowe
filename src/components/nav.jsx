@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import styles from "../styles/components/nav.module.css";
 import NavButton from "./navButton";
 
+import rocketIcon from "../assets/rocket.svg";
+import teamIcon from "../assets/team.svg";
+
 function Nav() {
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -37,11 +40,10 @@ function Nav() {
     checkAdminRole();
 
     // Nasłuchuj na zdarzenie logowania/wylogowania
-    // (Upewnij się, że w Login.jsx i funkcji Logout wywołujesz to zdarzenie)
     const handleAuthChange = () => checkAdminRole();
     window.addEventListener("authChange", handleAuthChange);
     
-    // Nasłuchuj na zmiany w localStorage (np. wylogowanie w innej karcie)
+    // Nasłuchuj na zmiany w localStorage
     window.addEventListener("storage", handleAuthChange);
 
     return () => {
@@ -55,15 +57,15 @@ function Nav() {
       <h2>Menu</h2>
       <ul>
         <li>
-          <NavButton name="Tournaments" path="/" />
+          <NavButton name="Tournaments" path="/" icon={rocketIcon} />
         </li>
         <li>
-          <NavButton name="Teams" path="/teams" />
+          <NavButton name="Teams" path="/teams" icon={teamIcon} />
         </li>
 
         {/* Renderuj ten przycisk TYLKO jeśli isAdmin === true */}
         {isAdmin && (
-          <li style={{ marginTop: "20px", borderTop: "1px solid #444", paddingTop: "10px" }}>
+          <li className={styles.adminSeparator}>
             <NavButton name="Admin Panel" path="/admin" />
           </li>
         )}

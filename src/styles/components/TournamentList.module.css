@@ -1,0 +1,71 @@
+.container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  box-sizing: border-box; /* Ważne dla responsywności */
+}
+
+.filterContainer {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap; /* Pozwala przyciskom przeskoczyć do nowej linii na telefonie */
+  justify-content: center;
+  gap: 10px;
+}
+
+.filterBtn {
+  padding: 10px 20px;
+  background-color: #2b2d42;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.3s ease, transform 0.1s;
+}
+
+.filterBtn:hover {
+  background-color: #3d405b;
+}
+
+.filterBtn.active {
+  background-color: #d90429;
+}
+
+.loadingText,
+.emptyText {
+  color: white;
+  text-align: center;
+  font-size: 1.2rem;
+}
+
+.emptyText {
+  color: #8d99ae;
+}
+
+/* RESPONSYWNA SIATKA (GRID) */
+.listGrid {
+  display: grid;
+  width: 100%;
+  /* To magiczna linia responsywności: 
+     Tworzy tyle kolumn ile się zmieści, ale każda musi mieć min 300px. 
+     Na telefonie będzie 1 kolumna, na tablecie 2, na PC 3+ */
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+  gap: 20px;
+  justify-items: center;
+}
+
+/* Opcjonalnie: poprawki dla bardzo małych ekranów */
+@media (max-width: 480px) {
+  .listGrid {
+    grid-template-columns: 1fr; /* Jedna kolumna na siłę na małym mobile */
+  }
+  
+  .filterBtn {
+    width: 100%; /* Przyciski na pełną szerokość na telefonie */
+    text-align: center;
+  }
+}

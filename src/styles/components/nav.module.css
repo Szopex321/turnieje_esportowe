@@ -1,31 +1,79 @@
 .sidebar {
-  width: 200px;
-  padding: 20px;
+  width: 250px; /* Nieco szerszy dla lepszej czytelności */
+  min-height: 100vh; /* Sidebar na całą wysokość ekranu */
+  padding: 30px 20px;
+  background-color: #15171e; /* Bardzo ciemne tło pasujące do dashboardu */
+  display: flex;
+  flex-direction: column; /* Subtelna linia oddzielająca */
 }
 
 .sidebar h2 {
-  font-size: 18px;
-  margin-bottom: 15px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  color: #7d8590; /* Szary kolor dla nagłówka sekcji "MENU" */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding-left: 10px; /* Wyrównanie do przycisków */
 }
 
 .sidebar ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .sidebar li {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
+/* Stylizacja linków (wnętrze NavButton) */
+/* Zakładam, że NavButton renderuje <a> lub posiada klasę kontenera */
 .sidebar a {
   text-decoration: none;
-  color: #333;
-  padding: 8px 10px;
-  display: block;
-  border-radius: 6px;
+  color: #e0e6ed; /* Jasny tekst, prawie biały */
+  padding: 12px 16px;
+  display: flex;
+  align-items: center; /* Wyśrodkowanie ikony i tekstu w pionie */
+  gap: 15px; /* Odstęp między ikoną a tekstem */
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  font-size: 16px;
 }
 
+/* Naprawa wielkich ikon (Rakieta ze screena) */
+.sidebar img,
+.sidebar svg {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: grayscale(100%) brightness(150%); /* Opcjonalnie: ujednolicenie kolorów ikon */
+  transition: filter 0.2s ease;
+}
+
+/* Hover effect - najechanie myszką */
+.sidebar a:hover {
+  background-color: #2b2d3e; /* Jaśniejsze tło przy hoverze */
+  color: #ffffff;
+  transform: translateX(5px); /* Lekki ruch w prawo */
+}
+
+.sidebar a:hover img,
+.sidebar a:hover svg {
+  filter: none; /* Przywrócenie kolorów ikony po najechaniu */
+}
+
+/* Separator dla Admina */
+.adminSeparator {
+  margin-top: 20px;
+  border-top: 1px solid #2b2d3e;
+  padding-top: 20px;
+}
+
+/* Opcjonalnie: Styl dla aktywnego elementu (jeśli dodasz klasę .active) */
 .sidebar .active a {
-  background: #007bff;
-  color: white;
+  background-color: #ffd700; /* Żółty akcent z przycisku "sign up" */
+  color: #000000; /* Czarny tekst dla kontrastu na żółtym */
+  font-weight: 700;
 }

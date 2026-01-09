@@ -5,6 +5,7 @@
   padding: 15px 30px;
   height: 80px;
   box-sizing: border-box;
+  background-color: #15171e;
 }
 
 .titleSection {
@@ -176,13 +177,56 @@
   transition: all 0.2s;
 }
 
+.logInButton:hover {
+  opacity: 0.8; /* Lekkie przygaszenie po najechaniu */
+  text-decoration: none;
+}
+
 .signUpButton {
   background-color: #facc15;
   color: #000000;
-  border: none;
+  border: 1px solid #555;
   padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 700;
   transition: background-color 0.2s;
+}
+
+.signUpButton:hover {
+  background-color: #eab308 !important; /* Ciemniejszy żółty po najechaniu */
+}
+
+/* Dodaj do istniejącego pliku titleBar.module.css */
+
+.logo {
+  cursor: pointer;
+  /* Reszta twoich stylów... */
+}
+
+.userProfile {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  /* Reszta twoich stylów... */
+}
+
+/* Responsywność nagłówka */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    height: auto;
+    padding: 15px;
+  }
+
+  .headerRight {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  
+  .welcomeText {
+    display: none; /* Ukryj powitanie "Welcome User" na telefonie, żeby zaoszczędzić miejsce */
+  }
 }
