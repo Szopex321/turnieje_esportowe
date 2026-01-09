@@ -284,3 +284,400 @@
   flex-grow: 1;
   gap: 25px;
 }
+/* --- NOWE STYLE (DODAJ NA KOŃCU PLIKU) --- */
+
+/* 1. STATUSY KARTY MECZU (Warianty) */
+.cardFinished {
+  border-color: #10b981; /* Zielony dla zakończonych */
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
+}
+
+.cardDisputed {
+  border-color: #ef4444; /* Czerwony dla spornych */
+  background: linear-gradient(
+    145deg,
+    #2a1a1a,
+    #1a1a1a
+  ); /* Lekka czerwień w tle */
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+}
+
+/* Ikony statusów w nagłówku */
+.statusIcons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.badgeFinished {
+  color: #10b981;
+}
+
+.badgePending {
+  color: #f59e0b; /* Pomarańczowy */
+  animation: pulse 2s infinite;
+}
+
+.badgeDisputed {
+  color: #ef4444;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+}
+
+/* 2. ELEMENTY WEWNĄTRZ MATCH BODY (Nowe nazwy z Reacta) */
+.pName {
+  color: #ddd;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.winnerRow .pName {
+  color: #ffd700;
+  font-weight: 700;
+}
+
+.pScore {
+  background: #111;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+  border: 1px solid #333;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* 3. STOPKA AKCJI (Przyciski na dole karty) */
+.matchActionsFooter {
+  padding: 12px 15px;
+  border-top: 1px dashed #333;
+  background-color: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Główny przycisk "Zgłoś wynik" */
+.actionBtnPrimary {
+  background: transparent;
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  padding: 6px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  width: 100%;
+  justify-content: center;
+}
+
+.actionBtnPrimary:hover {
+  background: rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+}
+
+/* Sekcja decyzyjna (Akceptuj / Odrzuć) */
+.decisionBox {
+  width: 100%;
+  text-align: center;
+}
+
+.proposalText {
+  color: #aaa;
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.proposalText strong {
+  color: #fff;
+  font-size: 1rem;
+  margin-left: 5px;
+}
+
+.btnGroup {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.btnAccept {
+  background-color: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #10b981;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnAccept:hover {
+  background-color: rgba(16, 185, 129, 0.4);
+}
+
+.btnDispute {
+  background-color: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btnDispute:hover {
+  background-color: rgba(239, 68, 68, 0.4);
+}
+
+/* Komunikaty statusowe w stopce */
+.statusMsg {
+  font-size: 0.8rem;
+  color: #f59e0b; /* Żółty/Pomarańczowy */
+  text-align: center;
+  font-style: italic;
+}
+
+.miniScore {
+  margin-top: 4px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.disputeMsg {
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+/* 4. MODALE (Report & Dispute) */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.85); /* Ciemniejsze tło overlay */
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modalContent {
+  background: #1a1a1a;
+  border: 1px solid #444;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 450px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  color: #fff;
+  position: relative;
+}
+
+.modalContent h3 {
+  margin-top: 0;
+  text-align: center;
+  color: #ffd700;
+  margin-bottom: 20px;
+}
+
+.modalSubtitle {
+  color: #aaa;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.disputeModal {
+  border-color: #ef4444; /* Czerwona ramka dla sporu */
+}
+
+/* VS w Modalu */
+.matchVersus {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #111;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+  border: 1px solid #333;
+}
+
+.teamName {
+  font-weight: bold;
+  font-size: 1rem;
+  color: #fff;
+  max-width: 40%;
+  text-align: center;
+}
+
+.vsBadge {
+  color: #666;
+  font-weight: 900;
+  font-style: italic;
+}
+
+/* Formularze w Modalu */
+.reportForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.scoreInputs {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+}
+
+.scoreField {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scoreField label {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.scoreField input {
+  width: 80px;
+  height: 60px;
+  font-size: 2rem;
+  text-align: center;
+  background: #252525;
+  border: 2px solid #444;
+  border-radius: 8px;
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.scoreField input:focus {
+  border-color: #ffd700;
+  outline: none;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formGroup label {
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+.formGroup input[type="text"],
+.textarea {
+  background: #252525;
+  border: 1px solid #444;
+  padding: 12px;
+  border-radius: 6px;
+  color: #fff;
+  width: 100%;
+  box-sizing: border-box; /* Ważne, żeby nie wychodziło poza ramki */
+}
+
+.formGroup input:focus,
+.textarea:focus {
+  border-color: #ffd700;
+  outline: none;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Ostrzeżenie w modalu sporu */
+.modalWarning {
+  background-color: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 12px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+
+.textDanger {
+  color: #ef4444 !important;
+}
+
+/* Przyciski Modala */
+.modalActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  margin-top: 10px;
+}
+
+.cancelBtn {
+  background: transparent !important;
+  border: 1px solid #555 !important;
+  color: #aaa !important;
+  flex: 1;
+}
+
+.cancelBtn:hover {
+  border-color: #fff !important;
+  color: #fff !important;
+}
+
+.submitBtn {
+  background: linear-gradient(135deg, #ffd700, #b8860b) !important;
+  color: #000 !important;
+  font-weight: bold !important;
+  border: none !important;
+  flex: 2;
+}
+
+.btnDanger {
+  background: linear-gradient(135deg, #ef4444, #991b1b) !important;
+  color: white !important;
+}
+
+.modalError {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  border: 1px solid #ef4444;
+}
+
+/* Animacja pulsowania dla pending */
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
