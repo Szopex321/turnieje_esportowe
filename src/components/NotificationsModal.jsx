@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import styles from "../styles/components/NotificationsModal.module.css";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -112,8 +112,6 @@ const NotificationItem = ({ notification, onRefresh }) => {
   const teamId = notification.relatedId;
   const notificationId = notification.notificationId;
   const targetUserId = notification.relatedUserId;
-
-  // Wyświetlamy dokładnie to, co przysłał backend.
   const displayMessage = notification.message;
 
   const handleAcceptInviteClick = (e) => {
@@ -228,10 +226,8 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
     }
   };
 
-  // --- FUNKCJA USUWANIA WSZYSTKIEGO BEZ ALERTU ---
   const handleClearAll = async () => {
     if (sortedNotifications.length === 0) return;
-
     const token = getCurrentToken();
     if (!token) return;
     try {
@@ -240,7 +236,7 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
-        onRefresh(); // Natychmiastowe odświeżenie listy
+        onRefresh();
       } else {
         console.error("Failed to clear notifications");
       }
@@ -264,7 +260,6 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
 
         <div className={styles.content}>
           <div className={styles.controls}>
-            {/* Przycisk Mark as Read */}
             <button
               onClick={handleMarkAllAsRead}
               disabled={!hasUnread}
@@ -272,18 +267,14 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
             >
               Mark All Read
             </button>
-
-            {/* Przycisk Clear All (bez alertu) */}
             <button
               onClick={handleClearAll}
               disabled={!hasNotifications}
               className={styles.clearAllButton}
-              title="Usuń wszystkie powiadomienia"
+              title="Delete all history"
             >
               Clear History
             </button>
-
-            {/* Przycisk Refresh */}
             <button onClick={onRefresh} className={styles.refreshButton}>
               ↻
             </button>
