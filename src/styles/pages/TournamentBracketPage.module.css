@@ -1,8 +1,5 @@
-/* RESZTA STYLÓW ZOSTAJE BEZ ZMIAN - DODAJEMY TYLKO TO CO PONIŻEJ */
-
 /* Match Card - STYL WYBLAKŁY CZARNY + ŻÓŁTY GRADIENT */
 .matchCard {
-  /* Zmiana: Tło to teraz ciemny grafit przechodzący w bardzo ciemne złoto/brąz */
   background: linear-gradient(145deg, #1a1a1a, #292718);
   border: 2px solid #333;
   border-radius: 12px;
@@ -15,7 +12,6 @@
 
 .matchCard:hover {
   transform: translateY(-3px);
-  /* Zmiana: Mocniejsza żółta poświata przy hover */
   box-shadow: 0 12px 24px rgba(255, 215, 0, 0.2);
   border-color: #ffd700;
 }
@@ -26,7 +22,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 15px;
-  /* Zmiana: Wyblakły czarny nagłówek z lekkim ciepłym tintem */
   background: linear-gradient(90deg, #252525, #202015);
   border-bottom: 1px solid rgba(255, 215, 0, 0.2);
 }
@@ -40,7 +35,7 @@
 
 .completedBadge {
   background: #ffd700;
-  color: #121212; /* Ciemny tekst na żółtym tle */
+  color: #121212;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
@@ -50,7 +45,6 @@
 /* Match Body */
 .matchBody {
   padding: 15px;
-  /* Zmiana: Nie czysty czarny, ale "faded black" (#121212) */
   background-color: #121212;
 }
 
@@ -61,7 +55,6 @@
   align-items: center;
   padding: 12px 15px;
   margin-bottom: 8px;
-  /* Zmiana: Jaśniejszy grafit dla wierszy */
   background: #1f1f1f;
   border-radius: 8px;
   border: 1px solid #333;
@@ -74,7 +67,6 @@
 }
 
 .participantRow.winnerRow {
-  /* Zmiana: Więcej żółtego w gradiencie zwycięzcy */
   background: linear-gradient(
     90deg,
     rgba(255, 215, 0, 0.25),
@@ -100,7 +92,7 @@
 }
 
 .textNormal {
-  color: #ddd; /* Jaśniejszy tekst dla lepszego kontrastu na faded black */
+  color: #ddd;
   font-size: 0.95rem;
   font-weight: 500;
   white-space: nowrap;
@@ -174,7 +166,6 @@
 /* Match Footer */
 .matchFooter {
   padding: 10px 15px;
-  /* Zmiana: Stopka też faded black z lekkim ciepłym odcieniem */
   background: linear-gradient(90deg, #202015, #121212);
   border-top: 1px solid rgba(255, 215, 0, 0.1);
 }
@@ -209,7 +200,7 @@
   font-weight: 700;
 }
 
-/* Reszta istniejących styli pozostaje bez zmian */
+/* UKŁAD STRONY (Main Layout) */
 .mainContent {
   display: flex;
   min-height: 100vh;
@@ -284,21 +275,18 @@
   flex-grow: 1;
   gap: 25px;
 }
-/* --- NOWE STYLE (DODAJ NA KOŃCU PLIKU) --- */
 
-/* 1. STATUSY KARTY MECZU (Warianty) */
+/* --- STATUSY I NOWE ELEMENTY --- */
+
+/* 1. STATUSY KARTY MECZU */
 .cardFinished {
-  border-color: #10b981; /* Zielony dla zakończonych */
+  border-color: #10b981;
   box-shadow: 0 0 10px rgba(16, 185, 129, 0.1);
 }
 
 .cardDisputed {
-  border-color: #ef4444; /* Czerwony dla spornych */
-  background: linear-gradient(
-    145deg,
-    #2a1a1a,
-    #1a1a1a
-  ); /* Lekka czerwień w tle */
+  border-color: #ef4444;
+  background: linear-gradient(145deg, #2a1a1a, #1a1a1a);
   box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
 }
 
@@ -314,7 +302,7 @@
 }
 
 .badgePending {
-  color: #f59e0b; /* Pomarańczowy */
+  color: #f59e0b;
   animation: pulse 2s infinite;
 }
 
@@ -328,7 +316,7 @@
   letter-spacing: 1px;
 }
 
-/* 2. ELEMENTY WEWNĄTRZ MATCH BODY (Nowe nazwy z Reacta) */
+/* 2. ELEMENTY WEWNĄTRZ MATCH BODY */
 .pName {
   color: #ddd;
   font-weight: 500;
@@ -440,7 +428,7 @@
 /* Komunikaty statusowe w stopce */
 .statusMsg {
   font-size: 0.8rem;
-  color: #f59e0b; /* Żółty/Pomarańczowy */
+  color: #f59e0b;
   text-align: center;
   font-style: italic;
 }
@@ -459,38 +447,51 @@
   text-transform: uppercase;
 }
 
-/* 4. MODALE (Report & Dispute) */
+/* =========================================================================
+   4. MODALE (ULEPSZONY STYL - WERSJA PRO)
+   ========================================================================= */
+
+/* Overlay */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.85); /* Ciemniejsze tło overlay */
-  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 9999;
+  animation: fadeIn 0.3s ease-out;
 }
 
+/* Główne okno */
 .modalContent {
-  background: #1a1a1a;
-  border: 1px solid #444;
-  padding: 30px;
-  border-radius: 12px;
+  background: linear-gradient(160deg, #1a1a1a 0%, #0d0d0d 100%);
+  border: 1px solid #333;
+  padding: 35px;
+  border-radius: 16px;
   width: 90%;
-  max-width: 450px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  max-width: 500px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 20px rgba(255, 215, 0, 0.05);
   color: #fff;
   position: relative;
+  text-align: center;
+  animation: slideIn 0.3s ease-out;
 }
 
+/* Tytuł */
 .modalContent h3 {
   margin-top: 0;
-  text-align: center;
   color: #ffd700;
-  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 25px;
+  text-shadow: 0 2px 10px rgba(255, 215, 0, 0.2);
 }
 
 .modalSubtitle {
@@ -501,89 +502,117 @@
   line-height: 1.4;
 }
 
-.disputeModal {
-  border-color: #ef4444; /* Czerwona ramka dla sporu */
-}
-
-/* VS w Modalu */
+/* Badge VS w Modalu */
 .matchVersus {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #111;
-  padding: 15px;
-  border-radius: 8px;
-  margin-bottom: 25px;
-  border: 1px solid #333;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .teamName {
-  font-weight: bold;
-  font-size: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
   color: #fff;
-  max-width: 40%;
-  text-align: center;
+  flex: 1;
+  word-break: break-word;
 }
 
 .vsBadge {
-  color: #666;
+  color: #555;
   font-weight: 900;
   font-style: italic;
+  font-size: 1.2rem;
+  margin: 0 15px;
+  user-select: none;
 }
 
-/* Formularze w Modalu */
+/* Formularze */
 .reportForm {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 25px;
 }
 
+/* Kontener na inputy (Tablica wyników) */
 .scoreInputs {
   display: flex;
-  gap: 20px;
   justify-content: center;
+  gap: 30px;
+  align-items: flex-end;
 }
 
 .scoreField {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100px;
 }
 
 .scoreField label {
   font-size: 0.75rem;
+  font-weight: 600;
   color: #888;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   text-transform: uppercase;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
+/* Cyfrowy Input */
 .scoreField input {
-  width: 80px;
-  height: 60px;
-  font-size: 2rem;
+  width: 100%;
+  height: 80px;
+  font-family: "Courier New", monospace;
+  font-size: 3rem;
   text-align: center;
-  background: #252525;
-  border: 2px solid #444;
-  border-radius: 8px;
+  background: #000;
+  border: 2px solid #333;
+  border-radius: 12px;
   color: #ffd700;
   font-weight: bold;
+  transition: all 0.2s ease;
+  caret-color: transparent;
+}
+
+/* Usunięcie strzałek input number (Chrome, Safari, Edge, Opera) */
+.scoreField input::-webkit-outer-spin-button,
+.scoreField input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Usunięcie strzałek input number (Firefox) */
+.scoreField input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .scoreField input:focus {
   border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
   outline: none;
+  background: #0a0a0a;
 }
 
+/* Grupy inputów (dla innych formularzy np. Dispute) */
 .formGroup {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  text-align: left;
 }
 
 .formGroup label {
   font-size: 0.85rem;
   color: #ccc;
+  margin-left: 5px;
 }
 
 .formGroup input[type="text"],
@@ -591,10 +620,10 @@
   background: #252525;
   border: 1px solid #444;
   padding: 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   color: #fff;
   width: 100%;
-  box-sizing: border-box; /* Ważne, żeby nie wychodziło poza ramki */
+  box-sizing: border-box;
 }
 
 .formGroup input:focus,
@@ -608,65 +637,98 @@
   min-height: 80px;
 }
 
-/* Ostrzeżenie w modalu sporu */
-.modalWarning {
-  background-color: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-  padding: 12px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.8rem;
-}
-
-.textDanger {
-  color: #ef4444 !important;
-}
-
 /* Przyciski Modala */
 .modalActions {
   display: flex;
-  justify-content: space-between;
+  justify-content: stretch;
   gap: 15px;
   margin-top: 10px;
 }
 
 .cancelBtn {
   background: transparent !important;
-  border: 1px solid #555 !important;
+  border: 1px solid #444 !important;
   color: #aaa !important;
   flex: 1;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  transition: 0.2s;
 }
 
 .cancelBtn:hover {
-  border-color: #fff !important;
+  border-color: #666 !important;
   color: #fff !important;
+  background: rgba(255, 255, 255, 0.05) !important;
 }
 
 .submitBtn {
   background: linear-gradient(135deg, #ffd700, #b8860b) !important;
   color: #000 !important;
-  font-weight: bold !important;
+  font-weight: 800 !important;
   border: none !important;
   flex: 2;
+  padding: 12px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.submitBtn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+  filter: brightness(1.1);
+}
+
+.submitBtn:active {
+  transform: translateY(0);
+}
+
+/* Obsługa błędów i innych typów modali */
+.modalError {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.disputeModal {
+  border-color: #ef4444; /* Czerwona ramka dla sporu */
 }
 
 .btnDanger {
   background: linear-gradient(135deg, #ef4444, #991b1b) !important;
   color: white !important;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3) !important;
 }
 
-.modalError {
-  background-color: rgba(239, 68, 68, 0.2);
-  color: #fca5a5;
-  padding: 10px;
-  border-radius: 6px;
-  text-align: center;
-  margin-bottom: 15px;
-  font-size: 0.9rem;
-  border: 1px solid #ef4444;
+.textDanger {
+  color: #ef4444 !important;
+}
+
+/* Animacje */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Animacja pulsowania dla pending */
@@ -679,5 +741,75 @@
   }
   100% {
     opacity: 1;
+  }
+}
+
+/* --- FOOTER ZWYCIĘZCY --- */
+.footerWinner {
+  margin-top: 50px;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.championBanner {
+  background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+  border-radius: 16px;
+  padding: 30px 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 25px;
+  box-shadow: 0 0 40px rgba(255, 215, 0, 0.3);
+  border: 2px solid #fff8dc;
+  animation: slideUp 0.8s ease-out;
+}
+
+.trophyIcon {
+  color: #1a1a1a;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  animation: bounce 2s infinite;
+}
+
+.championText {
+  display: flex;
+  flex-direction: column;
+}
+
+.winnerText {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.championName {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #000;
+  text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.4);
+  line-height: 1;
+  margin-top: 5px;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
   }
 }
