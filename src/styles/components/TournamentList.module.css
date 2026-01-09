@@ -5,13 +5,13 @@
   align-items: center;
   gap: 20px;
   padding: 20px;
-  box-sizing: border-box; /* Ważne dla responsywności */
+  box-sizing: border-box;
 }
 
 .filterContainer {
   margin-bottom: 20px;
   display: flex;
-  flex-wrap: wrap; /* Pozwala przyciskom przeskoczyć do nowej linii na telefonie */
+  flex-wrap: wrap; 
   justify-content: center;
   gap: 10px;
 }
@@ -50,22 +50,32 @@
 .listGrid {
   display: grid;
   width: 100%;
-  /* To magiczna linia responsywności: 
-     Tworzy tyle kolumn ile się zmieści, ale każda musi mieć min 300px. 
-     Na telefonie będzie 1 kolumna, na tablecie 2, na PC 3+ */
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
+  /* Responsywność: kolumny dopasowują się automatycznie */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
   gap: 20px;
   justify-items: center;
 }
 
-/* Opcjonalnie: poprawki dla bardzo małych ekranów */
+/* --- Responsywność --- */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px; /* Mniejszy padding na tabletach/mobile */
+  }
+  
+  /* Na mobile filtry na całą szerokość */
+  .filterBtn {
+    flex: 1 1 40%; /* 2 przyciski w rzędzie */
+    font-size: 14px;
+    padding: 8px;
+  }
+}
+
 @media (max-width: 480px) {
   .listGrid {
-    grid-template-columns: 1fr; /* Jedna kolumna na siłę na małym mobile */
+    grid-template-columns: 1fr; /* 1 kolumna na małym telefonie */
   }
   
   .filterBtn {
-    width: 100%; /* Przyciski na pełną szerokość na telefonie */
-    text-align: center;
+    flex: 1 1 100%; /* 1 przycisk w rzędzie (jeden pod drugim) */
   }
 }

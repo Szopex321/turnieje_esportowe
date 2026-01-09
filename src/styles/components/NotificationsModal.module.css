@@ -1,3 +1,4 @@
+/* Tło (overlay) - dodano animację pojawiania się (fadeIn) */
 .overlay {
   position: fixed;
   top: 0;
@@ -6,19 +7,44 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-end; /* Ważne: przykleja modal do prawej */
   z-index: 1000;
+  animation: fadeIn 0.3s ease-out forwards; /* Animacja tła */
 }
 
+/* Okno modala - dodano animację wjazdu (slideIn) */
 .modal {
   background-color: #212529;
   width: 400px;
-  height: 98%;
+  height: 100%; /* Rozciągnięcie na pełną wysokość */
   padding: 20px;
+  box-sizing: border-box; /* Ważne, aby padding nie powiększał szerokości */
   box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   color: #fff;
+  transform: translateX(100%); /* Startowa pozycja poza ekranem */
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; /* Płynny wjazd */
+}
+
+/* Definicja animacji wjazdu z prawej strony */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Definicja animacji pojawiania się tła */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .header {
@@ -33,26 +59,44 @@
 .header h2 {
   margin: 0;
   color: #ffc107;
+  font-size: 1.5rem;
 }
 
 .closeBtn {
   background: none;
   border: none;
   color: #fff;
-  font-size: 20px;
+  font-size: 24px;
   cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.closeBtn:hover {
+  transform: scale(1.1);
+  color: #ffc107;
 }
 
 .content {
   flex-grow: 1;
   overflow-y: auto;
+  padding-right: 5px; /* Miejsce na scrollbar */
+}
+
+/* Stylizacja paska przewijania (opcjonalne, ale ładne) */
+.content::-webkit-scrollbar {
+  width: 6px;
+}
+.content::-webkit-scrollbar-thumb {
+  background-color: #495057;
+  border-radius: 3px;
 }
 
 .controls {
   display: flex;
   justify-content: space-between;
-  gap: 10px; /* Odstęp między przyciskami w nagłówku */
+  gap: 10px;
   margin-bottom: 15px;
+  flex-wrap: wrap; /* Pozwala przyciskom zawijać się na bardzo małych ekranach */
 }
 
 .markAllReadButton,
@@ -65,11 +109,11 @@
   border-radius: 4px;
   font-size: 0.85em;
   transition: all 0.2s;
-  flex: 1; /* Przyciski rozłożą się równo */
+  flex: 1;
   text-align: center;
+  white-space: nowrap;
 }
 
-/* Styl dla Mark All Read */
 .markAllReadButton {
   background-color: #343a40;
 }
@@ -77,31 +121,30 @@
   background-color: #495057;
 }
 
-/* Styl dla Refresh */
 .refreshButton {
   background-color: #343a40;
-  max-width: 40px; /* Refresh może być węższy */
+  max-width: 40px;
+  min-width: 40px;
 }
 .refreshButton:hover {
   background-color: #495057;
 }
 
-/* NOWY STYL DLA CLEAR ALL */
 .clearAllButton {
-  background-color: #dc3545; /* Czerwony kolor */
+  background-color: #dc3545;
   border-color: #dc3545;
   font-weight: 500;
 }
 
 .clearAllButton:hover:not(:disabled) {
-  background-color: #bb2d3b; /* Ciemniejszy czerwony */
+  background-color: #bb2d3b;
 }
 
 .clearAllButton:disabled,
 .markAllReadButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background-color: #343a40; /* Szary dla nieaktywnych */
+  background-color: #343a40;
   border-color: #495057;
 }
 
@@ -116,7 +159,7 @@
   border-radius: 6px;
   border-left: 5px solid transparent;
   background-color: #2c3034;
-  transition: background-color 0.2s, border-left-color 0.2s;
+  transition: background-color 0.2s, border-left-color 0.2s, transform 0.1s;
   cursor: pointer;
   position: relative;
 }
@@ -153,28 +196,34 @@
   margin: 5px 0;
   font-size: 0.9em;
   word-wrap: break-word;
+  line-height: 1.4;
+  color: #e0e0e0;
 }
 
 .time {
   font-size: 0.75em;
   color: #adb5bd;
   white-space: nowrap;
+  margin-left: 5px;
 }
 
 .actions {
   margin-top: 10px;
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .acceptButton,
 .rejectButton {
-  padding: 8px 15px;
+  padding: 6px 12px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
-  transition: opacity 0.2s;
+  font-size: 0.85rem;
+  transition: opacity 0.2s, transform 0.1s;
+  flex: 1; /* Przyciski akcji rozciągają się */
 }
 
 .acceptButton {
@@ -189,11 +238,37 @@
 
 .acceptButton:hover,
 .rejectButton:hover {
-  opacity: 0.8;
+  opacity: 0.9;
+  transform: translateY(-1px);
 }
 
 .empty {
   text-align: center;
   color: #adb5bd;
   margin-top: 50px;
+}
+
+/* --- RESPONSYWNOŚĆ (Media Queries) --- */
+
+/* Dla telefonów (max 480px) */
+@media (max-width: 480px) {
+  .modal {
+    width: 100%; /* Pełna szerokość ekranu */
+    max-width: none;
+    box-shadow: none; /* Cień nie jest potrzebny na pełnym ekranie */
+  }
+
+  .header h2 {
+    font-size: 1.3rem;
+  }
+
+  .controls {
+    gap: 8px;
+  }
+
+  .markAllReadButton,
+  .clearAllButton {
+    padding: 10px 8px; /* Nieco większe przyciski dotykowe */
+    font-size: 0.8rem;
+  }
 }

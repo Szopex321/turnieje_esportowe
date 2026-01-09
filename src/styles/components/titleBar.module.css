@@ -6,12 +6,16 @@
   height: 80px;
   box-sizing: border-box;
   background-color: #15171e;
+  /* Na mobile przesuwamy padding, żeby zrobić miejsce na Burgera */
+  transition: padding 0.3s ease;
 }
 
 .titleSection {
   display: flex;
   align-items: center;
   gap: 20px;
+  /* Na mobile przesuwamy treść w prawo, by nie weszła na burgera */
+  margin-left: 0; 
 }
 
 .logo {
@@ -20,6 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .logoImage {
@@ -42,8 +47,6 @@
 }
 
 /* --- Sekcja Ikon (Powiadomienia, Drużyny, Znajomi) --- */
-
-/* Wspólne style dla przycisków ikon */
 .iconButton,
 .notificationButton,
 .friendsIconButton {
@@ -56,8 +59,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 15px; /* Odstęp między ikonami */
-  position: relative; /* Dla badge'a powiadomień */
+  margin-right: 15px;
+  position: relative;
 }
 
 .iconButton:hover,
@@ -66,15 +69,13 @@
   background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Styl dla samych ikon SVG (Flag, Bell, Users) */
 .teamIcon,
 .notificationIcon,
 .friendsIcon {
-  color: #facc15; /* Złoty kolor */
+  color: #facc15;
   transition: transform 0.2s ease, opacity 0.2s;
 }
 
-/* Efekt najazdu na ikony */
 .iconButton:hover .teamIcon,
 .notificationButton:hover .notificationIcon,
 .friendsIconButton:hover .friendsIcon {
@@ -104,10 +105,10 @@
 .userInfoContainer {
   display: flex;
   align-items: center;
-  /* gap: 20px; - Zmniejszono, bo ikony mają własne margin-right */
 }
 
 .userProfile {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -178,7 +179,7 @@
 }
 
 .logInButton:hover {
-  opacity: 0.8; /* Lekkie przygaszenie po najechaniu */
+  opacity: 0.8;
   text-decoration: none;
 }
 
@@ -194,39 +195,74 @@
 }
 
 .signUpButton:hover {
-  background-color: #eab308 !important; /* Ciemniejszy żółty po najechaniu */
+  background-color: #eab308 !important;
 }
 
-/* Dodaj do istniejącego pliku titleBar.module.css */
-
-.logo {
-  cursor: pointer;
-  /* Reszta twoich stylów... */
-}
-
-.userProfile {
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  /* Reszta twoich stylów... */
-}
-
-/* Responsywność nagłówka */
-@media (max-width: 768px) {
+/* --- RESPONSYWNOŚĆ (Mobile) --- */
+@media (max-width: 900px) {
   .header {
-    flex-direction: column;
-    height: auto;
-    padding: 15px;
+    padding: 10px 15px;
+    height: 70px;
   }
 
-  .headerRight {
-    width: 100%;
-    justify-content: space-between;
-    margin-top: 10px;
+  /* Przesuwamy zawartość w prawo, aby ominąć przycisk Burgera z Nav */
+  .titleSection {
+    margin-left: 50px; 
+  }
+
+  /* Zgodnie z życzeniem: UKRYWAMY LOGO */
+  .logo {
+    display: none;
+  }
+
+  .title h2 {
+    font-size: 16px; /* Mniejszy font nagłówka */
+  }
+
+  /* Ukrywamy powitanie tekstowe, zostawiamy tylko avatar */
+  .welcomeText {
+    display: none;
+  }
+
+  .userProfile {
+    padding: 0;
+    gap: 0;
+  }
+
+  /* Zmniejszamy ikony */
+  .iconButton, 
+  .notificationButton, 
+  .friendsIconButton {
+    margin-right: 5px;
+    padding: 5px;
   }
   
-  .welcomeText {
-    display: none; /* Ukryj powitanie "Welcome User" na telefonie, żeby zaoszczędzić miejsce */
+  .userAvatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Na bardzo małych ekranach ukrywamy przycisk wylogowania (powinien być w profilu) 
+     lub zmniejszamy go */
+  .logoutButton {
+    padding: 6px 10px;
+    font-size: 12px;
+    margin-left: 8px;
+  }
+
+  .authButtons .logInButton,
+  .authButtons .signUpButton {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .titleSection {
+     display: none; /* Na super małych telefonach ukrywamy nawet tytuł aplikacji, zostaje menu i profil */
+  }
+  
+  .header {
+      justify-content: flex-end; /* Elementy przesunięte do prawej */
   }
 }
