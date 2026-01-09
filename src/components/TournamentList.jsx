@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import MainPageContent from "./mainPageContent";
 // Zakładam, że stworzysz ten plik w styles/components/
-import styles from "../styles/components/tournamentList.module.css"; 
+import styles from "../styles/components/TournamentList.module.css"; 
 
 const TournamentList = () => {
   const [tournaments, setTournaments] = useState([]);
