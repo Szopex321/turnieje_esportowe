@@ -4,6 +4,9 @@ import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
 import Button from "../components/Button";
 import styles from "../styles/pages/TournamentBracketPage.module.css";
+// Default avatar import
+import defaultAvatar from "../assets/deafultAvatar.jpg";
+
 // Icons
 import {
   Edit3,
@@ -15,7 +18,6 @@ import {
 } from "lucide-react";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
-const DEFAULT_AVATAR = "https://placehold.co/150/2c3e50/ecf0f1?text=USER";
 
 // =========================================================================
 // 1. MODAL: READ ONLY TEAM DETAILS
@@ -29,8 +31,7 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
     const fetchTeam = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/teams/${teamId}`);
-        if (!response.ok)
-          throw new Error("Nie udało się pobrać danych drużyny.");
+        if (!response.ok) throw new Error("Failed to fetch team data."); // ENG
 
         const data = await response.json();
         setTeam(data);
@@ -55,22 +56,22 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
     return (
       <div className={styles.modalOverlay}>
         <div className={styles.modalContent}>
-          <h3>Błąd</h3>
+          <h3>Error</h3> {/* ENG */}
           <p>{error}</p>
-          <Button name="Zamknij" onClick={onClose} />
+          <Button name="Close" onClick={onClose} /> {/* ENG */}
         </div>
       </div>
     );
 
-  // --- BEZPIECZNE POBIERANIE DANYCH ---
-  const tName = team.teamName || team.name || "Bez nazwy";
-  const tDesc = team.description || "Brak opisu.";
+  // --- TEAM DATA ---
+  const tName = team.teamName || team.name || "Unnamed"; // ENG
+  const tDesc = team.description || "No description."; // ENG
   const tLogo = team.logoUrl || team.logo || null;
 
   const rawPlayers = team.teamMembers || team.players || [];
   const captainId = parseInt(team.captainId || 0);
 
-  // Sortowanie: Kapitan pierwszy
+  // Sort: Captain first
   const sortedPlayers = [...rawPlayers].sort((a, b) => {
     const idA = a.userId || a.id;
     const idB = b.userId || b.id;
@@ -105,6 +106,13 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
               objectFit: "cover",
               marginBottom: "10px",
             }}
+            onError={(e) => {
+              e.target.onerror = null;
+              // Fallback for team logo
+              e.target.src = `https://placehold.co/150/2c3e50/ecf0f1?text=${tName
+                .substring(0, 2)
+                .toUpperCase()}`;
+            }}
           />
           <h2 style={{ margin: "5px 0" }}>{tName}</h2>
           <p style={{ color: "#888", fontSize: "0.9rem" }}>{tDesc}</p>
@@ -117,7 +125,7 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
             marginBottom: "15px",
           }}
         >
-          Skład drużyny ({sortedPlayers.length})
+          Team Roster ({sortedPlayers.length}) {/* ENG */}
         </h3>
 
         <div
@@ -126,11 +134,11 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
         >
           {sortedPlayers.length > 0 ? (
             sortedPlayers.map((player) => {
-              // Mapowanie usera zagnieżdżonego w obiekcie lub bezpośrednio
+              // Map user data (handling nested 'user' object if present)
               const userData = player.user || player;
 
-              const pUsername = userData.username || "Nieznany";
-              const pAvatar = userData.avatarUrl || DEFAULT_AVATAR;
+              const pUsername = userData.username || "Unknown"; // ENG
+              const pAvatar = userData.avatarUrl || defaultAvatar;
               const pId = player.userId || userData.id;
 
               return (
@@ -152,6 +160,12 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
                       height: "40px",
                       borderRadius: "50%",
                       marginRight: "15px",
+                      objectFit: "cover",
+                    }}
+                    // Fallback to local defaultAvatar on error
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = defaultAvatar;
                     }}
                   />
                   <div style={{ flex: 1 }}>
@@ -160,7 +174,7 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
                     </span>
                     {pId === captainId && (
                       <span style={{ fontSize: "0.8rem", color: "#f1c40f" }}>
-                        👑 Kapitan
+                        👑 Captain {/* ENG */}
                       </span>
                     )}
                   </div>
@@ -169,14 +183,14 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
             })
           ) : (
             <p style={{ textAlign: "center", color: "#666" }}>
-              Brak widocznych graczy.
-            </p>
+              No players found.
+            </p> // ENG
           )}
         </div>
 
         <div className={styles.modalActions} style={{ marginTop: "20px" }}>
           <Button
-            name="Zamknij"
+            name="Close" // ENG
             onClick={onClose}
             className={styles.cancelBtn}
             type="button"
@@ -396,14 +410,14 @@ const MatchCard = ({
       match.participant2Score ?? match.score2 ?? match.Score2 ?? "-";
   }
 
-  // Funkcja kliknięcia
+  // Click Handler
   const handleRowClick = (e, id, name) => {
     e.stopPropagation();
     if (name === "TBA" || name === "BYE" || !id) return;
     if (onTeamClick) onTeamClick(id);
   };
 
-  // Styl dla wiersza
+  // Row Styles
   const rowStyle = (name) => ({
     cursor: name !== "TBA" && name !== "BYE" ? "pointer" : "default",
     transition: "background-color 0.2s",
@@ -437,14 +451,14 @@ const MatchCard = ({
       </div>
 
       <div className={styles.matchBody}>
-        {/* DRUŻYNA 1 */}
+        {/* TEAM 1 */}
         <div
           className={`${styles.participantRow} ${
             p1Winner ? styles.winnerRow : ""
           }`}
           onClick={(e) => handleRowClick(e, p1Id, p1Name)}
           style={rowStyle(p1Name)}
-          title={p1Name !== "TBA" ? "Zobacz szczegóły" : ""}
+          title={p1Name !== "TBA" ? "View details" : ""}
         >
           <span
             className={styles.pName}
@@ -458,14 +472,14 @@ const MatchCard = ({
           <span className={styles.pScore}>{displayScore1}</span>
         </div>
 
-        {/* DRUŻYNA 2 */}
+        {/* TEAM 2 */}
         <div
           className={`${styles.participantRow} ${
             p2Winner ? styles.winnerRow : ""
           }`}
           onClick={(e) => handleRowClick(e, p2Id, p2Name)}
           style={rowStyle(p2Name)}
-          title={p2Name !== "TBA" ? "Zobacz szczegóły" : ""}
+          title={p2Name !== "TBA" ? "View details" : ""}
         >
           <span
             className={styles.pName}
