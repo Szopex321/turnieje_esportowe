@@ -4,7 +4,7 @@ import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
 import Button from "../components/Button";
 import styles from "../styles/pages/TournamentBracketPage.module.css";
-// Default avatar import
+// Import domyślnego awatara (zostawiona oryginalna pisownia)
 import defaultAvatar from "../assets/deafultAvatar.jpg";
 
 // Icons
@@ -29,10 +29,28 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
 
   useEffect(() => {
     const fetchTeam = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/teams/${teamId}`);
-        if (!response.ok) throw new Error("Failed to fetch team data."); // ENG
+      const token = localStorage.getItem("jwt_token");
 
+      try {
+        const response = await fetch(`${API_BASE_URL}/teams/${teamId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 404) {
+          setTeam({
+            teamName: "Nieznana Drużyna",
+            description: "Ta drużyna mogła zostać usunięta.",
+            logoUrl: null,
+            teamMembers: [],
+          });
+          setLoading(false);
+          return;
+        }
+
+        if (!response.ok) throw new Error("Failed to fetch team data.");
         const data = await response.json();
         setTeam(data);
       } catch (err) {
@@ -56,22 +74,19 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
     return (
       <div className={styles.modalOverlay}>
         <div className={styles.modalContent}>
-          <h3>Error</h3> {/* ENG */}
+          <h3>Error</h3>
           <p>{error}</p>
-          <Button name="Close" onClick={onClose} /> {/* ENG */}
+          <Button name="Close" onClick={onClose} />
         </div>
       </div>
     );
 
-  // --- TEAM DATA ---
-  const tName = team.teamName || team.name || "Unnamed"; // ENG
-  const tDesc = team.description || "No description."; // ENG
+  const tName = team.teamName || team.name || "Unnamed";
+  const tDesc = team.description || "No description.";
   const tLogo = team.logoUrl || team.logo || null;
-
   const rawPlayers = team.teamMembers || team.players || [];
   const captainId = parseInt(team.captainId || 0);
 
-  // Sort: Captain first
   const sortedPlayers = [...rawPlayers].sort((a, b) => {
     const idA = a.userId || a.id;
     const idB = b.userId || b.id;
@@ -108,7 +123,6 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
             }}
             onError={(e) => {
               e.target.onerror = null;
-              // Fallback for team logo
               e.target.src = `https://placehold.co/150/2c3e50/ecf0f1?text=${tName
                 .substring(0, 2)
                 .toUpperCase()}`;
@@ -125,7 +139,7 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
             marginBottom: "15px",
           }}
         >
-          Team Roster ({sortedPlayers.length}) {/* ENG */}
+          Team Roster ({sortedPlayers.length})
         </h3>
 
         <div
@@ -134,10 +148,8 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
         >
           {sortedPlayers.length > 0 ? (
             sortedPlayers.map((player) => {
-              // Map user data (handling nested 'user' object if present)
               const userData = player.user || player;
-
-              const pUsername = userData.username || "Unknown"; // ENG
+              const pUsername = userData.username || "Unknown";
               const pAvatar = userData.avatarUrl || defaultAvatar;
               const pId = player.userId || userData.id;
 
@@ -162,7 +174,6 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
                       marginRight: "15px",
                       objectFit: "cover",
                     }}
-                    // Fallback to local defaultAvatar on error
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = defaultAvatar;
@@ -174,7 +185,7 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
                     </span>
                     {pId === captainId && (
                       <span style={{ fontSize: "0.8rem", color: "#f1c40f" }}>
-                        👑 Captain {/* ENG */}
+                        👑 Captain
                       </span>
                     )}
                   </div>
@@ -183,14 +194,13 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
             })
           ) : (
             <p style={{ textAlign: "center", color: "#666" }}>
-              No players found.
-            </p> // ENG
+              No players found / Hidden.
+            </p>
           )}
         </div>
-
         <div className={styles.modalActions} style={{ marginTop: "20px" }}>
           <Button
-            name="Close" // ENG
+            name="Close"
             onClick={onClose}
             className={styles.cancelBtn}
             type="button"
@@ -202,7 +212,113 @@ const ReadOnlyTeamModal = ({ teamId, onClose }) => {
 };
 
 // =========================================================================
-// 2. MODAL: REPORT RESULT
+// 2. MODAL: READ ONLY USER DETAILS
+// =========================================================================
+const ReadOnlyUserModal = ({ userId, onClose, initialData }) => {
+  const [user, setUser] = useState({
+    username: initialData?.name || "Loading...",
+    avatarUrl: initialData?.avatarUrl || defaultAvatar,
+    email: "",
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserFromList = async () => {
+      const token = localStorage.getItem("jwt_token");
+      try {
+        // Pobieramy pełną listę, aby znaleźć usera i jego avatar
+        const response = await fetch(`${API_BASE_URL}/users`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const allUsers = await response.json();
+          const foundUser = allUsers.find(
+            (u) => u.userId === parseInt(userId) || u.id === parseInt(userId)
+          );
+
+          if (foundUser) {
+            setUser(foundUser);
+          } else {
+            // Fallback do danych z drabinki
+            setUser((prev) => ({
+              ...prev,
+              username: initialData?.name || "Nieznany / Usunięty",
+            }));
+          }
+        }
+      } catch (err) {
+        // Fallback
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) fetchUserFromList();
+  }, [userId, initialData]);
+
+  const username = user.username || "Unknown User";
+  const avatar = user.avatarUrl || defaultAvatar;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div
+        className={styles.modalContent}
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: "400px", cursor: "default" }}
+      >
+        <div style={{ textAlign: "center", marginBottom: "20px" }}>
+          <img
+            src={avatar}
+            alt={username}
+            style={{
+              width: "100px",
+              height: "100px",
+              borderRadius: "50%",
+              objectFit: "cover",
+              marginBottom: "15px",
+              border: "2px solid #4a4a4a",
+            }}
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = defaultAvatar;
+            }}
+          />
+          <h2 style={{ margin: "5px 0" }}>{username}</h2>
+
+          <div
+            style={{
+              marginTop: "10px",
+              padding: "5px 10px",
+              background: "#2a2a2a",
+              borderRadius: "15px",
+              display: "inline-block",
+              fontSize: "0.8rem",
+              color: "#aaa",
+            }}
+          >
+            Individual Player
+          </div>
+        </div>
+
+        <div className={styles.modalActions}>
+          <Button
+            name="Close"
+            onClick={onClose}
+            className={styles.cancelBtn}
+            type="button"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =========================================================================
+// 3. MODAL: REPORT RESULT
 // =========================================================================
 const ReportResultModal = ({
   match,
@@ -277,7 +393,7 @@ const ReportResultModal = ({
 };
 
 // =========================================================================
-// 3. MODAL: REPORT DISPUTE
+// 4. MODAL: REPORT DISPUTE
 // =========================================================================
 const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
   const [reason, setReason] = useState("");
@@ -340,7 +456,7 @@ const DisputeModal = ({ resultId, onClose, onSubmit, isSubmitting, error }) => {
 };
 
 // =========================================================================
-// 4. MATCH CARD
+// 5. MATCH CARD
 // =========================================================================
 const MatchCard = ({
   match,
@@ -348,7 +464,7 @@ const MatchCard = ({
   onReportClick,
   onAcceptClick,
   onDisputeClick,
-  onTeamClick,
+  onParticipantClick,
 }) => {
   const p1Winner = match.winnerId && match.winnerId === match.participant1Id;
   const p2Winner = match.winnerId && match.winnerId === match.participant2Id;
@@ -360,8 +476,7 @@ const MatchCard = ({
   const p2Name = match.participant2Name || match.Participant2Name || "TBA";
 
   const pendingResult = match.pendingResult || match.PendingResult || null;
-  const statusRaw = match.matchStatus || match.MatchStatus || "";
-  let status = statusRaw.toLowerCase();
+  let status = (match.matchStatus || match.MatchStatus || "").toLowerCase();
   if (pendingResult) status = "pending";
 
   const isScheduled = status === "scheduled";
@@ -410,14 +525,13 @@ const MatchCard = ({
       match.participant2Score ?? match.score2 ?? match.Score2 ?? "-";
   }
 
-  // Click Handler
+  // Funkcja kliknięcia
   const handleRowClick = (e, id, name) => {
     e.stopPropagation();
     if (name === "TBA" || name === "BYE" || !id) return;
-    if (onTeamClick) onTeamClick(id);
+    if (onParticipantClick) onParticipantClick(id, name, null);
   };
 
-  // Row Styles
   const rowStyle = (name) => ({
     cursor: name !== "TBA" && name !== "BYE" ? "pointer" : "default",
     transition: "background-color 0.2s",
@@ -451,7 +565,7 @@ const MatchCard = ({
       </div>
 
       <div className={styles.matchBody}>
-        {/* TEAM 1 */}
+        {/* UCZESTNIK 1 */}
         <div
           className={`${styles.participantRow} ${
             p1Winner ? styles.winnerRow : ""
@@ -472,7 +586,7 @@ const MatchCard = ({
           <span className={styles.pScore}>{displayScore1}</span>
         </div>
 
-        {/* TEAM 2 */}
+        {/* UCZESTNIK 2 */}
         <div
           className={`${styles.participantRow} ${
             p2Winner ? styles.winnerRow : ""
@@ -541,7 +655,7 @@ const MatchCard = ({
 };
 
 // =========================================================================
-// 5. MAIN PAGE
+// 6. MAIN PAGE
 // =========================================================================
 const TournamentBracketPage = () => {
   const { tournamentId } = useParams();
@@ -549,9 +663,18 @@ const TournamentBracketPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // --- ZMIANA: Domyślnie false (Individual), żeby nie próbował ładować Teams ---
+  const [isTeamTournament, setIsTeamTournament] = useState(false);
+
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [disputeData, setDisputeData] = useState(null);
+
+  // Stany dla widoku szczegółów
   const [viewTeamId, setViewTeamId] = useState(null);
+  const [viewUserId, setViewUserId] = useState(null);
+
+  // NOWY STAN: do przechowywania danych tymczasowych (z drabinki)
+  const [tempModalData, setTempModalData] = useState(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [reportError, setReportError] = useState(null);
@@ -562,6 +685,27 @@ const TournamentBracketPage = () => {
     if (userId) setCurrentUserId(parseInt(userId, 10));
   }, []);
 
+  // 1. Pobieranie danych o turnieju
+  const fetchTournamentInfo = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/tournaments`);
+      if (response.ok) {
+        const list = await response.json();
+        const currentTournament = list.find(
+          (t) => t.tournamentId === parseInt(tournamentId)
+        );
+        if (currentTournament) {
+          setIsTeamTournament(
+            currentTournament.registrationType?.toLowerCase() === "team"
+          );
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  // 2. Pobieranie drabinki
   const fetchBracket = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/brackets/${tournamentId}`);
@@ -575,14 +719,16 @@ const TournamentBracketPage = () => {
       setBracketData(matches);
       setLoading(false);
     } catch (err) {
-      console.error(err);
       setError("An error occurred.");
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (tournamentId) fetchBracket();
+    if (tournamentId) {
+      fetchTournamentInfo();
+      fetchBracket();
+    }
   }, [tournamentId]);
 
   const rounds = useMemo(() => {
@@ -636,6 +782,22 @@ const TournamentBracketPage = () => {
       ? Math.max(...Object.keys(rounds).map(Number))
       : 0;
 
+  // --- POPRAWIONA FUNKCJA KLIKNIĘCIA ---
+  const handleParticipantClick = (id, name, avatarUrl) => {
+    setTempModalData({ name, avatarUrl });
+
+    if (isTeamTournament) {
+      // Jeśli to turniej drużynowy, upewnij się że UserModal jest zamknięty
+      setViewUserId(null);
+      setViewTeamId(id);
+    } else {
+      // Jeśli indywidualny, upewnij się że TeamModal jest zamknięty
+      setViewTeamId(null);
+      setViewUserId(id);
+    }
+  };
+
+  // --- API HANDLERS (Report, Accept, Dispute) ---
   const handleReportSubmit = async (matchId, scoreA, scoreB) => {
     setIsSubmitting(true);
     setReportError(null);
@@ -650,10 +812,6 @@ const TournamentBracketPage = () => {
         body: JSON.stringify({ matchId, scoreA, scoreB, screenshotUrl: "" }),
       });
       if (!response.ok) {
-        if (response.status === 403)
-          throw new Error(
-            "⛔ Permission denied! Only the CAPTAIN can report the result."
-          );
         const txt = await response.text();
         throw new Error(txt || "Reporting error.");
       }
@@ -683,12 +841,9 @@ const TournamentBracketPage = () => {
         fetchBracket();
       } else {
         const txt = await response.text();
-        if (response.status === 403)
-          alert("⛔ Only the opponent CAPTAIN can confirm the result.");
-        else alert("Error: " + txt);
+        alert("Error: " + txt);
       }
     } catch (e) {
-      console.error(e);
       alert("Connection error.");
     }
   };
@@ -756,7 +911,7 @@ const TournamentBracketPage = () => {
                         onReportClick={setSelectedMatch}
                         onAcceptClick={handleAcceptResult}
                         onDisputeClick={openDisputeModal}
-                        onTeamClick={setViewTeamId}
+                        onParticipantClick={handleParticipantClick}
                       />
                     ))}
                   </div>
@@ -782,6 +937,7 @@ const TournamentBracketPage = () => {
           )}
         </div>
       </div>
+
       {selectedMatch && (
         <ReportResultModal
           match={selectedMatch}
@@ -800,10 +956,22 @@ const TournamentBracketPage = () => {
           error={reportError}
         />
       )}
+
+      {/* RENDEROWANIE MODALI */}
       {viewTeamId && (
         <ReadOnlyTeamModal
           teamId={viewTeamId}
           onClose={() => setViewTeamId(null)}
+        />
+      )}
+      {viewUserId && (
+        <ReadOnlyUserModal
+          userId={viewUserId}
+          initialData={tempModalData}
+          onClose={() => {
+            setViewUserId(null);
+            setTempModalData(null);
+          }}
         />
       )}
     </>

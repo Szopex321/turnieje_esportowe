@@ -23,6 +23,8 @@ const getCurrentUser = () => {
   return null;
 };
 
+// --- API ACTIONS ---
+
 const handleMarkAsRead = async (notificationId, onRefresh) => {
   const token = getCurrentToken();
   if (!token) return;
@@ -103,16 +105,37 @@ const handleRejectInvite = async (teamId, notificationId, onRefresh) => {
   handleMarkAsRead(notificationId, onRefresh);
 };
 
+// --- COMPONENT: Notification Item ---
+
 const NotificationItem = ({ notification, onRefresh }) => {
-  const isTeamInvite =
-    notification.notificationType === "TeamInvite" && notification.relatedId;
-  const isJoinRequest =
-    notification.notificationType === "TeamJoinRequest" &&
-    notification.relatedId;
+  const type = notification.notificationType;
   const teamId = notification.relatedId;
   const notificationId = notification.notificationId;
   const targetUserId = notification.relatedUserId;
   const displayMessage = notification.message;
+
+  // Rozpoznawanie typów
+  const isTeamInvite = type === "TeamInvite" && teamId;
+  const isJoinRequest = type === "TeamJoinRequest" && teamId;
+
+  // Nowe typy z Backend-u
+  const isMatchReport = type === "MatchReport"; // Przeciwnik zgłosił wynik
+  const isMatchResult = type === "MatchResult"; // Wynik końcowy (Win/Loss)
+
+  // Ikony w zależności od typu
+  let icon = "🔔";
+  if (isTeamInvite) icon = "📨";
+  if (isJoinRequest) icon = "🙋‍♂️";
+  if (isMatchReport) icon = "📝"; // Notatnik/Ołówek dla raportu
+  if (isMatchResult) {
+    // Sprawdzamy treść, żeby dać odpowiednią ikonę
+    if (notification.title?.toLowerCase().includes("zwycięstwo")) icon = "🏆";
+    else if (notification.title?.toLowerCase().includes("przegrana"))
+      icon = "💀";
+    else icon = "⚔️";
+  }
+
+  // --- HANDLERS ---
 
   const handleAcceptInviteClick = (e) => {
     e.stopPropagation();
@@ -143,7 +166,8 @@ const NotificationItem = ({ notification, onRefresh }) => {
   };
 
   const handleItemClick = () => {
-    if (!isTeamInvite && !isJoinRequest && !notification.isRead) {
+    // Kliknięcie w element oznacza go jako przeczytany (jeśli nie ma akcji)
+    if (!notification.isRead) {
       handleMarkAsRead(notificationId, onRefresh);
     }
   };
@@ -156,13 +180,17 @@ const NotificationItem = ({ notification, onRefresh }) => {
       onClick={handleItemClick}
     >
       <div className={styles.notificationHeader}>
-        <p className={styles.notificationTitle}>{notification.title}</p>
+        <p className={styles.notificationTitle}>
+          <span style={{ marginRight: "8px" }}>{icon}</span>
+          {notification.title}
+        </p>
         <span className={styles.time}>
           {new Date(notification.createdAt).toLocaleString()}
         </span>
       </div>
       <p className={styles.notificationMessage}>{displayMessage}</p>
 
+      {/* AKCJE DLA ZAPROSZEŃ DO DRUŻYNY */}
       {isTeamInvite && !notification.isRead && (
         <div className={styles.actions}>
           <button
@@ -180,6 +208,7 @@ const NotificationItem = ({ notification, onRefresh }) => {
         </div>
       )}
 
+      {/* AKCJE DLA PROŚB O DOŁĄCZENIE */}
       {isJoinRequest && !notification.isRead && (
         <div className={styles.actions}>
           <button
@@ -198,9 +227,22 @@ const NotificationItem = ({ notification, onRefresh }) => {
           </button>
         </div>
       )}
+
+      {/* INFO DLA MECZÓW (Tylko informacja wizualna, kliknięcie oznacza jako przeczytane) */}
+      {(isMatchReport || isMatchResult) && !notification.isRead && (
+        <div className={styles.infoFooter}>
+          <span style={{ fontSize: "0.8rem", color: "#888" }}>
+            {isMatchReport
+              ? "Check the tournament bracket to confirm."
+              : "Result recorded in bracket."}
+          </span>
+        </div>
+      )}
     </div>
   );
 };
+
+// --- COMPONENT: Main Modal ---
 
 const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
   const sortedNotifications = [...notifications].sort((a, b) => {
