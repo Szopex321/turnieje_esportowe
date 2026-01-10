@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import MainPageContent from "./mainPageContent";
-// Zakładam, że stworzysz ten plik w styles/components/
 import styles from "../styles/components/TournamentList.module.css"; 
 
 const TournamentList = () => {
@@ -10,11 +9,9 @@ const TournamentList = () => {
 
   useEffect(() => {
     setLoading(true);
-    let url = "https://projektturniej.onrender.com/api/Tournaments";
-    
-    if (filter !== "all") {
-        url = `https://projektturniej.onrender.com/api/tournaments?status=${filter}`;
-    }
+
+    // 1. ZAWSZE pobieramy wszystkie turnieje (ignorujemy filtrowanie backendu)
+    const url = "https://projektturniej.onrender.com/api/tournaments";
 
     fetch(url)
       .then((res) => {
@@ -22,7 +19,43 @@ const TournamentList = () => {
         return res.json();
       })
       .then((data) => {
-        const sortedData = data.sort((a, b) => {
+        const now = new Date();
+
+        // 2. WŁASNE FILTROWANIE PO STRONIE KLIENTA
+        const filteredData = data.filter((t) => {
+            if (filter === "all") return true;
+
+            const start = new Date(t.startDate);
+            let end;
+
+            // Logika ustalania daty zakończenia
+            if (t.endDate) {
+                // Jeśli jest podana data końca, używamy jej
+                end = new Date(t.endDate);
+            } else {
+                // Jeśli BRAK daty końca -> turniej trwa do końca dnia rozpoczęcia (23:59:59)
+                end = new Date(start);
+                end.setHours(23, 59, 59, 999);
+            }
+
+            // Logika statusów
+            if (filter === "upcoming") {
+                // Nadchodzący: obecny czas jest przed czasem startu
+                return now < start;
+            }
+            if (filter === "ongoing") {
+                // Trwający: obecny czas jest między startem a końcem
+                return now >= start && now <= end;
+            }
+            if (filter === "finished") {
+                // Zakończony: obecny czas jest po dacie końca
+                return now > end;
+            }
+            return true;
+        });
+
+        // 3. Sortowanie (od najbliższych)
+        const sortedData = filteredData.sort((a, b) => {
             return new Date(a.startDate) - new Date(b.startDate);
         });
 
@@ -33,7 +66,7 @@ const TournamentList = () => {
         console.error("Błąd:", err);
         setLoading(false);
       });
-  }, [filter]);
+  }, [filter]); // Odśwież, gdy zmienimy zakładkę
 
   return (
     <div className={styles.container}>
@@ -46,7 +79,7 @@ const TournamentList = () => {
                 className={`${styles.filterBtn} ${filter === status ? styles.active : ''}`} 
                 onClick={() => setFilter(status)}
             >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {status === 'all' ? 'Wszystkie' : status.charAt(0).toUpperCase() + status.slice(1)}
             </button>
         ))}
       </div>
