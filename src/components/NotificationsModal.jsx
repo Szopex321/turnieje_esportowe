@@ -117,11 +117,7 @@ const handleRejectInvite = async (teamId, notificationId, onRefresh) => {
 // --- KOMPONENT POJEDYNCZEGO POWIADOMIENIA ---
 
 const NotificationItem = ({ notification, onRefresh }) => {
-  const isTeamInvite =
-    notification.notificationType === "TeamInvite" && notification.relatedId;
-  const isJoinRequest =
-    notification.notificationType === "TeamJoinRequest" &&
-    notification.relatedId;
+  const type = notification.notificationType;
   const teamId = notification.relatedId;
   const notificationId = notification.notificationId;
   const targetUserId = notification.relatedUserId;
@@ -158,7 +154,8 @@ const NotificationItem = ({ notification, onRefresh }) => {
 
   // Kliknięcie w powiadomienie (oznaczenie jako przeczytane, jeśli to nie jest akcja)
   const handleItemClick = () => {
-    if (!isTeamInvite && !isJoinRequest && !notification.isRead) {
+    // Kliknięcie w element oznacza go jako przeczytany (jeśli nie ma akcji)
+    if (!notification.isRead) {
       handleMarkAsRead(notificationId, onRefresh);
     }
   };
@@ -171,7 +168,10 @@ const NotificationItem = ({ notification, onRefresh }) => {
       onClick={handleItemClick}
     >
       <div className={styles.notificationHeader}>
-        <p className={styles.notificationTitle}>{notification.title}</p>
+        <p className={styles.notificationTitle}>
+          <span style={{ marginRight: "8px" }}>{icon}</span>
+          {notification.title}
+        </p>
         <span className={styles.time}>
           {new Date(notification.createdAt).toLocaleString()}
         </span>
@@ -213,6 +213,17 @@ const NotificationItem = ({ notification, onRefresh }) => {
           >
             ❌ Odrzuć
           </button>
+        </div>
+      )}
+
+      {/* INFO DLA MECZÓW (Tylko informacja wizualna, kliknięcie oznacza jako przeczytane) */}
+      {(isMatchReport || isMatchResult) && !notification.isRead && (
+        <div className={styles.infoFooter}>
+          <span style={{ fontSize: "0.8rem", color: "#888" }}>
+            {isMatchReport
+              ? "Check the tournament bracket to confirm."
+              : "Result recorded in bracket."}
+          </span>
         </div>
       )}
     </div>
