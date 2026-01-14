@@ -3,10 +3,8 @@ import styles from "../styles/components/NotificationsModal.module.css";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
-// Pobieranie tokena z LocalStorage
 const getCurrentToken = () => localStorage.getItem("jwt_token");
 
-// Pobieranie danych zalogowanego użytkownika
 const getCurrentUser = () => {
   try {
     const savedUserJSON = localStorage.getItem("currentUser");
@@ -20,14 +18,11 @@ const getCurrentUser = () => {
       };
     }
   } catch (e) {
-    console.error("Błąd odczytu danych użytkownika:", e);
+    console.error("Error reading user data:", e);
   }
   return null;
 };
 
-// --- FUNKCJE API ---
-
-// Oznaczenie powiadomienia jako przeczytane
 const handleMarkAsRead = async (notificationId, onRefresh) => {
   const token = getCurrentToken();
   if (!token) return;
@@ -40,14 +35,13 @@ const handleMarkAsRead = async (notificationId, onRefresh) => {
       }
     );
     if (response.ok) {
-      onRefresh(); // Odśwież listę po sukcesie
+      onRefresh();
     }
   } catch (e) {
-    console.error("Błąd oznaczania jako przeczytane:", e);
+    console.error("Error marking as read:", e);
   }
 };
 
-// Akceptacja zaproszenia do drużyny
 const handleAcceptInvite = async (teamId, notificationId, onRefresh) => {
   const token = getCurrentToken();
   if (!token) return;
@@ -62,14 +56,13 @@ const handleAcceptInvite = async (teamId, notificationId, onRefresh) => {
     if (response.ok) {
       handleMarkAsRead(notificationId, onRefresh);
     } else {
-      console.error("Błąd akceptacji zaproszenia");
+      console.error("Error accepting invitation");
     }
   } catch (error) {
-    console.error("Błąd sieci (Accept Invite):", error);
+    console.error("Error accepting invitation (Fetch Error):", error);
   }
 };
 
-// Akceptacja prośby o dołączenie (dla Kapitana)
 const handleAcceptJoinRequest = async (
   teamId,
   userIdToApprove,
@@ -93,28 +86,22 @@ const handleAcceptJoinRequest = async (
       handleMarkAsRead(notificationId, onRefresh);
     }
   } catch (error) {
-    console.error("Błąd akceptacji prośby o dołączenie:", error);
+    console.error("Error accepting join request:", error);
   }
 };
 
-// Odrzucenie prośby o dołączenie
 const handleRejectJoinRequest = async (
   teamId,
   userIdToReject,
   notificationId,
   onRefresh
 ) => {
-  // Tutaj logika backendowa odrzucenia (jeśli istnieje endpoint), 
-  // na razie oznaczamy powiadomienie jako przeczytane.
   handleMarkAsRead(notificationId, onRefresh);
 };
 
-// Odrzucenie zaproszenia do drużyny
 const handleRejectInvite = async (teamId, notificationId, onRefresh) => {
   handleMarkAsRead(notificationId, onRefresh);
 };
-
-// --- KOMPONENT POJEDYNCZEGO POWIADOMIENIA ---
 
 const NotificationItem = ({ notification, onRefresh }) => {
   const type = notification.notificationType;
@@ -123,7 +110,22 @@ const NotificationItem = ({ notification, onRefresh }) => {
   const targetUserId = notification.relatedUserId;
   const displayMessage = notification.message;
 
-  // Obsługa przycisków
+  const isTeamInvite = type === "TeamInvite" && teamId;
+  const isJoinRequest = type === "TeamJoinRequest" && teamId;
+  const isMatchReport = type === "MatchReport";
+  const isMatchResult = type === "MatchResult";
+
+  let icon = "🔔";
+  if (isTeamInvite) icon = "📨";
+  if (isJoinRequest) icon = "🙋‍♂️";
+  if (isMatchReport) icon = "📝";
+  if (isMatchResult) {
+    if (notification.title?.toLowerCase().includes("zwycięstwo")) icon = "🏆";
+    else if (notification.title?.toLowerCase().includes("przegrana"))
+      icon = "💀";
+    else icon = "⚔️";
+  }
+
   const handleAcceptInviteClick = (e) => {
     e.stopPropagation();
     handleAcceptInvite(teamId, notificationId, onRefresh);
@@ -152,9 +154,7 @@ const NotificationItem = ({ notification, onRefresh }) => {
     }
   };
 
-  // Kliknięcie w powiadomienie (oznaczenie jako przeczytane, jeśli to nie jest akcja)
   const handleItemClick = () => {
-    // Kliknięcie w element oznacza go jako przeczytany (jeśli nie ma akcji)
     if (!notification.isRead) {
       handleMarkAsRead(notificationId, onRefresh);
     }
@@ -178,25 +178,23 @@ const NotificationItem = ({ notification, onRefresh }) => {
       </div>
       <p className={styles.notificationMessage}>{displayMessage}</p>
 
-      {/* Przyciski dla Zaproszenia do Drużyny */}
       {isTeamInvite && !notification.isRead && (
         <div className={styles.actions}>
           <button
             className={styles.acceptButton}
             onClick={handleAcceptInviteClick}
           >
-            ✅ Akceptuj
+            ✅ Accept
           </button>
           <button
             className={styles.rejectButton}
             onClick={handleRejectInviteClick}
           >
-            ❌ Odrzuć
+            ❌ Reject
           </button>
         </div>
       )}
 
-      {/* Przyciski dla Prośby o Dołączenie */}
       {isJoinRequest && !notification.isRead && (
         <div className={styles.actions}>
           <button
@@ -204,19 +202,18 @@ const NotificationItem = ({ notification, onRefresh }) => {
             onClick={handleAcceptJoinRequestClick}
             disabled={!targetUserId}
           >
-            ✅ Akceptuj
+            ✅ Accept
           </button>
           <button
             className={styles.rejectButton}
             onClick={handleRejectJoinRequestClick}
             disabled={!targetUserId}
           >
-            ❌ Odrzuć
+            ❌ Reject
           </button>
         </div>
       )}
 
-      {/* INFO DLA MECZÓW (Tylko informacja wizualna, kliknięcie oznacza jako przeczytane) */}
       {(isMatchReport || isMatchResult) && !notification.isRead && (
         <div className={styles.infoFooter}>
           <span style={{ fontSize: "0.8rem", color: "#888" }}>
@@ -230,10 +227,7 @@ const NotificationItem = ({ notification, onRefresh }) => {
   );
 };
 
-// --- GŁÓWNY KOMPONENT MODALA ---
-
 const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
-  // Sortowanie: najpierw nieprzeczytane, potem wg daty (najnowsze na górze)
   const sortedNotifications = [...notifications].sort((a, b) => {
     if (a.isRead !== b.isRead) {
       return a.isRead ? 1 : -1;
@@ -253,7 +247,7 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
         onRefresh();
       }
     } catch (e) {
-      console.error("Błąd oznaczania wszystkich jako przeczytane:", e);
+      console.error("Error marking all as read:", e);
     }
   };
 
@@ -269,10 +263,10 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
       if (response.ok) {
         onRefresh();
       } else {
-        console.error("Nie udało się wyczyścić powiadomień");
+        console.error("Failed to clear notifications");
       }
     } catch (e) {
-      console.error("Błąd czyszczenia historii:", e);
+      console.error("Error clearing notifications:", e);
     }
   };
 
@@ -283,7 +277,7 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2>🔔 Powiadomienia</h2>
+          <h2>🔔 Notifications</h2>
           <button className={styles.closeBtn} onClick={onClose}>
             ✕
           </button>
@@ -296,23 +290,23 @@ const NotificationsModal = ({ notifications, onClose, onRefresh }) => {
               disabled={!hasUnread}
               className={styles.markAllReadButton}
             >
-              Oznacz wszystkie
+              Mark All Read
             </button>
             <button
               onClick={handleClearAll}
               disabled={!hasNotifications}
               className={styles.clearAllButton}
-              title="Usuń całą historię"
+              title="Delete all history"
             >
-              Wyczyść historię
+              Clear History
             </button>
-            <button onClick={onRefresh} className={styles.refreshButton} title="Odśwież">
+            <button onClick={onRefresh} className={styles.refreshButton}>
               ↻
             </button>
           </div>
 
           {sortedNotifications.length === 0 ? (
-            <p className={styles.empty}>Brak powiadomień.</p>
+            <p className={styles.empty}>No notifications.</p>
           ) : (
             <div className={styles.notificationsList}>
               {sortedNotifications.map((notification) => (
