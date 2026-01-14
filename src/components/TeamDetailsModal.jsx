@@ -7,7 +7,7 @@ import defaultAvatar from "../assets/deafultAvatar.jpg";
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
 
-// Funkcja fallback do pobierania usera z localStorage
+// Fallback function to get user from localStorage
 const getCurrentUserFallback = () => {
   try {
     const savedUserJSON = localStorage.getItem("currentUser");
@@ -81,7 +81,7 @@ const TeamDetailsModal = ({
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
-  // Backend może zwracać "logo" lub "logoUrl". Bierzemy to co dostępne.
+  // Backend might return "logo" or "logoUrl". We take whatever is available.
   const initialLogo = team.logo || team.logoUrl;
   const [localLogo, setLocalLogo] = useState(initialLogo);
 
@@ -133,7 +133,7 @@ const TeamDetailsModal = ({
     onClose(localLogo);
   };
 
-  // --- LOGIKA ZMIANY LOGA ---
+  // --- LOGO CHANGE LOGIC ---
   const handleLogoSelected = async (newUrl) => {
     setError(null);
 
@@ -152,7 +152,7 @@ const TeamDetailsModal = ({
         throw new Error(data.message || "Failed to update team logo");
       }
 
-      // Wymuszenie odświeżenia obrazka w przeglądarce (timestamp trick)
+      // Force image refresh in browser (timestamp trick)
       const separator = newUrl.includes("?") ? "&" : "?";
       const timestamp = new Date().getTime();
       const refreshedUrl = `${newUrl}${separator}v=${timestamp}`;
@@ -165,14 +165,14 @@ const TeamDetailsModal = ({
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error("Update logo error:", err);
-      setError(err.message || "Wystąpił błąd podczas aktualizacji logo.");
+      setError(err.message || "An error occurred while updating the logo.");
     }
   };
 
   const handleJoin = () => {
     setError(null);
     if (!isLogged) {
-      setError("Musisz być zalogowany, aby dołączyć do drużyny.");
+      setError("You must be logged in to join the team.");
       return;
     }
     onJoin(team.id);
@@ -183,16 +183,35 @@ const TeamDetailsModal = ({
 
   const handleDisbandTeam = async () => {
     if (!isCaptain) return;
-    setError(null);
 
-    if (activeMembersCount > 1) {
-      setError(
-        "Nie możesz rozwiązać drużyny, gdy są w niej inni członkowie. Wyrzuć ich najpierw."
-      );
+    if (
+      !window.confirm(
+        `Are you sure you want to disband "${team.name}"?\n\nAll members (including pending requests) will be automatically removed, and the team will cease to exist.`
+      )
+    ) {
       return;
     }
 
+    setError(null);
+
     try {
+      const membersToRemove = team.players.filter(
+        (p) => parseInt(p.userId, 10) !== currentUser.userId
+      );
+
+      if (membersToRemove.length > 0) {
+        const kickPromises = membersToRemove.map((player) =>
+          fetch(`${API_BASE_URL}/teams/${team.id}/kick/${player.userId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${currentUser.token}`,
+            },
+          })
+        );
+
+        await Promise.all(kickPromises);
+      }
+
       const response = await fetch(`${API_BASE_URL}/teams/${team.id}/leave`, {
         method: "DELETE",
         headers: {
@@ -201,17 +220,16 @@ const TeamDetailsModal = ({
       });
 
       if (response.ok) {
-        cleanupAndClose(`💥 Pomyślnie rozwiązano drużynę "${team.name}".`);
+        cleanupAndClose(`💥 Successfully disbanded team "${team.name}".`);
       } else {
         const data = await response.json().catch(() => ({}));
         setError(
-          data.message ||
-            `Nie udało się rozwiązać drużyny. Status: ${response.status}`
+          data.message || `Failed to disband team. Status: ${response.status}`
         );
       }
     } catch (err) {
       console.error("Disband error:", err);
-      setError("Wystąpił błąd sieci podczas próby rozwiązania drużyny.");
+      setError("Network error occurred while trying to disband the team.");
     }
   };
 
@@ -228,17 +246,16 @@ const TeamDetailsModal = ({
       });
 
       if (response.ok) {
-        cleanupAndClose(`🚪 Pomyślnie opuściłeś drużynę "${team.name}".`);
+        cleanupAndClose(`🚪 Successfully left team "${team.name}".`);
       } else {
         const data = await response.json().catch(() => ({}));
         setError(
-          data.message ||
-            `Nie udało się opuścić drużyny. Status: ${response.status}`
+          data.message || `Failed to leave team. Status: ${response.status}`
         );
       }
     } catch (err) {
       console.error("Leave error:", err);
-      setError("Wystąpił błąd sieci podczas próby opuszczenia drużyny.");
+      setError("Network error occurred while trying to leave the team.");
     }
   };
 
@@ -253,7 +270,7 @@ const TeamDetailsModal = ({
 
     if (parseInt(userIdToKick, 10) === currentUser.userId) {
       setError(
-        "Nie możesz wyrzucić samego siebie. Użyj przycisku 'Rozwiąż Drużynę' (jeśli jesteś jedynym członkiem)."
+        "You cannot kick yourself. Use 'Disband Team' if you are the only member."
       );
       return;
     }
@@ -270,17 +287,16 @@ const TeamDetailsModal = ({
       );
 
       if (response.ok) {
-        cleanupAndClose(`Pomyślnie wyrzucono ${username} z drużyny.`);
+        cleanupAndClose(`Successfully removed ${username} from the team.`);
       } else {
         const data = await response.json().catch(() => ({}));
         setError(
-          data.message ||
-            `Nie udało się wyrzucić gracza. Status: ${response.status}`
+          data.message || `Failed to remove player. Status: ${response.status}`
         );
       }
     } catch (err) {
       console.error("Kick error:", err);
-      setError("Wystąpił błąd sieci podczas próby wyrzucenia gracza.");
+      setError("Network error occurred while trying to remove the player.");
     }
   };
 
@@ -288,7 +304,7 @@ const TeamDetailsModal = ({
     setError(null);
     if (activeMembersCount >= MAX_PLAYERS) {
       setError(
-        `Drużyna jest pełna (${MAX_PLAYERS} członków). Nie można wysłać więcej zaproszeń.`
+        `Team is full (${MAX_PLAYERS} members). Cannot send more invitations.`
       );
       return;
     }
@@ -300,11 +316,6 @@ const TeamDetailsModal = ({
     : acceptedMembers;
 
   const pendingPlayers = team.players.filter((p) => p.status === "Pending");
-
-  const canDisband = activeMembersCount === 1;
-  const disbandTitle = canDisband
-    ? "Rozwiąż drużynę (tylko ty jesteś członkiem)"
-    : "Aby rozwiązać drużynę, musisz najpierw usunąć wszystkich pozostałych członków.";
 
   return (
     <>
@@ -414,8 +425,8 @@ const TeamDetailsModal = ({
                     disabled={visiblePlayers.length >= MAX_PLAYERS}
                     title={
                       visiblePlayers.length >= MAX_PLAYERS
-                        ? "Drużyna osiągnęła maksymalną liczbę graczy"
-                        : "Zaproś nowego gracza"
+                        ? "Team reached maximum player limit"
+                        : "Invite new player"
                     }
                   >
                     <span className={styles.buttonIcon}>📨</span>
@@ -432,8 +443,7 @@ const TeamDetailsModal = ({
                 <button
                   className={`${styles.actionButton} ${styles.dangerButton}`}
                   onClick={handleDisbandTeam}
-                  disabled={!canDisband}
-                  title={disbandTitle}
+                  title="Disband team (removes all members)"
                 >
                   <span className={styles.buttonIcon}>💥</span>
                   Disband Team
