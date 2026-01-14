@@ -1,41 +1,37 @@
 /* src/styles/pages/userProfile.module.css */
 
-/* Główny layout strony (taki sam jak na MainPage) */
 .pageWrapper {
-    min-height: 100vh;/* Bardzo ciemne tło całej strony */
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
 }
 
 .contentContainer {
     display: flex;
-    flex: 1; /* Zajmuje resztę miejsca pod TitleBarem */
+    flex: 1;
 }
 
-/* Główna sekcja z treścią (obok nawigacji) */
 .mainContent {
     flex: 1;
     padding: 40px;
     display: flex;
-    justify-content: center; /* Centrujemy kartę na środku */
+    justify-content: center;
     align-items: flex-start;
 }
 
-/* Karta Profilu */
 .profileCard {
     background-color: #1e1e1e;
     border: 1px solid #333;
     border-radius: 16px;
     padding: 40px;
     width: 100%;
-    max-width: 600px; /* Szersza niż logowanie */
+    max-width: 600px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
     display: flex;
     flex-direction: column;
     gap: 30px;
 }
 
-/* Nagłówek karty */
 .cardHeader {
     display: flex;
     align-items: center;
@@ -44,12 +40,35 @@
     padding-bottom: 20px;
 }
 
+/* Sekcja Avatara */
+.avatarContainer {
+    position: relative;
+    display: inline-block;
+}
+
 .largeAvatar {
     width: 100px;
     height: 100px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #facc15; /* Złota ramka */
+    border: 3px solid #facc15;
+    transition: all 0.3s ease;
+}
+
+.avatarEditable {
+    opacity: 0.8;
+    cursor: pointer;
+    border: 2px dashed #4ade80;
+}
+
+.avatarEditHint {
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: #aaa;
+    white-space: nowrap;
 }
 
 .headerInfo h2 {
@@ -76,10 +95,86 @@
     text-transform: uppercase;
 }
 
-/* Siatka formularza */
+/* Modal wyboru Avatara */
+.avatarModal {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #222;
+    border-radius: 8px;
+    border: 1px solid #444;
+}
+
+.avatarModalTitle {
+    margin-top: 0;
+    color: #fff;
+}
+
+.avatarsGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+}
+
+.avatarItem {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform 0.2s;
+}
+
+.avatarItem:hover {
+    transform: scale(1.1);
+}
+
+.avatarItemSelected {
+    border: 3px solid #4ade80;
+}
+
+.loadingText {
+    color: #888;
+}
+
+.modalCloseBtn {
+    margin-top: 10px;
+    padding: 5px 10px;
+    background: transparent;
+    border: 1px solid #666;
+    color: #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modalCloseBtn:hover {
+    background: #333;
+}
+
+/* Komunikaty */
+.messageBox {
+    text-align: center;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.messageSuccess {
+    color: #4ade80;
+    background-color: rgba(74, 222, 128, 0.1);
+}
+
+.messageError {
+    color: #ff4d4d;
+    background-color: rgba(255, 77, 77, 0.1);
+}
+
+/* Formularz */
 .detailsGrid {
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Dwie kolumny */
+    grid-template-columns: 1fr 1fr;
     gap: 20px;
 }
 
@@ -105,7 +200,33 @@
     font-size: 16px;
 }
 
-/* Przycisk edycji (na razie tylko wizualny) */
+.editInput {
+    background-color: #2d2d2d;
+    border: 1px solid #555;
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    width: 100%;
+}
+
+.editInput:focus {
+    outline: none;
+    border-color: #facc15;
+}
+
+.inputDisabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Przyciski Akcji */
+.actionButtonsContainer {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+}
+
 .actionButton {
     background-color: #333;
     color: white;
@@ -115,7 +236,7 @@
     cursor: pointer;
     font-weight: 600;
     transition: all 0.2s;
-    margin-top: 10px;
+    width: 100%;
 }
 
 .actionButton:hover {
@@ -124,9 +245,45 @@
     color: #facc15;
 }
 
-/* ... Twoje istniejące style ... */
+.saveButton {
+    background-color: #4ade80;
+    color: #000;
+    padding: 10px 25px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex: 1;
+}
 
-/* --- HISTORY SECTION --- */
+.saveButton:hover {
+    background-color: #3bce70;
+}
+
+.cancelButton {
+    background-color: #ff4d4d;
+    color: #fff;
+    padding: 10px 25px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex: 1;
+}
+
+.cancelButton:hover {
+    background-color: #e04343;
+}
+
+.loadingMessage {
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Style Historii (zostawione bez zmian, jeśli były używane) */
 .historySection {
     margin-top: 40px;
     border-top: 1px solid #444;
@@ -195,7 +352,7 @@
 }
 
 .winnerName {
-    color: #10b981; /* Zielony dla wygranego */
+    color: #10b981;
     font-weight: bold;
 }
 
@@ -223,7 +380,6 @@
     background-color: #e5920d;
 }
 
-/* Responsywność dla historii na małych ekranach */
 @media (max-width: 768px) {
     .matchCard {
         flex-direction: column;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styles from "../styles/components/TeamInvitationModal.module.css";
-import defaultAvatar from "../assets/deafultAvatar.jpg"; // Upewnij się, że ścieżka jest poprawna
+// Poprawiona literówka w nazwie pliku (deafult -> default)
+import defaultAvatar from "../assets/deafultAvatar.jpg";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
 const MAX_PLAYERS = 5;
@@ -17,7 +18,7 @@ const getCurrentUser = () => {
         userId: parseInt(currentUserIdString, 10),
         username: user.username,
         token: jwtToken,
-        avatarUrl: user.avatar || user.avatarUrl, // Bez fallbacku do pravatar
+        avatarUrl: user.avatar || user.avatarUrl,
       };
     }
   } catch (e) {
@@ -31,29 +32,31 @@ const UserListItem = ({
   isSelected,
   onToggle,
   isDisabled = false,
-  isInvited = false,
 }) => (
   <div
-    className={`${styles["invitationModal-userListItem"]}${
-      isSelected ? ` ${styles["invitationModal-selected"]}` : ""
-    }${isDisabled ? ` ${styles["invitationModal-disabled"]}` : ""}`}
+    className={`${styles.userListItem} ${
+      isSelected ? styles.selected : ""
+    } ${isDisabled ? styles.disabled : ""}`}
     onClick={(e) => {
       if (isDisabled) return;
       e.stopPropagation();
       onToggle(user);
     }}
-    title={isDisabled ? "Cannot select" : "Click to select/unselect"}
+    title={isDisabled ? "Cannot select (Team full)" : "Click to select"}
   >
-    <img
-      src={user.avatarUrl || defaultAvatar}
-      alt={user.username}
-      className={styles["invitationModal-userAvatar"]}
-      onError={(e) => {
-        e.target.onerror = null;
-        e.target.src = defaultAvatar;
-      }}
-    />
-    <span className={styles["invitationModal-userName"]}>{user.username}</span>
+    <div className={styles.avatarContainer}>
+      <img
+        src={user.avatarUrl || defaultAvatar}
+        alt={user.username}
+        className={styles.userAvatar}
+        onError={(e) => {
+          e.target.onerror = null;
+          e.target.src = defaultAvatar;
+        }}
+      />
+      {isSelected && <div className={styles.checkIcon}>✓</div>}
+    </div>
+    <span className={styles.userName}>{user.username}</span>
   </div>
 );
 
@@ -70,9 +73,13 @@ const TeamInvitationModal = ({
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
 
+  // Obliczamy ile miejsc jest zajętych (ignorujemy Pending, bo Pending + zaproszenia to osobne limity w logice,
+  // ale tutaj zakładamy, że zapraszamy na wolne sloty MAX - Accepted).
+  // *Dostosuj filtr statusu do swojej logiki biznesowej, jeśli 'Pending' też zajmuje slot.*
   const acceptedMembers = currentTeamMembers.filter(
     (p) => p.status !== "Pending"
   ).length;
+  
   const availableSlots = MAX_PLAYERS - acceptedMembers;
 
   const clearError = () => setErrorMessage("");
@@ -98,7 +105,7 @@ const TeamInvitationModal = ({
         .map((f) => ({
           userId: Number(f.userId),
           username: f.username,
-          avatarUrl: f.avatarUrl, // Bierzemy URL bezpośrednio z API
+          avatarUrl: f.avatarUrl,
         }))
         .filter((f) => !existingTeamPlayerIds.has(f.userId));
 
@@ -117,7 +124,6 @@ const TeamInvitationModal = ({
 
   const handleTogglePlayer = (user) => {
     clearError();
-
     const isSelected = selectedPlayers.some((p) => p.userId === user.userId);
 
     if (isSelected) {
@@ -161,6 +167,7 @@ const TeamInvitationModal = ({
       )
       .map((p) => p.userId);
 
+    // Usuwamy zaproszonych z listy przyjaciół (lokalnie)
     setFriends((prev) =>
       prev.filter((f) => !successfulUserIds.includes(f.userId))
     );
@@ -170,38 +177,39 @@ const TeamInvitationModal = ({
 
     if (onInviteSent) onInviteSent();
     onClose();
+    
     if (successfulUserIds.length > 0) {
-      // Usunąłem alert zgodnie z prośbą o usuwanie alertów,
-      // ale jeśli chcesz potwierdzenie, możesz użyć console.log lub toast
       console.log(`✅ Sent ${successfulUserIds.length} invitation(s).`);
     }
   };
 
+  const remainingSlots = availableSlots - selectedPlayers.length;
+
   return (
-    <div className={styles["invitationModal-overlay"]} onClick={onClose}>
-      <div
-        className={styles["invitationModal-content"]}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3>📨 Invite Friends to Team</h3>
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <h3>Invite Friends</h3>
+          <button className={styles.closeBtn} onClick={onClose}>×</button>
+        </div>
+
         {errorMessage && (
-          <p className={styles["invitationModal-errorText"]}>{errorMessage}</p>
+            <div className={styles.errorMessage}>
+              <span className={styles.errorIcon}>!</span>
+              {errorMessage}
+            </div>
         )}
-        <p>
-          Available slots:{" "}
-          <strong
-            style={{
-              color:
-                availableSlots - selectedPlayers.length > 0 ? "green" : "red",
-            }}
-          >
-            {availableSlots - selectedPlayers.length}
-          </strong>{" "}
-          / {availableSlots}
-        </p>
-        <div className={styles["invitationModal-userListContainer"]}>
+
+        <div className={styles.statsContainer}>
+             <span className={styles.slotsLabel}>Available Slots:</span>
+             <span className={`${styles.slotsValue} ${remainingSlots === 0 ? styles.slotsFull : ''}`}>
+                {remainingSlots} / {MAX_PLAYERS}
+             </span>
+        </div>
+
+        <div className={styles.listContainer}>
           {isLoading ? (
-            <p>Loading friends...</p>
+            <div className={styles.loadingState}>Loading friends...</div>
           ) : friends.length > 0 ? (
             friends.map((user) => (
               <UserListItem
@@ -211,30 +219,34 @@ const TeamInvitationModal = ({
                   (p) => p.userId === user.userId
                 )}
                 isDisabled={
-                  availableSlots - selectedPlayers.length <= 0 &&
+                  remainingSlots <= 0 &&
                   !selectedPlayers.some((p) => p.userId === user.userId)
                 }
                 onToggle={handleTogglePlayer}
               />
             ))
           ) : (
-            <p style={{ color: "#aaa" }}>No available friends to invite.</p>
+            <div className={styles.emptyState}>
+                <span>👥</span>
+                <p>No available friends to invite.</p>
+            </div>
           )}
         </div>
 
-        <div className={styles["invitationModal-actions"]}>
+        <div className={styles.modalActions}>
           <button
-            className={styles["invitationModal-cancelButton"]}
+            className={styles.cancelButton}
             onClick={onClose}
+            disabled={isSending}
           >
             Cancel
           </button>
           <button
-            className={styles["invitationModal-saveButton"]}
+            className={styles.confirmButton}
             onClick={handleSubmit}
             disabled={isSending || selectedPlayers.length === 0}
           >
-            {isSending ? "Sending..." : "Send Invitations"}
+            {isSending ? "Sending..." : `Invite ${selectedPlayers.length > 0 ? `(${selectedPlayers.length})` : ""}`}
           </button>
         </div>
       </div>

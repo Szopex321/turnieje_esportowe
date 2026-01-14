@@ -1,4 +1,5 @@
-/* Tło (overlay) - dodano animację pojawiania się (fadeIn) */
+/* --- TŁO (OVERLAY) --- */
+/* Ważne: Flexbox z justify-content: flex-end przykleja modal do prawej krawędzi */
 .overlay {
   position: fixed;
   top: 0;
@@ -7,27 +8,30 @@
   bottom: 0;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
-  justify-content: flex-end; /* Ważne: przykleja modal do prawej */
+  justify-content: flex-end; 
   z-index: 1000;
-  animation: fadeIn 0.3s ease-out forwards; /* Animacja tła */
+  animation: fadeIn 0.3s ease-out forwards;
 }
 
-/* Okno modala - dodano animację wjazdu (slideIn) */
+/* --- OKNO MODALA (PANEL BOCZNY) --- */
 .modal {
   background-color: #212529;
   width: 400px;
-  height: 100%; /* Rozciągnięcie na pełną wysokość */
+  height: 100%; /* Rozciągnięcie na całą wysokość ekranu */
   padding: 20px;
-  box-sizing: border-box; /* Ważne, aby padding nie powiększał szerokości */
-  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+  box-sizing: border-box;
+  box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5); /* Cień rzucany w lewo */
   display: flex;
   flex-direction: column;
   color: #fff;
-  transform: translateX(100%); /* Startowa pozycja poza ekranem */
-  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; /* Płynny wjazd */
+  
+  /* Startowa pozycja poza prawą krawędzią ekranu */
+  transform: translateX(100%); 
+  /* Animacja wjazdu */
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
 }
 
-/* Definicja animacji wjazdu z prawej strony */
+/* Animacja wjazdu z prawej strony */
 @keyframes slideIn {
   from {
     transform: translateX(100%);
@@ -37,7 +41,7 @@
   }
 }
 
-/* Definicja animacji pojawiania się tła */
+/* Animacja pojawiania się tła */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -47,6 +51,7 @@
   }
 }
 
+/* --- NAGŁÓWEK --- */
 .header {
   display: flex;
   justify-content: space-between;
@@ -58,7 +63,7 @@
 
 .header h2 {
   margin: 0;
-  color: #ffc107;
+  color: #ffc107; /* Złoty kolor */
   font-size: 1.5rem;
 }
 
@@ -76,13 +81,14 @@
   color: #ffc107;
 }
 
+/* --- TREŚĆ GŁÓWNA --- */
 .content {
   flex-grow: 1;
-  overflow-y: auto;
-  padding-right: 5px; /* Miejsce na scrollbar */
+  overflow-y: auto; /* Przewijanie tylko wewnątrz treści */
+  padding-right: 5px; 
 }
 
-/* Stylizacja paska przewijania (opcjonalne, ale ładne) */
+/* Stylizacja paska przewijania */
 .content::-webkit-scrollbar {
   width: 6px;
 }
@@ -91,12 +97,13 @@
   border-radius: 3px;
 }
 
+/* --- PRZYCISKI STERUJĄCE --- */
 .controls {
   display: flex;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 15px;
-  flex-wrap: wrap; /* Pozwala przyciskom zawijać się na bardzo małych ekranach */
+  flex-wrap: wrap; /* Zawijanie przycisków na małych ekranach */
 }
 
 .markAllReadButton,
@@ -131,7 +138,7 @@
 }
 
 .clearAllButton {
-  background-color: #dc3545;
+  background-color: #dc3545; /* Czerwony */
   border-color: #dc3545;
   font-weight: 500;
 }
@@ -148,6 +155,7 @@
   border-color: #495057;
 }
 
+/* --- LISTA POWIADOMIEŃ --- */
 .notificationsList {
   display: flex;
   flex-direction: column;
@@ -168,8 +176,9 @@
   background-color: #343a40;
 }
 
+/* Styl dla nieprzeczytanych */
 .unread {
-  border-left-color: #ffc107;
+  border-left-color: #ffc107; /* Złoty pasek z lewej */
   background-color: #383e44;
 }
 
@@ -207,6 +216,7 @@
   margin-left: 5px;
 }
 
+/* --- PRZYCISKI AKCJI (Akceptuj/Odrzuć) --- */
 .actions {
   margin-top: 10px;
   display: flex;
@@ -223,16 +233,16 @@
   font-weight: bold;
   font-size: 0.85rem;
   transition: opacity 0.2s, transform 0.1s;
-  flex: 1; /* Przyciski akcji rozciągają się */
+  flex: 1; /* Przyciski zajmują całą dostępną szerokość */
 }
 
 .acceptButton {
-  background-color: #28a745;
+  background-color: #28a745; /* Zielony */
   color: white;
 }
 
 .rejectButton {
-  background-color: #dc3545;
+  background-color: #dc3545; /* Czerwony */
   color: white;
 }
 
@@ -248,14 +258,14 @@
   margin-top: 50px;
 }
 
-/* --- RESPONSYWNOŚĆ (Media Queries) --- */
+/* --- RESPONSYWNOŚĆ --- */
 
 /* Dla telefonów (max 480px) */
 @media (max-width: 480px) {
   .modal {
-    width: 100%; /* Pełna szerokość ekranu */
+    width: 100%; /* Na telefonie zajmij cały ekran */
     max-width: none;
-    box-shadow: none; /* Cień nie jest potrzebny na pełnym ekranie */
+    box-shadow: none;
   }
 
   .header h2 {
@@ -268,7 +278,7 @@
 
   .markAllReadButton,
   .clearAllButton {
-    padding: 10px 8px; /* Nieco większe przyciski dotykowe */
+    padding: 10px 8px; /* Większe pola dotykowe */
     font-size: 0.8rem;
   }
 }

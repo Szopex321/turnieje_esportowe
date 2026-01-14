@@ -7,8 +7,6 @@ import defaultAvatar from "../assets/deafultAvatar.jpg";
 
 const UserProfile = () => {
   const navigate = useNavigate();
-
-  // Upewnij się, że ten adres nie ma ukośnika na końcu
   const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
   const [user, setUser] = useState(null);
@@ -27,6 +25,7 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
+  // Pobieranie danych użytkownika i dostępnych avatarów przy załadowaniu komponentu
   useEffect(() => {
     const token = localStorage.getItem("jwt_token");
     if (!token) {
@@ -36,8 +35,6 @@ const UserProfile = () => {
 
     const fetchData = async () => {
       try {
-        // POPRAWKA: Zmiana /User/profile na /user/profile (małe litery)
-        // Spróbuj też /users/profile jeśli to nie zadziała
         const userRes = await fetch(`${API_BASE_URL}/users/profile`, { 
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -53,7 +50,6 @@ const UserProfile = () => {
             avatarUrl: userData.avatarUrl || "" 
           });
         } else {
-            // Logowanie błędu w konsoli, żebyś widział co jest nie tak
             console.error("Błąd pobierania profilu. Status:", userRes.status);
         }
 
@@ -83,12 +79,12 @@ const UserProfile = () => {
       setShowAvatarModal(false); 
   };
 
+  // Obsługa zapisu zaktualizowanych danych profilu
   const handleSave = async () => {
     setMessage("");
     try {
       const token = localStorage.getItem("jwt_token");
       
-      // POPRAWKA: Tutaj też małe litery /user/profile
       const response = await fetch(`${API_BASE_URL}/users/profile`, {
         method: "PUT",
         headers: {
@@ -123,7 +119,6 @@ const UserProfile = () => {
     setIsEditing(false);
     setShowAvatarModal(false);
     setMessage("");
-    // Reset formularza
     if (user) {
         setFormData({
             firstName: user.firstName || "",
@@ -137,10 +132,9 @@ const UserProfile = () => {
 
   const displayAvatarSrc = formData.avatarUrl || defaultAvatar;
 
-  if (loading) return <div style={{ color: "white", padding: 20 }}>Ładowanie...</div>;
+  if (loading) return <div className={styles.loadingMessage}>Ładowanie...</div>;
   
-  // Zabezpieczenie: jeśli user się nie załadował, nie renderuj reszty
-  if (!user) return <div style={{ color: "white", padding: 20 }}>Nie udało się pobrać danych użytkownika. Sprawdź konsolę (F12).</div>;
+  if (!user) return <div className={styles.loadingMessage}>Nie udało się pobrać danych użytkownika. Sprawdź konsolę (F12).</div>;
 
   return (
     <div className={styles.pageWrapper}>
@@ -151,29 +145,17 @@ const UserProfile = () => {
           <div className={styles.profileCard}>
             
             <div className={styles.cardHeader}>
-              <div 
-                className={styles.avatarContainer} 
-                style={{ position: 'relative', display: 'inline-block' }}
-              >
+              <div className={styles.avatarContainer}>
                 <img
                   src={displayAvatarSrc}
                   alt="Avatar"
-                  className={styles.largeAvatar}
-                  style={{ 
-                    objectFit: 'cover',
-                    opacity: isEditing ? 0.8 : 1,
-                    cursor: isEditing ? 'pointer' : 'default',
-                    border: isEditing ? '2px dashed #4ade80' : 'none'
-                  }}
+                  className={`${styles.largeAvatar} ${isEditing ? styles.avatarEditable : ''}`}
                   onClick={() => isEditing && setShowAvatarModal(true)}
                   onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatar; }}
                 />
                 
                 {isEditing && (
-                    <div style={{
-                        position: 'absolute', bottom: '-25px', left: '50%', transform: 'translateX(-50%)',
-                        fontSize: '12px', color: '#aaa', whiteSpace: 'nowrap'
-                    }}>
+                    <div className={styles.avatarEditHint}>
                         Kliknij, aby wybrać
                     </div>
                 )}
@@ -187,11 +169,9 @@ const UserProfile = () => {
             </div>
 
             {showAvatarModal && (
-                <div style={{
-                    marginBottom: '20px', padding: '15px', background: '#222', borderRadius: '8px', border: '1px solid #444'
-                }}>
-                    <h4 style={{marginTop: 0, color: '#fff'}}>Wybierz avatara:</h4>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center' }}>
+                <div className={styles.avatarModal}>
+                    <h4 className={styles.avatarModalTitle}>Wybierz avatara:</h4>
+                    <div className={styles.avatarsGrid}>
                         {availableAvatars.length > 0 ? (
                             availableAvatars.map((avatarObj) => (
                                 <img 
@@ -199,22 +179,16 @@ const UserProfile = () => {
                                     src={avatarObj.url} 
                                     alt={avatarObj.name || "Avatar"}
                                     onClick={() => handleAvatarSelect(avatarObj.url)}
-                                    style={{
-                                        width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', cursor: 'pointer',
-                                        border: formData.avatarUrl === avatarObj.url ? '3px solid #4ade80' : '2px solid transparent',
-                                        transition: 'transform 0.2s'
-                                    }}
-                                    onMouseOver={(e) => e.target.style.transform = 'scale(1.1)'}
-                                    onMouseOut={(e) => e.target.style.transform = 'scale(1.0)'}
+                                    className={`${styles.avatarItem} ${formData.avatarUrl === avatarObj.url ? styles.avatarItemSelected : ''}`}
                                 />
                             ))
                         ) : (
-                            <p style={{color: '#888'}}>Ładowanie avatarów...</p>
+                            <p className={styles.loadingText}>Ładowanie avatarów...</p>
                         )}
                     </div>
                     <button 
                         onClick={() => setShowAvatarModal(false)}
-                        style={{marginTop: '10px', padding: '5px 10px', background: 'transparent', border: '1px solid #666', color: '#ccc', borderRadius: '4px', cursor: 'pointer'}}
+                        className={styles.modalCloseBtn}
                     >
                         Zamknij listę
                     </button>
@@ -222,7 +196,7 @@ const UserProfile = () => {
             )}
 
             {message && (
-                <div style={{ textAlign: 'center', color: message.includes("Profil") ? '#4ade80' : '#ff4d4d', margin: '10px 0' }}>
+                <div className={`${styles.messageBox} ${message.includes("Profil") ? styles.messageSuccess : styles.messageError}`}>
                     {message}
                 </div>
             )}
@@ -253,7 +227,7 @@ const UserProfile = () => {
                 {isEditing ? (
                     <input 
                         type="text" name="username" value={formData.username} readOnly disabled 
-                        className={styles.editInput} style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                        className={`${styles.editInput} ${styles.inputDisabled}`}
                     />
                 ) : <div className={styles.valueBox}>{user.username}</div>}
               </div>
@@ -269,15 +243,13 @@ const UserProfile = () => {
               </div>
             </div>
 
-            <div className={styles.actionButtonsContainer} style={{ marginTop: '30px', display: 'flex', gap: '15px' }}>
+            <div className={styles.actionButtonsContainer}>
                 {isEditing ? (
                     <>
-                        <button className={styles.saveButton} onClick={handleSave} 
-                            style={{ backgroundColor: '#4ade80', color: '#000', padding: '10px 25px', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
+                        <button className={styles.saveButton} onClick={handleSave}>
                             Zapisz
                         </button>
-                        <button className={styles.cancelButton} onClick={handleCancel} 
-                            style={{ backgroundColor: '#ff4d4d', color: '#fff', padding: '10px 25px', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>
+                        <button className={styles.cancelButton} onClick={handleCancel}>
                             Anuluj
                         </button>
                     </>

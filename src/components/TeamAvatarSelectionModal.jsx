@@ -3,6 +3,7 @@ import styles from "../styles/components/TeamAvatarSelectionModal.module.css";
 
 const API_BASE_URL = "/api";
 
+// Komponent pomocniczy wyświetlający pojedynczy kafelek z awatarem
 const AvatarItem = ({ avatar, isSelected, onClick }) => (
   <div
     key={avatar.teamAvatarId}
@@ -33,15 +34,17 @@ const TeamAvatarSelectionModal = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Pobieranie listy dostępnych awatarów przy montowaniu komponentu
   useEffect(() => {
     const fetchAvatars = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/teams/avatars`);
         if (!response.ok) {
-          throw new Error("Failed to fetch team avatars");
+          throw new Error("Nie udało się pobrać awatarów drużyn.");
         }
         const data = await response.json();
 
+        // Mapowanie danych (jeśli backend zwraca inną strukturę, tutaj to ujednolicamy)
         const formattedAvatars = data.map((item) => ({
           teamAvatarId: item.teamAvatarId,
           teamAvatarName: item.teamAvatarName,
@@ -50,13 +53,14 @@ const TeamAvatarSelectionModal = ({
 
         setAvatars(formattedAvatars);
 
+        // Ustawienie aktualnie używanego logo jako wybranego (jeśli istnieje na liście)
         const initialSelection = formattedAvatars.find(
           (a) => a.url === currentLogoUrl
         );
         setSelectedAvatar(initialSelection || null);
       } catch (err) {
         setError(err.message);
-        console.error("Fetch avatars error:", err);
+        console.error("Błąd pobierania awatarów:", err);
       } finally {
         setIsLoading(false);
       }
@@ -65,10 +69,12 @@ const TeamAvatarSelectionModal = ({
     fetchAvatars();
   }, [currentLogoUrl]);
 
+  // Obsługa kliknięcia w awatar
   const handleSelectAvatar = (avatar) => {
     setSelectedAvatar(avatar);
   };
 
+  // Zatwierdzenie wyboru
   const handleConfirmSelection = () => {
     if (selectedAvatar) {
       onLogoSelected(selectedAvatar.url);
@@ -77,17 +83,18 @@ const TeamAvatarSelectionModal = ({
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
+      {/* stopPropagation zapobiega zamknięciu modala przy kliknięciu w jego wnętrze */}
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <button
           className={styles.closeModalBtn}
           onClick={onClose}
-          aria-label="Close"
+          aria-label="Zamknij"
         >
           ×
         </button>
         <h3>🖼️ Wybierz Logo Drużyny</h3>
 
-        {error && <p className={styles.errorText}>Błąd ładowania: {error}</p>}
+        {error && <p className={styles.errorText}>Błąd: {error}</p>}
 
         {isLoading ? (
           <p>Ładowanie awatarów...</p>

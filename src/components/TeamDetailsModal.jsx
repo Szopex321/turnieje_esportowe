@@ -81,8 +81,7 @@ const TeamDetailsModal = ({
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
-  // Backend może zwracać "logo" lub "logoUrl" w zależności od modelu C#.
-  // Bierzemy to co jest dostępne.
+  // Backend może zwracać "logo" lub "logoUrl". Bierzemy to co dostępne.
   const initialLogo = team.logo || team.logoUrl;
   const [localLogo, setLocalLogo] = useState(initialLogo);
 
@@ -134,11 +133,10 @@ const TeamDetailsModal = ({
     onClose(localLogo);
   };
 
-  // --- LOGIKA ZMIANY LOGA (Dopasowana do nowego Backendu) ---
+  // --- LOGIKA ZMIANY LOGA ---
   const handleLogoSelected = async (newUrl) => {
     setError(null);
 
-    // 1. Wysyłamy żądanie PUT na endpoint /teams/{id}/logo
     try {
       const response = await fetch(`${API_BASE_URL}/teams/${team.id}/logo`, {
         method: "PUT",
@@ -146,7 +144,6 @@ const TeamDetailsModal = ({
           "Content-Type": "application/json",
           Authorization: `Bearer ${currentUser.token}`,
         },
-        // WAŻNE: Klucz "logoUrl" musi pasować do pola w klasie UpdateTeamLogoDto w C#
         body: JSON.stringify({ logoUrl: newUrl }),
       });
 
@@ -155,26 +152,22 @@ const TeamDetailsModal = ({
         throw new Error(data.message || "Failed to update team logo");
       }
 
-      // 2. Sukces - Backend zapisał zmianę.
-      // Teraz wymuszamy odświeżenie obrazka w przeglądarce dodając timestamp (?v=...)
+      // Wymuszenie odświeżenia obrazka w przeglądarce (timestamp trick)
       const separator = newUrl.includes("?") ? "&" : "?";
       const timestamp = new Date().getTime();
       const refreshedUrl = `${newUrl}${separator}v=${timestamp}`;
 
       console.log("Logo updated via PUT. Local refresh:", refreshedUrl);
 
-      // Aktualizujemy stan lokalny, żeby użytkownik od razu widział zmianę
       setLocalLogo(refreshedUrl);
       setShowAvatarModal(false);
 
-      // Odświeżamy listę drużyn "pod spodem"
       if (onRefresh) onRefresh();
     } catch (err) {
       console.error("Update logo error:", err);
       setError(err.message || "Wystąpił błąd podczas aktualizacji logo.");
     }
   };
-  // --------------------------------------------------------
 
   const handleJoin = () => {
     setError(null);
@@ -338,9 +331,7 @@ const TeamDetailsModal = ({
           <div className={styles.teamHeader}>
             <div className={styles.logoContainer}>
               <img
-                key={
-                  localLogo
-                } /* Zmiana klucza wymusza na Reactcie przerysowanie */
+                key={localLogo}
                 src={localLogo}
                 alt={`${team.name} logo`}
                 className={styles.teamLogo}

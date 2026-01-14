@@ -1,29 +1,23 @@
 import React, { useState } from "react";
-import { getStatusColor } from "../components/adminHelpers"; // Upewnij się, że ścieżka do utils jest poprawna
+import { getStatusColor } from "../components/adminHelpers";
 import styles from "../styles/pages/adminPanel.module.css";
 
-// --- SUB-KOMPONENT: Pojedynczy wiersz meczu ---
-// Wydzielony, aby każdy mecz miał swoje własne stany inputów (scoreA, scoreB)
+// Komponent wyświetlający pojedynczy mecz z opcją interwencji admina
 const MatchItem = ({ match, onResolveDispute }) => {
-  // Lokalne stany dla inputów admina (tylko dla tego konkretnego meczu)
   const [localScoreA, setLocalScoreA] = useState(0);
   const [localScoreB, setLocalScoreB] = useState(0);
 
-  // 1. Ustalanie nazw i ID
   const p1Name = match.participant1Name || match.teamAName || "Team A";
   const p2Name = match.participant2Name || match.teamBName || "Team B";
   const p1Id = match.participant1Id || match.teamAId;
   const p2Id = match.participant2Id || match.teamBId;
 
-  // 2. Obsługa wyników "Pending" (zgłoszonych przez graczy)
   const pending = match.pendingResult || match.PendingResult;
   
-  // Domyślne wyniki z bazy
   let displayScoreA = match.score1 ?? match.scoreA;
   let displayScoreB = match.score2 ?? match.scoreB;
   let proofUrl = match.screenshotUrl;
 
-  // Nadpisanie widoku, jeśli jest zgłoszenie oczekujące
   if (pending) {
     displayScoreA = pending.scoreA ?? pending.participant1Score ?? displayScoreA;
     displayScoreB = pending.scoreB ?? pending.participant2Score ?? displayScoreB;
@@ -33,106 +27,130 @@ const MatchItem = ({ match, onResolveDispute }) => {
   const isP1Winner = match.winnerId && match.winnerId === p1Id;
   const isP2Winner = match.winnerId && match.winnerId === p2Id;
 
+  const needsAttention = match.matchStatus === 'disputed' || match.matchStatus === 'pending';
+
+  // Funkcja pomocnicza do zmiany wyniku przyciskami
+  const adjustScore = (setter, currentValue, amount) => {
+    const val = parseInt(currentValue) || 0;
+    const newVal = Math.max(0, val + amount); // Nie pozwól na ujemne wyniki
+    setter(newVal);
+  };
+
   return (
-    <div className={styles.matchCard} style={{ borderColor: getStatusColor(match.matchStatus) }}>
-      {/* NAGŁÓWEK MECZU */}
+    <div className={`${styles.matchCard} ${needsAttention ? styles.cardAttention : ''}`} style={{ borderLeftColor: getStatusColor(match.matchStatus) }}>
+      
+      {/* HEADER */}
       <div className={styles.matchHeader}>
-        <span style={{ color: getStatusColor(match.matchStatus), fontWeight: 'bold', textTransform: 'uppercase' }}>
+        <span className={styles.matchId}>#{match.matchNumber || match.matchId}</span>
+        <span 
+          className={styles.statusBadge} 
+          style={{ 
+            borderColor: getStatusColor(match.matchStatus),
+            color: getStatusColor(match.matchStatus)
+          }}
+        >
           {match.matchStatus}
-          {pending && match.matchStatus === 'pending' && " (To Verify)"}
+          {pending && match.matchStatus === 'pending' && " (Verifying)"}
         </span>
-        <span className={styles.matchId}>Match #{match.matchNumber || match.matchId}</span>
       </div>
 
-      {/* DRUŻYNY I WYNIKI */}
-      <div className={styles.matchTeams}>
-        <div className={isP1Winner ? styles.winner : ''}>
-          {p1Name}
+      {/* TEAMS & SCORES */}
+      <div className={styles.matchContent}>
+        <div className={`${styles.teamInfo} ${isP1Winner ? styles.winnerText : ''}`}>
+          <span className={styles.teamName}>{p1Name}</span>
           {(displayScoreA !== null && displayScoreA !== undefined) && (
-            <span className={styles.score} style={pending ? { backgroundColor: '#fca311', color: '#000' } : {}}>
-              {displayScoreA}
-            </span>
+            <span className={`${styles.mainScore} ${pending ? styles.pendingScore : ''}`}>{displayScoreA}</span>
           )}
         </div>
-        <span>vs</span>
-        <div className={isP2Winner ? styles.winner : ''}>
-          {p2Name}
+        
+        <div className={styles.vsSeparator}>VS</div>
+
+        <div className={`${styles.teamInfo} ${isP2Winner ? styles.winnerText : ''}`}>
           {(displayScoreB !== null && displayScoreB !== undefined) && (
-            <span className={styles.score} style={pending ? { backgroundColor: '#fca311', color: '#000' } : {}}>
-              {displayScoreB}
-            </span>
+            <span className={`${styles.mainScore} ${pending ? styles.pendingScore : ''}`}>{displayScoreB}</span>
           )}
+          <span className={styles.teamName}>{p2Name}</span>
         </div>
       </div>
 
-      {/* LINK DO SCREENSHOTA */}
+      {/* PROOF LINK */}
       {proofUrl && (
-        <div style={{ marginTop: '5px', textAlign: 'center' }}>
-          <a href={proofUrl} target="_blank" rel="noreferrer" className={styles.proofLink}>
-            📷 View Screenshot
+        <div className={styles.proofContainer}>
+          <a href={proofUrl} target="_blank" rel="noreferrer" className={styles.proofButton}>
+            📷 View Proof Screenshot
           </a>
         </div>
       )}
 
-      {/* --- SEKCJA ADMINA: ROZWIĄZYWANIE SPORU --- */}
-      {(match.matchStatus === 'disputed' || match.matchStatus === 'pending') && (
-        <div style={{ marginTop: "15px", padding: "10px", border: "2px solid red", backgroundColor: "#fff0f0", borderRadius: "6px" }}>
-          <h4 style={{ color: "red", margin: "0 0 10px 0", fontSize: "0.9rem" }}>⚠️ Admin Override / Solve Dispute</h4>
-
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "10px", justifyContent: "center" }}>
-            {/* Input Team A */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <label style={{ fontSize: "10px", color: "black" }}>{p1Name}</label>
-              <input
-                type="number"
-                value={localScoreA}
-                onChange={(e) => setLocalScoreA(e.target.value)}
-                placeholder="0"
-                style={{ padding: "5px", width: "50px", textAlign: "center" }}
-              />
-            </div>
-            
-            <span style={{ fontWeight: "bold", color: "black" }}>:</span>
-            
-            {/* Input Team B */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <label style={{ fontSize: "10px", color: "black" }}>{p2Name}</label>
-              <input
-                type="number"
-                value={localScoreB}
-                onChange={(e) => setLocalScoreB(e.target.value)}
-                placeholder="0"
-                style={{ padding: "5px", width: "50px", textAlign: "center" }}
-              />
-            </div>
+      {/* ADMIN DISPUTE PANEL */}
+      {needsAttention && (
+        <div className={styles.disputeBox}>
+          <div className={styles.disputeHeader}>
+            <span className={styles.alertIcon}>⚠️</span>
+            <h4>Admin Override / Resolve Dispute</h4>
           </div>
 
-          <div style={{ textAlign: "center" }}>
-            <button
-  // ZMIANA: Przekazujemy teraz p1Id i p2Id do funkcji
-  onClick={() => onResolveDispute(match.matchId || match.id, localScoreA, localScoreB, p1Id, p2Id)}
-  style={{
-    /* ...style bez zmian... */
-    backgroundColor: "#d9534f",
-    color: "white",
-    border: "none",
-    padding: "6px 12px",
-    cursor: "pointer",
-    borderRadius: "4px",
-    fontSize: "0.8rem",
-    fontWeight: "bold"
-  }}
->
-  Submit Result & Solve
-</button>
+          <div className={styles.disputeForm}>
+            
+            {/* INPUT DRUŻYNA A */}
+            <div className={styles.scoreEditGroup}>
+              <label>{p1Name}</label>
+              <div className={styles.inputStepperWrapper}>
+                <button 
+                  className={styles.stepBtn} 
+                  onClick={() => adjustScore(setLocalScoreA, localScoreA, -1)}
+                >−</button>
+                <input
+                  type="number"
+                  value={localScoreA}
+                  onChange={(e) => setLocalScoreA(e.target.value)}
+                  className={styles.scoreInput}
+                />
+                <button 
+                  className={styles.stepBtn} 
+                  onClick={() => adjustScore(setLocalScoreA, localScoreA, 1)}
+                >+</button>
+              </div>
+            </div>
+
+            <span className={styles.editSeparator}>:</span>
+
+            {/* INPUT DRUŻYNA B */}
+            <div className={styles.scoreEditGroup}>
+              <label>{p2Name}</label>
+              <div className={styles.inputStepperWrapper}>
+                <button 
+                  className={styles.stepBtn} 
+                  onClick={() => adjustScore(setLocalScoreB, localScoreB, -1)}
+                >−</button>
+                <input
+                  type="number"
+                  value={localScoreB}
+                  onChange={(e) => setLocalScoreB(e.target.value)}
+                  className={styles.scoreInput}
+                />
+                <button 
+                  className={styles.stepBtn} 
+                  onClick={() => adjustScore(setLocalScoreB, localScoreB, 1)}
+                >+</button>
+              </div>
+            </div>
+
           </div>
+
+          <button
+            onClick={() => onResolveDispute(match.matchId || match.id, localScoreA, localScoreB, p1Id, p2Id)}
+            className={styles.resolveBtn}
+          >
+            Confirm Result & Resolve
+          </button>
         </div>
       )}
     </div>
   );
 };
 
-// --- GŁÓWNY KOMPONENT MODALA ---
+// Główny modal szczegółów turnieju
 const TournamentDetailsModal = ({
   tournament,
   matches,
@@ -140,12 +158,11 @@ const TournamentDetailsModal = ({
   onGenerateBracket,
   onEdit,
   onDelete,
-  onRefresh // Callback do odświeżenia danych po akcji admina
+  onRefresh 
 }) => {
 
-  // Funkcja API do rozwiązywania sporu
+  // Logika wysyłania rozwiązania sporu do API
   const handleAdminResolve = async (matchId, scoreA, scoreB, p1Id, p2Id) => {
-    // 1. Zamiana pustych pól na 0 i sprawdzenie czy to liczby
     const sA = scoreA === "" ? 0 : parseInt(scoreA);
     const sB = scoreB === "" ? 0 : parseInt(scoreB);
 
@@ -154,12 +171,7 @@ const TournamentDetailsModal = ({
       return;
     }
 
-    // 2. Budujemy obiekt TYLKO z wynikami
-    const payload = {
-        scoreA: sA,
-        scoreB: sB
-    };
-
+    const payload = { scoreA: sA, scoreB: sB };
     console.log("Wysyłanie (tylko wyniki):", payload);
 
     if (!window.confirm(`Zatwierdzić wynik ${sA}:${sB}?`)) return;
@@ -168,7 +180,6 @@ const TournamentDetailsModal = ({
     const API_BASE_URL = "https://projektturniej.onrender.com";
 
     try {
-      // ID meczu jest w adresie URL
       const response = await fetch(`${API_BASE_URL}/api/brackets/admin-resolve/${matchId}`, {
         method: "POST",
         headers: {
@@ -182,10 +193,9 @@ const TournamentDetailsModal = ({
         alert("Sukces! Wynik zaktualizowany.");
         if (onRefresh) onRefresh();
       } else {
-        // Jeśli serwer zwróci błąd, próbujemy go odczytać
         const errorText = await response.text();
         console.error("Błąd Backend (treść):", errorText);
-        alert(`Błąd serwera: ${response.status} (Internal Server Error). Sprawdź konsolę.`);
+        alert(`Błąd serwera: ${response.status}. Sprawdź konsolę.`);
       }
     } catch (error) {
       console.error("Błąd sieci:", error);
@@ -198,11 +208,11 @@ const TournamentDetailsModal = ({
       <h2 className={styles.detailsTitle}>{tournament.tournamentName}</h2>
 
       {tournament.imageUrl && (
-        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <div className={styles.bannerWrapper}>
           <img
             src={tournament.imageUrl}
             alt="Tournament Banner"
-            style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '8px', border: '1px solid #333' }}
+            className={styles.bannerImage}
           />
         </div>
       )}
@@ -220,7 +230,7 @@ const TournamentDetailsModal = ({
         <h3>Bracket Management</h3>
 
         {matchesLoading ? (
-          <p style={{ textAlign: 'center', color: '#888' }}>Loading matches...</p>
+          <p className={styles.loadingText}>Loading matches...</p>
         ) : (
           <>
             {matches.length === 0 ? (
@@ -232,16 +242,7 @@ const TournamentDetailsModal = ({
               </div>
             ) : (
               <>
-                <div style={{
-                  padding: '10px',
-                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid #10b981',
-                  borderRadius: '6px',
-                  color: '#10b981',
-                  marginBottom: '15px',
-                  textAlign: 'center',
-                  fontWeight: 'bold'
-                }}>
+                <div className={styles.bracketReadyMsg}>
                   ✅ Bracket is ready
                 </div>
 

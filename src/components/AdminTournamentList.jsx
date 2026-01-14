@@ -1,73 +1,73 @@
 import React from "react";
-// Zakładam, że helpery masz w utils, jak ustaliliśmy wcześniej
-import { getCalculatedStatusColor, getTournamentStatus } from "../components/adminHelpers"; 
-// Używamy stylów admina, bo to część panelu administracyjnego
-import styles from "../styles/pages/adminPanel.module.css"; 
+import {
+  getCalculatedStatusColor,
+  getTournamentStatus,
+} from "../components/adminHelpers";
+import styles from "../styles/pages/adminPanel.module.css";
 
-const AdminTournamentList = ({ 
-    tournaments, 
-    searchTerm, 
-    setSearchTerm, 
-    sortBy, 
-    setSortBy, 
-    onSelect, 
-    onEdit, 
-    onDelete 
+const AdminTournamentList = ({
+  tournaments,
+  searchTerm,
+  setSearchTerm,
+  sortBy,
+  setSortBy,
+  onSelect,
+  onEdit,
+  onDelete,
 }) => {
-
-  // Logika filtrowania i sortowania po stronie klienta (dla Admina)
+  // Logika: Obliczanie statusu, filtrowanie po nazwie i sortowanie listy
   const getProcessedTournaments = () => {
-      // 1. Dodajemy status wyliczony
-      let processed = tournaments.map(t => ({
-          ...t,
-          calculatedStatus: getTournamentStatus(t.startDate)
-      }));
+    let processed = tournaments.map((t) => ({
+      ...t,
+      calculatedStatus: getTournamentStatus(t.startDate),
+    }));
 
-      // 2. Filtrowanie po nazwie
-      if (searchTerm) {
-          const lower = searchTerm.toLowerCase();
-          processed = processed.filter(t => 
-              t.tournamentName.toLowerCase().includes(lower)
-          );
+    if (searchTerm) {
+      const lower = searchTerm.toLowerCase();
+      processed = processed.filter((t) =>
+        t.tournamentName.toLowerCase().includes(lower)
+      );
+    }
+
+    processed.sort((a, b) => {
+      const dateA = new Date(a.startDate);
+      const dateB = new Date(b.startDate);
+      const nameA = a.tournamentName.toLowerCase();
+      const nameB = b.tournamentName.toLowerCase();
+
+      switch (sortBy) {
+        case "dateDesc":
+          return dateB - dateA;
+        case "dateAsc":
+          return dateA - dateB;
+        case "nameAsc":
+          return nameA.localeCompare(nameB);
+        case "nameDesc":
+          return nameB.localeCompare(nameA);
+        default:
+          return 0;
       }
-
-      // 3. Sortowanie
-      processed.sort((a, b) => {
-          const dateA = new Date(a.startDate);
-          const dateB = new Date(b.startDate);
-          const nameA = a.tournamentName.toLowerCase();
-          const nameB = b.tournamentName.toLowerCase();
-
-          switch (sortBy) {
-              case 'dateDesc': return dateB - dateA;
-              case 'dateAsc': return dateA - dateB;
-              case 'nameAsc': return nameA.localeCompare(nameB);
-              case 'nameDesc': return nameB.localeCompare(nameA);
-              default: return 0;
-          }
-      });
-      return processed;
+    });
+    return processed;
   };
 
   const processedList = getProcessedTournaments();
 
   return (
     <div className={styles.tournamentListWrapper}>
-      {/* Pasek filtrów admina */}
-      <div className={styles.filtersBar} style={{display: 'flex', gap: '15px', marginBottom: '20px', alignItems: 'center'}}>
-        <input 
-          type="text" 
-          placeholder="🔍 Search tournaments..." 
+      {/* Sekcja filtrów: Wyszukiwanie i Sortowanie */}
+      <div className={styles.filtersBar}>
+        <input
+          type="text"
+          placeholder="🔍 Search tournaments..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.input}
-          style={{flex: 1, padding: '10px'}}
+          className={`${styles.input} ${styles.searchInput}`}
         />
-        <select 
-          value={sortBy} 
+        <select
+          value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className={styles.select}
-          style={{width: '200px', padding: '10px'}}
+          className={`${styles.select} ${styles.sortSelect}`}
         >
           <option value="dateAsc">📅 Date: Oldest First</option>
           <option value="dateDesc">📅 Date: Newest First</option>
@@ -76,78 +76,82 @@ const AdminTournamentList = ({
         </select>
       </div>
 
-      {/* Lista wierszy (List View) */}
+      {/* Wyświetlanie listy turniejów */}
       <div className={styles.tournamentList}>
-        {processedList.length === 0 && <p style={{textAlign: 'center', color: '#888'}}>No tournaments found.</p>}
-        
-        {processedList.map(t => (
-          <div key={t.id || t.tournamentId} className={styles.tournamentItem} onClick={() => onSelect(t)}>
-            <div style={{display: 'flex', alignItems: 'center', gap: '15px', flex: 1}}>
-              {/* Miniaturka obrazka */}
-              {t.imageUrl && (
-                <img 
-                  src={t.imageUrl} 
-                  alt="Cover" 
-                  style={{width: '60px', height: '60px', objectFit: 'cover', borderRadius: '4px'}} 
-                />
-              )}
-              
-              <div>
-                <strong className={styles.itemTitle}>{t.tournamentName}</strong>
-                <div className={styles.itemSubtitle}>
-                  {/* Badge: Typ (Team/Solo) */}
-                  <span style={{
-                    textTransform: 'uppercase', 
-                    fontSize: '0.7rem', 
-                    background: t.registrationType === 'team' ? '#4f46e5' : '#2563eb',
-                    color: 'white',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    marginRight: '8px'
-                  }}>
-                    {t.registrationType === 'team' ? 'TEAM' : 'SOLO'}
-                  </span>
-                  
-                  {/* Badge: Status (Upcoming/Ongoing) */}
-                  <span style={{
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                    color: getCalculatedStatusColor(t.calculatedStatus),
-                    border: `1px solid ${getCalculatedStatusColor(t.calculatedStatus)}`,
-                    padding: '1px 5px',
-                    borderRadius: '4px',
-                    marginRight: '8px'
-                  }}>
-                    {t.calculatedStatus}
-                  </span>
+        {processedList.length === 0 && (
+          <p className={styles.emptyListMessage}>No tournaments found.</p>
+        )}
 
-                  <span style={{color: '#aaa', fontSize: '0.8rem'}}>
-                    {new Date(t.startDate).toLocaleDateString()}
-                  </span>
+        {processedList.map((t) => {
+          const statusColor = getCalculatedStatusColor(t.calculatedStatus);
+
+          return (
+            <div
+              key={t.id || t.tournamentId}
+              className={styles.tournamentItem}
+              onClick={() => onSelect(t)}
+            >
+              <div className={styles.itemContent}>
+                {t.imageUrl && (
+                  <img
+                    src={t.imageUrl}
+                    alt="Cover"
+                    className={styles.itemImage}
+                  />
+                )}
+
+                <div>
+                  <strong className={styles.itemTitle}>
+                    {t.tournamentName}
+                  </strong>
+                  <div className={styles.itemSubtitle}>
+                    {/* Odznaka: Typ rejestracji */}
+                    <span
+                      className={`${styles.badgeBase} ${
+                        t.registrationType === "team"
+                          ? styles.badgeTeam
+                          : styles.badgeSolo
+                      }`}
+                    >
+                      {t.registrationType === "team" ? "TEAM" : "SOLO"}
+                    </span>
+
+                    {/* Odznaka: Status (kolor przekazywany przez zmienną CSS) */}
+                    <span
+                      className={styles.badgeStatus}
+                      style={{ "--status-color": statusColor }}
+                    >
+                      {t.calculatedStatus}
+                    </span>
+
+                    <span className={styles.dateText}>
+                      {new Date(t.startDate).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Akcje Admina (Edycja/Usuwanie) */}
-            <div className={styles.itemActions} style={{display: 'flex', gap: '10px'}}>
-              <button 
-                onClick={(e) => onEdit(t, e)}
-                style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem'}}
-                title="Edit"
-              >
-                ✏️
-              </button>
-              <button 
-                onClick={(e) => onDelete(t.tournamentId || t.id, e)}
-                style={{background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem'}}
-                title="Delete"
-              >
-                🗑️
-              </button>
-              <div className={styles.arrowIcon}>&rsaquo;</div>
+              {/* Akcje: Edycja i Usuwanie */}
+              <div className={styles.itemActions}>
+                <button
+                  onClick={(e) => onEdit(t, e)}
+                  className={styles.iconBtn}
+                  title="Edit"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={(e) => onDelete(t.tournamentId || t.id, e)}
+                  className={styles.iconBtn}
+                  title="Delete"
+                >
+                  🗑️
+                </button>
+                <div className={styles.arrowIcon}>&rsaquo;</div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

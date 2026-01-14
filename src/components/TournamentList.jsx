@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import MainPageContent from "./mainPageContent";
+import MainPageContent from "./mainPageContent"; 
 import styles from "../styles/components/TournamentList.module.css"; 
 
 const TournamentList = () => {
@@ -10,7 +10,6 @@ const TournamentList = () => {
   useEffect(() => {
     setLoading(true);
 
-    // 1. ZAWSZE pobieramy wszystkie turnieje (ignorujemy filtrowanie backendu)
     const url = "https://projektturniej.onrender.com/api/tournaments";
 
     fetch(url)
@@ -19,44 +18,63 @@ const TournamentList = () => {
         return res.json();
       })
       .then((data) => {
-        const now = new Date();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Resetujemy czas dzisiejszy do północy
 
-        // 2. WŁASNE FILTROWANIE PO STRONIE KLIENTA
-        const filteredData = data.filter((t) => {
-            if (filter === "all") return true;
-
+        // Funkcja pomocnicza do określania statusu i dat
+        const getTournamentInfo = (t) => {
             const start = new Date(t.startDate);
-            let end;
+            start.setHours(0, 0, 0, 0); // Reset startu do północy
 
-            // Logika ustalania daty zakończenia
+            let end;
             if (t.endDate) {
-                // Jeśli jest podana data końca, używamy jej
                 end = new Date(t.endDate);
             } else {
-                // Jeśli BRAK daty końca -> turniej trwa do końca dnia rozpoczęcia (23:59:59)
+                // Jeśli brak daty końca, to koniec jest w tym samym dniu co start
                 end = new Date(start);
-                end.setHours(23, 59, 59, 999);
+            }
+            // Koniec dnia to 23:59:59
+            end.setHours(23, 59, 59, 999);
+
+            let status = 'upcoming'; 
+            
+            // LOGIKA PORÓWNYWANIA DAT:
+            if (today > end) {
+                status = 'finished';
+            } else if (today >= start && today <= end) {
+                status = 'ongoing';
+            } else {
+                status = 'upcoming';
             }
 
-            // Logika statusów
-            if (filter === "upcoming") {
-                // Nadchodzący: obecny czas jest przed czasem startu
-                return now < start;
-            }
-            if (filter === "ongoing") {
-                // Trwający: obecny czas jest między startem a końcem
-                return now >= start && now <= end;
-            }
-            if (filter === "finished") {
-                // Zakończony: obecny czas jest po dacie końca
-                return now > end;
-            }
-            return true;
+            return { start, end, status };
+        };
+
+        // 1. FILTROWANIE
+        const filteredData = data.filter((t) => {
+            if (filter === "all") return true;
+            const { status } = getTournamentInfo(t);
+            return status === filter;
         });
 
-        // 3. Sortowanie (od najbliższych)
+        // 2. SORTOWANIE
         const sortedData = filteredData.sort((a, b) => {
-            return new Date(a.startDate) - new Date(b.startDate);
+            const infoA = getTournamentInfo(a);
+            const infoB = getTournamentInfo(b);
+
+            const priority = {
+                'ongoing': 1,
+                'upcoming': 2,
+                'finished': 3
+            };
+
+            const priorityA = priority[infoA.status];
+            const priorityB = priority[infoB.status];
+
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
+            return infoA.start - infoB.start;
         });
 
         setTournaments(sortedData);
@@ -66,12 +84,12 @@ const TournamentList = () => {
         console.error("Błąd:", err);
         setLoading(false);
       });
-  }, [filter]); // Odśwież, gdy zmienimy zakładkę
+  }, [filter]);
 
   return (
     <div className={styles.container}>
       
-      {/* SEKCJA FILTROWANIA */}
+      {/* SEKCJA FILTROWANIA - TERAZ PO ANGIELSKU */}
       <div className={styles.filterContainer}>
         {['all', 'upcoming', 'ongoing', 'finished'].map((status) => (
             <button 
@@ -79,14 +97,17 @@ const TournamentList = () => {
                 className={`${styles.filterBtn} ${filter === status ? styles.active : ''}`} 
                 onClick={() => setFilter(status)}
             >
-                {status === 'all' ? 'Wszystkie' : status.charAt(0).toUpperCase() + status.slice(1)}
+                {/* TŁUMACZENIE BUTTONÓW NA ANGIELSKI */}
+                {status === 'all' ? 'All' : 
+                 status === 'upcoming' ? 'Upcoming' :
+                 status === 'ongoing' ? 'Ongoing' : 'Finished'}
             </button>
         ))}
       </div>
 
       {/* LISTA TURNIEJÓW */}
       {loading ? (
-        <p className={styles.loadingText}>Ładowanie turniejów...</p>
+        <p className={styles.loadingText}>Loading tournaments...</p>
       ) : (
         <div className={styles.listGrid}>
           {tournaments.length > 0 ? (
@@ -108,7 +129,7 @@ const TournamentList = () => {
                 />
             ))
           ) : (
-              <p className={styles.emptyText}>Brak turniejów w tej kategorii.</p>
+              <p className={styles.emptyText}>No tournaments found in this category.</p>
           )}
         </div>
       )}

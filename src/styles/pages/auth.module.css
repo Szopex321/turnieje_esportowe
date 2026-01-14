@@ -1,5 +1,3 @@
-/* src/styles/pages/auth.module.css */
-
 /* Główny kontener na cały ekran - centruje kartę */
 .pageContainer {
     min-height: 100vh; 
@@ -30,16 +28,36 @@
     font-size: 28px;
     font-weight: bold;
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .subtitle {
     color: #a0aec0;
     text-align: center;
     font-size: 14px;
-    margin-top: -15px;
+    margin-top: 0;
     margin-bottom: 10px;
 }
+
+/* --- Nowe klasy (zastępujące style inline) --- */
+
+.errorBox {
+    color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* ------------------------------------------- */
 
 /* Grupa inputa (etykieta + pole) */
 .inputGroup {
@@ -110,6 +128,8 @@
     text-decoration: underline;
 }
 
+/* --- Klasy prawdopodobnie używane w SignUp (zachowane) --- */
+
 .avatarContainer {
     display: flex;
     justify-content: center;
@@ -133,24 +153,18 @@
     flex: 1;
 }
 
-.formContainer {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
 .avatarGrid {
   display: flex;
   justify-content: center;
   gap: 15px;
   margin-bottom: 20px;
-  flex-wrap: wrap; /* Pozwala zawijać awatary jeśli jest ich dużo */
+  flex-wrap: wrap; 
 }
 
 .avatarOption {
   width: 60px;
   height: 60px;
-  border-radius: 50%; /* Okrągłe awatary */
+  border-radius: 50%; 
   cursor: pointer;
   object-fit: cover;
   border: 3px solid transparent; 
@@ -163,9 +177,8 @@
   opacity: 0.9;
 }
 
-/* Styl dla aktywnego awatara */
 .avatarSelected {
-  border-color: #fbbf24; /* Złoty kolor ramki */
+  border-color: #fbbf24;
   opacity: 1;
   transform: scale(1.15);
   box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);

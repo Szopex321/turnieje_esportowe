@@ -14,22 +14,26 @@ const API_BASE_URL = "https://projektturniej.onrender.com/api";
 
 function TitleBar() {
   const navigate = useNavigate();
+
+  // Stany użytkownika
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
   const [avatar, setAvatar] = useState(null);
   const [userId, setUserId] = useState(null);
 
-  // Stany Modali
+  // Stany widoczności modali
   const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isMyTeamsModalOpen, setIsMyTeamsModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  
+  // Dane aplikacji
   const [selectedTeamForDetails, setSelectedTeamForDetails] = useState(null);
-
   const [teams, setTeams] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [notifications, setNotifications] = useState([]);
 
+  // Sprawdza poprawność URL avatara, zwracając domyślny w razie błędu
   const getValidAvatar = useCallback((url) => {
     if (!url || url === "string" || url.includes("pravatar.cc")) {
       return defaultAvatar;
@@ -37,6 +41,7 @@ function TitleBar() {
     return url;
   }, []);
 
+  // Pobiera listę drużyn i mapuje strukturę danych pod widok (w tym obsługę brakujących logo)
   const fetchAllTeams = useCallback(async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/teams`);
@@ -67,6 +72,7 @@ function TitleBar() {
     }
   }, [getValidAvatar]);
 
+  // Pobiera powiadomienia dla zalogowanego użytkownika i zlicza nieprzeczytane
   const fetchNotifications = useCallback(async () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) return;
@@ -87,10 +93,12 @@ function TitleBar() {
     }
   }, []);
 
+  // Inicjalizacja: przywracanie sesji z localStorage i ustawienie interwału odświeżania
   useEffect(() => {
     const savedUserJSON = localStorage.getItem("currentUser");
     const token = localStorage.getItem("jwt_token");
     const savedUserId = localStorage.getItem("currentUserId");
+
     if (savedUserJSON && token) {
       try {
         const user = JSON.parse(savedUserJSON);
@@ -103,6 +111,7 @@ function TitleBar() {
           }
           fetchNotifications();
           fetchAllTeams();
+          
           const interval = setInterval(fetchNotifications, 30000);
           return () => clearInterval(interval);
         }
@@ -115,11 +124,13 @@ function TitleBar() {
     }
   }, [fetchNotifications, fetchAllTeams]);
 
+  // Nawigacja i obsługa modali
   const goToProfile = () => navigate("/profile");
   const goToMyTeams = () => setIsMyTeamsModalOpen(true);
   const toggleFriendsModal = () => setIsFriendsModalOpen((prev) => !prev);
   const toggleNotificationsModal = () => setIsNotificationsModalOpen((prev) => !prev);
 
+  // Wylogowanie: czyszczenie danych lokalnych i reset stanu
   const handleLogout = () => {
     localStorage.removeItem("jwt_token");
     localStorage.removeItem("currentUser");

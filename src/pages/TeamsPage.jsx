@@ -1,12 +1,9 @@
-/* eslint-disable no-irregular-whitespace */
 import React, { useState, useEffect } from "react";
 import Nav from "../components/nav";
 import TitleBar from "../components/titleBar";
 import styles from "../styles/pages/TeamsPage.module.css";
 import AddTeamModal from "../components/AddTeamModal";
 import TeamDetailsModal from "../components/TeamDetailsModal";
-
-// IMPORT TWOJEGO AWATARA Z ASSETS
 import defaultAvatar from "../assets/deafultAvatar.jpg";
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -24,6 +21,7 @@ const TEAM_COLORS = [
 ];
 
 function TeamsPage({ user, onNotificationsRefresh }) {
+  // Stan aplikacji: dane, modale, wyszukiwanie
   const [teams, setTeams] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [availableUsers, setAvailableUsers] = useState([]);
@@ -31,7 +29,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
-  // Funkcja pomocnicza do sprawdzania czy URL awatara jest poprawny
+  // Walidacja URL awatara (zabezpieczenie przed błędnymi linkami)
   const getValidAvatar = (url) => {
     if (!url || url === "string" || url.includes("pravatar.cc")) {
       return defaultAvatar;
@@ -39,6 +37,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
     return url;
   };
 
+  // Pobieranie listy użytkowników z API
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/users`);
@@ -55,18 +54,21 @@ function TeamsPage({ user, onNotificationsRefresh }) {
     }
   };
 
+  // Pobieranie wszystkich drużyn i mapowanie struktury graczy
   const fetchAllTeams = async () => {
     try {
       const teamsResponse = await fetch(`${API_BASE_URL}/teams`);
       if (!teamsResponse.ok) {
-        console.error("Błąd serwera (500) lub inny:", teamsResponse.status);
-        throw new Error("Błąd podczas pobierania wszystkich drużyn");
+        console.error("Błąd serwera:", teamsResponse.status);
+        throw new Error("Błąd podczas pobierania drużyn");
       }
       const allTeamsData = await teamsResponse.json();
+      
       const mappedTeams = allTeamsData.map((team, index) => {
         const allPlayers = [];
         const addedUserIds = new Set();
 
+        // Dodawanie kapitana
         if (team.captain) {
           allPlayers.push({
             userId: team.captain.userId,
@@ -78,6 +80,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
           addedUserIds.add(team.captain.userId);
         }
 
+        // Dodawanie członków drużyny (z pominięciem duplikatów)
         const membersList = team.teamMembers || [];
         if (Array.isArray(membersList)) {
           membersList.forEach((member) => {
@@ -119,11 +122,12 @@ function TeamsPage({ user, onNotificationsRefresh }) {
       });
       setTeams(mappedTeams);
     } catch (error) {
-      console.error("Błąd podczas pobierania drużyn:", error);
+      console.error("Błąd pobierania drużyn:", error);
       setTeams([]);
     }
   };
 
+  // Aktualizacja logo w stanie lokalnym po zmianie
   const handleUpdateTeamLogo = (teamId, newLogoUrl) => {
     setTeams((prevTeams) =>
       prevTeams.map((team) =>
@@ -143,6 +147,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
     fetchAllTeams();
   }, []);
 
+  // Obsługa otwierania modali i walidacja logowania
   const handleOpenAddTeamModal = () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) {
@@ -157,6 +162,7 @@ function TeamsPage({ user, onNotificationsRefresh }) {
     setIsDetailsModalOpen(true);
   };
 
+  // Logika dołączania do drużyny (API Request)
   const handleJoinTeam = async (teamId) => {
     const token = localStorage.getItem("jwt_token");
     if (!token) {
@@ -266,7 +272,6 @@ function TeamsPage({ user, onNotificationsRefresh }) {
                       </div>
                     ))
                   ) : (
-                    // Fallback dla kapitana jeśli lista aktywnych jest pusta
                     <div className={styles.playerAvatar}>
                       <img src={defaultAvatar} alt="No players" />
                     </div>

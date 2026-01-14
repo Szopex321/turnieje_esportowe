@@ -9,9 +9,19 @@ const TournamentForm = ({
     gamesList, 
     isEditing 
 }) => {
+
+  // Bezpieczna zmiana liczby uczestników
+  const adjustParticipants = (amount) => {
+    // Parsujemy na int, jeśli puste to traktujemy jako 0
+    const currentVal = parseInt(formData.maxParticipants) || 0;
+    const newVal = Math.max(0, currentVal + amount);
+    setFormData({ ...formData, maxParticipants: newVal });
+  };
+
   return (
     <div className={styles.tabContent}>
       <h2>{isEditing ? "Edit Tournament" : "Create New Tournament"}</h2>
+      
       <form onSubmit={onSubmit}>
         <div className={styles.formGroup}>
           <label>Tournament Name</label>
@@ -43,7 +53,9 @@ const TournamentForm = ({
             onChange={e => setFormData({...formData, gameId: e.target.value})}
           >
             <option value="">-- Select Game --</option>
-            {gamesList.map(g => <option key={g.gameId} value={g.gameId}>{g.gameName}</option>)}
+            {gamesList.map(g => (
+              <option key={g.gameId} value={g.gameId}>{g.gameName}</option>
+            ))}
           </select>
         </div>
 
@@ -68,19 +80,35 @@ const TournamentForm = ({
           />
         </div>
 
+        {/* Sekcja Licznika Uczestników */}
         <div className={styles.formGroup}>
           <label>Max Participants</label>
-          <input 
-            type="number" 
-            className={styles.input} 
-            value={formData.maxParticipants} 
-            onChange={e => setFormData({...formData, maxParticipants: e.target.value})} 
-          />
+          <div className={styles.stepperContainer}>
+            <button 
+                type="button" 
+                className={styles.stepperBtn} 
+                onClick={() => adjustParticipants(-1)}
+            >−</button>
+            
+            <input 
+                type="number" 
+                className={styles.stepperInput} 
+                value={formData.maxParticipants} 
+                onChange={e => setFormData({...formData, maxParticipants: e.target.value})} 
+            />
+
+            <button 
+                type="button" 
+                className={styles.stepperBtn} 
+                onClick={() => adjustParticipants(1)}
+            >+</button>
+          </div>
         </div>
         
-        <div style={{display: 'flex', gap: '20px'}}>
-            <div className={styles.formGroup} style={{flex: 1}}>
-                <label>Start Date</label>
+        {/* Wiersz z datami (układ 50/50) */}
+        <div className={styles.formRow}>
+            <div className={styles.formCol}>
+                <label className={styles.labelSmall}>Start Date</label>
                 <input 
                     type="datetime-local" 
                     className={styles.input} 
@@ -88,8 +116,8 @@ const TournamentForm = ({
                     onChange={e => setFormData({...formData, startDate: e.target.value})} 
                 />
             </div>
-            <div className={styles.formGroup} style={{flex: 1}}>
-                <label>End Date</label>
+            <div className={styles.formCol}>
+                <label className={styles.labelSmall}>End Date</label>
                 <input 
                     type="datetime-local" 
                     className={styles.input} 

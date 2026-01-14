@@ -195,7 +195,7 @@
 }
 
 .signUpButton:hover {
-  background-color: #eab308 !important;
+  background-color: #eab308;
 }
 
 /* --- RESPONSYWNOŚĆ (Mobile) --- */
@@ -243,7 +243,7 @@
   }
 
   /* Na bardzo małych ekranach ukrywamy przycisk wylogowania (powinien być w profilu) 
-     lub zmniejszamy go */
+      lub zmniejszamy go */
   .logoutButton {
     padding: 6px 10px;
     font-size: 12px;
@@ -263,6 +263,6 @@
   }
   
   .header {
-      justify-content: flex-end; /* Elementy przesunięte do prawej */
+     justify-content: flex-end; /* Elementy przesunięte do prawej */
   }
 }
