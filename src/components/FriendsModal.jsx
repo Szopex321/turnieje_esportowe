@@ -1,18 +1,14 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import styles from "../styles/components/FriendsModal.module.css";
 import defaultAvatar from "../assets/deafultAvatar.jpg";
+
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
-const fetchAPI = async (
-  endpoint,
-  method = "GET",
-  body = null,
-  base = "friends"
-) => {
+
+// --- Pomocnik API (Obsługa zapytań) ---
+const fetchAPI = async (endpoint, method = "GET", body = null, base = "friends") => {
   const token = localStorage.getItem("jwt_token");
-  if (!token) {
-    return { success: false, message: "Missing authorization token" };
-  }
-  const url = `${API_BASE_URL}/${base}/${endpoint}`;
+  if (!token) return { success: false, message: "Brak tokenu autoryzacji" };
+
   const config = {
     method,
     headers: {
@@ -20,518 +16,341 @@ const fetchAPI = async (
       "Content-Type": "application/json",
     },
   };
-  if (body && (method === "POST" || method === "PUT" || method === "DELETE")) {
+
+  // Dodaj body tylko dla metod, które tego wymagają
+  if (body && ["POST", "PUT", "DELETE"].includes(method)) {
     config.body = JSON.stringify(body);
   }
+
   try {
-    const response = await fetch(url, config);
+    const response = await fetch(`${API_BASE_URL}/${base}/${endpoint}`, config);
+    
+    // Status 204 oznacza sukces bez treści (No Content)
+    if (response.status === 204) return { success: true, data: {} };
+    
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(
-        `Error ${response.status}: ${errorText || response.statusText}`
-      );
+      throw new Error(`Błąd ${response.status}: ${errorText || response.statusText}`);
     }
-    if (response.status === 204) {
-      return { success: true, data: {} };
-    }
+
     const data = await response.json().catch(() => ({}));
     return { success: true, data };
   } catch (error) {
     return { success: false, message: error.message };
   }
 };
+
+// --- Formater Danych ---
 const formatUserData = (item) => {
-  const senderNameValue =
-    item.SenderName || item.senderName || item.username || "Anonymous";
-  const senderIdValue =
-    item.SenderId ||
-    item.senderId ||
-    item.RequesterId ||
-    item.UserId ||
-    item.id ||
-    0;
+  // Normalizacja niespójnych odpowiedzi z backendu (różne wielkości liter w kluczach)
   return {
     id: item.id || item.userId || item._id || item.UserId || 0,
-    username: item.username || item.Username || senderNameValue,
+    username: item.username || item.Username || item.SenderName || "Anonymous",
     avatar: item.avatar || item.avatarUrl || item.AvatarUrl || defaultAvatar,
     isOnline: item.isOnline || item.online || item.IsActive || false,
     displayName: item.displayName || item.username || item.Username,
     requestId: item.requestId || item.RequestId,
-    senderId: senderIdValue,
-    senderName: senderNameValue,
+    senderId: item.SenderId || item.senderId || item.RequesterId || 0,
+    senderName: item.SenderName || item.senderName || item.username,
     createdAt: item.createdAt || item.sentAt || item.SentAt,
   };
 };
-const checkFriendshipStatus = (
-  userId,
-  friendsList,
-  requestsList,
-  currentUserId
-) => {
-  if (!userId || userId === currentUserId) return "none";
-  const isFriend = friendsList.some((friend) => {
-    const friendId = friend.id || friend.userId || friend._id;
-    return friendId === userId;
-  });
-  if (isFriend) return "friend";
-  const pendingFromUser = requestsList.some((request) => {
-    const senderId = request.senderId || request.SenderId;
-    return senderId === userId;
-  });
-  if (pendingFromUser) return "pending_from_them";
-  return "none";
-};
+
 const FriendsModal = ({ onClose }) => {
   const [friends, setFriends] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]); // Cache wszystkich użytkowników do wyszukiwania lokalnego
+  const [searchResults, setSearchResults] = useState([]);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [activeTab, setActiveTab] = useState("friends");
-  const [search, setSearch] = useState("");
-  const [searchResults, setSearchResults] = useState([]);
-  const [userStatuses, setUserStatuses] = useState({});
-  const searchTimeout = useRef(null);
-  const currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
-  const currentUserId = currentUser.id || currentUser.userId || 0;
-  useEffect(() => {
-    if (!localStorage.getItem("jwt_token")) {
-      setError("Please log in to manage friends.");
+  const [searchTerm, setSearchTerm] = useState("");
+  
+  const searchTimeoutRef = useRef(null);
+
+  // Zapamiętanie (memoizacja) obecnego użytkownika, aby uniknąć ciągłego odczytu z localStorage
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem("currentUser") || "{}");
+    } catch {
+      return {};
     }
   }, []);
+  
+  const currentUserId = currentUser.id || currentUser.userId || 0;
+
+  // --- Pobieranie Danych ---
   const loadData = useCallback(async () => {
     if (!localStorage.getItem("jwt_token")) return;
     setLoading(true);
     setError(null);
-    setMessage(null);
+
     try {
+      // Pobieramy wszystko równolegle: znajomych, prośby i listę wszystkich użytkowników
       const [friendsRes, requestsRes, usersRes] = await Promise.all([
         fetchAPI("", "GET"),
         fetchAPI("requests", "GET"),
         fetch(`${API_BASE_URL}/users`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwt_token")}`,
-          },
+          headers: { Authorization: `Bearer ${localStorage.getItem("jwt_token")}` },
         }).then((r) => r.json().catch(() => ({}))),
       ]);
+
+      // Obsługa listy znajomych
       if (friendsRes.success) {
-        const friendsData = Array.isArray(friendsRes.data)
-          ? friendsRes.data
-          : friendsRes.data.friends || friendsRes.data.data || [];
-        setFriends(friendsData.map(formatUserData));
-      } else {
-        console.error("Failed to load friends:", friendsRes.message);
+        const rawFriends = Array.isArray(friendsRes.data) ? friendsRes.data : (friendsRes.data.friends || []);
+        setFriends(rawFriends.map(formatUserData));
       }
+
+      // Obsługa listy próśb
       if (requestsRes.success) {
-        const requestsData = Array.isArray(requestsRes.data)
-          ? requestsRes.data
-          : requestsRes.data.requests || requestsRes.data.data || [];
-        setRequests(requestsData.map(formatUserData));
-      } else {
-        setError(
-          "Błąd ładowania próśb: Upewnij się, że API /friends/requests działa i zwraca poprawny JSON."
-        );
-        console.error("Failed to load requests:", requestsRes.message);
+        const rawRequests = Array.isArray(requestsRes.data) ? requestsRes.data : (requestsRes.data.requests || []);
+        setRequests(rawRequests.map(formatUserData));
       }
-      const usersData = Array.isArray(usersRes)
-        ? usersRes
-        : usersRes.users || usersRes.data || [];
-      const formattedUsers = usersData
+
+      // Obsługa listy "Wszyscy użytkownicy" (do wyszukiwarki)
+      const rawUsers = Array.isArray(usersRes) ? usersRes : (usersRes.users || []);
+      const formattedUsers = rawUsers
         .map(formatUserData)
-        .filter((user) => user.id !== currentUserId);
-      setUsers(formattedUsers);
+        .filter((u) => u.id !== currentUserId); // Wyklucz siebie
+      setAllUsers(formattedUsers);
+
     } catch (err) {
-      setError("Error loading data: " + err.message);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   }, [currentUserId]);
+
   useEffect(() => {
-    const updateStatuses = () => {
-      if (users.length === 0) return;
-      const newStatuses = { ...userStatuses };
-      for (const user of users) {
-        if (user.id && user.id !== currentUserId) {
-          const status = checkFriendshipStatus(
-            user.id,
-            friends,
-            requests,
-            currentUserId
-          );
-          newStatuses[user.id] = status;
-        }
-      }
-      setUserStatuses(newStatuses);
-    };
-    if (users.length > 0) {
-      updateStatuses();
-    }
-  }, [users, friends, requests, currentUserId]);
-  useEffect(() => {
-    if (localStorage.getItem("jwt_token")) {
-      loadData();
-    }
+    loadData();
   }, [loadData]);
+
+  // --- Akcje Użytkownika ---
+
   const handleRemoveFriend = async (friendId, friendName) => {
-    if (!friendId) return;
-    setLoading(true);
+    if (!window.confirm(`Are you sure you want to remove ${friendName}?`)) return;
+    
     const result = await fetchAPI(`remove/${friendId}`, "DELETE");
     if (result.success) {
       setMessage({ type: "success", text: `${friendName} removed` });
-      setFriends((prev) => prev.filter((friend) => friend.id !== friendId));
-      setUserStatuses((prev) => ({
-        ...prev,
-        [friendId]: "none",
-      }));
-      await loadData();
+      // Aktualizacja lokalnego stanu (bez ponownego pobierania danych)
+      setFriends((prev) => prev.filter((f) => f.id !== friendId));
     } else {
-      setMessage({ type: "error", text: `Error: ${result.message}` });
+      setMessage({ type: "error", text: result.message });
     }
-    setLoading(false);
   };
-  const sendInvite = async (userId, username) => {
-    if (!userId) return;
-    setLoading(true);
-    const result = await fetchAPI(`invite/${userId}`, "POST");
-    if (result.success) {
-      setMessage({
-        type: "success",
-        text: `Invitation sent to ${username}`,
-      });
-      setSearch("");
-      setSearchResults([]);
-      setActiveTab("requests");
-      setUserStatuses((prev) => ({
-        ...prev,
-        [userId]: "pending_from_me",
-      }));
-    } else {
-      setMessage({ type: "error", text: `Błąd wysyłania: ${result.message}` });
-    }
-    setLoading(false);
-  };
-  const handleRequest = async (type, requesterId, requesterName) => {
-    if (!requesterId || requesterId === 0) {
-      setMessage({
-        type: "error",
-        text: "Błąd: Brak poprawnego ID nadawcy prośby (ID: 0).",
-      });
-      console.error("Missing Requester ID for action:", type);
-      return;
-    }
-    setLoading(true);
-    let endpoint;
-    let method;
-    if (type === "accept") {
-      endpoint = `accept/${requesterId}`;
-      method = "POST";
-    } else {
-      endpoint = `remove/${requesterId}`;
-      method = "DELETE";
-    }
+
+  const handleRequestAction = async (action, requesterId) => {
+    // action: 'accept' (akceptuj) lub 'remove' (odrzuć)
+    const endpoint = action === "accept" ? `accept/${requesterId}` : `remove/${requesterId}`;
+    const method = action === "accept" ? "POST" : "DELETE";
+
     const result = await fetchAPI(endpoint, method);
     if (result.success) {
-      setMessage({
-        type: "success",
-        text: `Invitation ${type === "accept" ? "accepted" : "declined"}`,
+      setMessage({ 
+        type: "success", 
+        text: `Request ${action === "accept" ? "accepted" : "declined"}` 
       });
-      setRequests((prev) =>
-        prev.filter((req) => {
-          const reqId = req.senderId;
-          return reqId !== requesterId;
-        })
-      );
-      if (type === "accept") {
-        await loadData();
+      
+      // Usuń z listy próśb
+      setRequests((prev) => prev.filter((r) => r.senderId !== requesterId));
+      
+      // Jeśli zaakceptowano, dodaj do listy znajomych od razu (UX)
+      if (action === "accept") {
+        const newFriend = allUsers.find(u => u.id === requesterId) || requests.find(r => r.senderId === requesterId);
+        if(newFriend) setFriends(prev => [...prev, formatUserData(newFriend)]);
       }
-      setUserStatuses((prev) => ({
-        ...prev,
-        [requesterId]: type === "accept" ? "friend" : "none",
-      }));
     } else {
-      setMessage({ type: "error", text: `Error: ${result.message}` });
+      setMessage({ type: "error", text: result.message });
     }
-    setLoading(false);
   };
-  const handleSearch = useCallback(
-    (query) => {
-      if (query.trim().length < 3) {
-        setSearchResults([]);
-        return;
-      }
-      const results = users.filter((user) => {
-        if (user.id === currentUserId) return false;
-        return (
-          user.username.toLowerCase().includes(query.toLowerCase()) ||
-          user.displayName?.toLowerCase().includes(query.toLowerCase())
-        );
-      });
-      setSearchResults(results);
-    },
-    [users, currentUserId]
-  );
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    if (value.trim().length >= 3) {
-      searchTimeout.current = setTimeout(() => handleSearch(value), 300);
+
+  const sendInvite = async (userId, username) => {
+    const result = await fetchAPI(`invite/${userId}`, "POST");
+    if (result.success) {
+      setMessage({ type: "success", text: `Invite sent to ${username}` });
+      // Reset wyszukiwania i przejście do zakładki próśb (lub zostawienie w wyszukiwaniu)
+      setSearchTerm("");
+      setActiveTab("requests"); 
     } else {
+      setMessage({ type: "error", text: result.message });
+    }
+  };
+
+  // --- Logika Wyszukiwania (Debounce) ---
+  const handleSearch = (value) => {
+    setSearchTerm(value);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    if (value.trim().length < 3) {
       setSearchResults([]);
+      return;
     }
+
+    // Opóźnienie wyszukiwania o 300ms dla wydajności
+    searchTimeoutRef.current = setTimeout(() => {
+      const lowerQuery = value.toLowerCase();
+      const results = allUsers.filter((user) => 
+        user.username.toLowerCase().includes(lowerQuery) ||
+        user.displayName?.toLowerCase().includes(lowerQuery)
+      );
+      setSearchResults(results);
+    }, 300);
   };
-  const renderInviteButton = (user) => {
-    const status = userStatuses[user.id] || "checking";
-    switch (status) {
-      case "friend":
-        return (
-          <button className={styles.friendBtn} disabled>
-            ✓ Friend
-          </button>
-        );
-      case "pending_from_them":
-        return (
-          <button
-            className={styles.pendingBtn}
-            onClick={() => setActiveTab("requests")}
-          >
-            📩 Invitation to You
-          </button>
-        );
-      case "pending_from_me":
-        return (
-          <button className={styles.pendingBtn} disabled>
-            ⏳ Invitation Sent
-          </button>
-        );
-      case "checking":
-        return (
-          <button className={styles.inviteBtn} disabled>
-            Checking...
-          </button>
-        );
-      case "error":
-        return (
-          <button className={styles.errorBtn} disabled>
-            Error
-          </button>
-        );
-      case "none":
-      default:
-        return (
-          <button
-            className={styles.inviteBtn}
-            onClick={() => sendInvite(user.id, user.username)}
-            disabled={loading}
-          >
-            Invite
-          </button>
-        );
-    }
+
+  // --- Funkcje Pomocnicze ---
+  const getFriendshipStatus = (userId) => {
+    if (friends.some(f => f.id === userId)) return "friend";
+    if (requests.some(r => r.senderId === userId)) return "pending_received";
+    // Uwaga: API nie zwraca "pending_sent" (wysłanych przez nas), więc domyślnie 'none'
+    return "none";
   };
-  const renderUserItem = (user, type = "friend") => {
-    const uniqueKey = `${type}-${
-      user.requestId || user.id || user.senderId || new Date().getTime()
-    }`;
+
+  // --- Podkomponent: Pojedynczy Użytkownik ---
+  // Wydzielony, aby główny render był czystszy
+  const UserItem = ({ user, type }) => {
+    const status = getFriendshipStatus(user.id);
+    
     return (
-      <div key={uniqueKey} className={styles.userItem}>
-        <img
-          src={user.avatar}
-          alt={user.username}
+      <div className={styles.userItem}>
+        <img 
+          src={user.avatar} 
+          alt="avatar" 
           className={styles.avatar}
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = defaultAvatar;
-          }}
+          onError={(e) => { e.target.onerror = null; e.target.src = defaultAvatar; }} 
         />
+        
         <div className={styles.userInfo}>
           <span className={styles.username}>
-            {type === "request"
-              ? user.senderName
-              : user.displayName || user.username}
+            {type === "request" ? user.senderName : user.displayName}
           </span>
-          {user.displayName && user.displayName !== user.username && (
-            <span className={styles.userHandle}>@{user.username}</span>
-          )}
-          {type === "request" && user.createdAt && (
-            <span className={styles.requestTime}>
-              {new Date(user.createdAt).toLocaleDateString()}
-            </span>
+          {user.username && user.username !== user.displayName && (
+             <span className={styles.userHandle}>@{user.username}</span>
           )}
         </div>
-        {type === "friend" && (
-          <div className={styles.actions}>
-            <span
-              className={`${styles.status} ${
-                user.isOnline ? styles.online : styles.offline
-              }`}
-            >
-              {user.isOnline ? "ONLINE" : "OFFLINE"}
-            </span>
-            <button
-              className={styles.removeBtn}
-              onClick={() => handleRemoveFriend(user.id, user.username)}
-              disabled={loading}
-            >
-              Remove
-            </button>
-          </div>
-        )}
-        {type === "request" && (
-          <div className={styles.actions}>
-            <button
-              className={styles.acceptBtn}
-              onClick={() =>
-                handleRequest(
-                  "accept",
-                  user.senderId,
-                  user.senderName || user.username
-                )
-              }
-              disabled={loading}
-            >
-              ✓
-            </button>
-            <button
-              className={styles.rejectBtn}
-              onClick={() =>
-                handleRequest(
-                  "decline",
-                  user.senderId,
-                  user.senderName || user.username
-                )
-              }
-              disabled={loading}
-            >
-              ✕
-            </button>
-          </div>
-        )}
-        {type === "search" && (
-          <div className={styles.searchActions}>{renderInviteButton(user)}</div>
-        )}
+
+        <div className={styles.actions}>
+          {type === "friend" && (
+            <>
+               <span className={`${styles.status} ${user.isOnline ? styles.online : styles.offline}`}>
+                {user.isOnline ? "ON" : "OFF"}
+              </span>
+              <button 
+                className={styles.removeBtn} 
+                onClick={() => handleRemoveFriend(user.id, user.username)}
+              >
+                Remove
+              </button>
+            </>
+          )}
+
+          {type === "request" && (
+            <>
+              <button className={styles.acceptBtn} onClick={() => handleRequestAction("accept", user.senderId)}>✓</button>
+              <button className={styles.rejectBtn} onClick={() => handleRequestAction("remove", user.senderId)}>✕</button>
+            </>
+          )}
+
+          {type === "search" && (
+            <>
+              {status === "friend" && <button className={styles.friendBtn} disabled>✓ Friend</button>}
+              {status === "pending_received" && (
+                <button className={styles.pendingBtn} onClick={() => setActiveTab("requests")}>Check Inbox</button>
+              )}
+              {status === "none" && (
+                <button className={styles.inviteBtn} onClick={() => sendInvite(user.id, user.username)}>+ Invite</button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     );
   };
-  const renderContent = () => {
-    if (loading && activeTab !== "send") {
-      return (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <p>Loading...</p>
-        </div>
-      );
-    }
-    if (error) {
-      return (
-        <div className={styles.error}>
-          <p>{error}</p>
-          <button onClick={loadData}>Try Again</button>
-        </div>
-      );
-    }
-    switch (activeTab) {
-      case "friends":
-        return friends.length === 0 ? (
-          <div className={styles.empty}>
-            <p>No Friends</p>
-            <button onClick={() => setActiveTab("send")}>Add Friends</button>
-          </div>
-        ) : (
-          <div className={styles.list}>
-            {friends.map((user) => renderUserItem(user, "friend"))}
-          </div>
-        );
-      case "requests":
-        return requests.length === 0 ? (
-          <div className={styles.empty}>
-            <p>No Pending Requests</p>
-          </div>
-        ) : (
-          <div className={styles.list}>
-            {requests.map((user) => renderUserItem(user, "request"))}
-          </div>
-        );
-      case "send":
-        return (
-          <div className={styles.sendTab}>
-            <div className={styles.searchBox}>
-              <input
-                type="text"
-                placeholder="Search users (min. 3 chars)..."
-                value={search}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className={styles.results}>
-              {searchResults.length > 0 ? (
-                searchResults.map((user) => renderUserItem(user, "search"))
-              ) : search.length >= 3 ? (
-                <p className={styles.noResults}>No Results Found</p>
-              ) : (
-                <p className={styles.infoText}>
-                  {search.length > 0
-                    ? "Type at least 3 characters"
-                    : "Search users to add friends"}
-                </p>
-              )}
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+
+  // --- Główny Render ---
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+        
+        {/* Nagłówek */}
         <div className={styles.header}>
           <h2>FRIENDS</h2>
-          <button className={styles.closeBtn} onClick={onClose}>
-            ✕
-          </button>
+          <button className={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
+
+        {/* Zakładki (Tabs) */}
         <div className={styles.tabs}>
-          <button
-            className={`${styles.tab} ${
-              activeTab === "friends" ? styles.active : ""
-            }`}
-            onClick={() => setActiveTab("friends")}
-          >
-            Friends ({friends.length})
-          </button>
-          <button
-            className={`${styles.tab} ${
-              activeTab === "requests" ? styles.active : ""
-            }`}
-            onClick={() => setActiveTab("requests")}
-          >
-            Requests ({requests.length})
-          </button>
-          <button
-            className={`${styles.tab} ${
-              activeTab === "send" ? styles.active : ""
-            }`}
-            onClick={() => setActiveTab("send")}
-          >
-            Add
-          </button>
+          {['friends', 'requests', 'send'].map(tab => (
+            <button
+              key={tab}
+              className={`${styles.tab} ${activeTab === tab ? styles.active : ""}`}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)} 
+              {tab === 'friends' && ` (${friends.length})`}
+              {tab === 'requests' && requests.length > 0 && ` (${requests.length})`}
+            </button>
+          ))}
         </div>
+
+        {/* Komunikaty o błędach/sukcesie */}
         {message && (
           <div className={`${styles.message} ${styles[message.type]}`}>
             {message.text}
-            <button
-              onClick={() => setMessage(null)}
-              className={styles.messageClose}
-            >
-              ✕
-            </button>
+            <button onClick={() => setMessage(null)} className={styles.messageClose}>✕</button>
           </div>
         )}
-        <div className={styles.content}>{renderContent()}</div>
+
+        {/* Obszar treści */}
+        <div className={styles.content}>
+          {loading && !allUsers.length ? (
+            <div className={styles.loading}><div className={styles.spinner}></div></div>
+          ) : error ? (
+            <div className={styles.error}>{error}</div>
+          ) : (
+            <>
+              {/* Zakładka: Znajomi */}
+              {activeTab === "friends" && (
+                friends.length === 0 
+                  ? <div className={styles.empty}><p>No friends yet.</p></div>
+                  : <div className={styles.list}>{friends.map(u => <UserItem key={u.id} user={u} type="friend"/>)}</div>
+              )}
+
+              {/* Zakładka: Prośby */}
+              {activeTab === "requests" && (
+                requests.length === 0
+                  ? <div className={styles.empty}><p>No pending requests.</p></div>
+                  : <div className={styles.list}>{requests.map(u => <UserItem key={u.senderId} user={u} type="request"/>)}</div>
+              )}
+
+              {/* Zakładka: Szukaj/Dodaj */}
+              {activeTab === "send" && (
+                <div className={styles.sendTab}>
+                  <div className={styles.searchBox}>
+                    <input
+                      autoFocus
+                      type="text"
+                      placeholder="Search users..."
+                      value={searchTerm}
+                      onChange={(e) => handleSearch(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.results}>
+                    {searchResults.map(u => <UserItem key={u.id} user={u} type="search"/>)}
+                    {searchTerm.length >= 3 && searchResults.length === 0 && (
+                      <p className={styles.noResults}>No users found.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
 };
+
 export default FriendsModal;

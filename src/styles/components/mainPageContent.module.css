@@ -12,13 +12,13 @@
     
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
-    overflow: hidden;
+    overflow: hidden; /* Zapobiega wystawaniu obrazka poza zaokrąglone rogi */
 }
 
 .container:hover {
     transform: translateY(-6px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.5);
-    border-color: #007bff;
+    border-color: #facc15; /* Złota ramka po najechaniu */
 }
 
 /* --- SEKCJA OBRAZKA (Banner) --- */
@@ -35,7 +35,7 @@
 .banner {
     width: 100%;
     height: 100%;
-    object-fit: contain; 
+    object-fit: contain; /* Obrazek skaluje się, zachowując proporcje */
 }
 
 /* --- TREŚĆ KARTY --- */
@@ -43,7 +43,7 @@
     padding: 20px;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
+    flex-grow: 1; /* Wypełnia pozostałą przestrzeń */
 }
 
 .title {
@@ -57,7 +57,8 @@
     align-items: center;
     justify-content: center;
     margin: 0 0 15px 0;
-    /* Zabezpieczenie: jeśli tytuł będzie miał 3 linie, utnie go z "..." */
+    
+    /* Zabezpieczenie: jeśli tytuł będzie miał więcej niż 2 linie, utnie go z "..." */
     overflow: hidden;
     display: -webkit-box;
     -webkit-box-orient: vertical;
@@ -76,11 +77,11 @@
     letter-spacing: 0.5px;
 }
 
-/* Lista informacji */
+/* Lista informacji w karcie */
 .list {
     list-style-type: none;
     padding: 0;
-    margin: auto 0 0 0;
+    margin: auto 0 0 0; /* Wypycha listę na dół kontenera */
     width: 100%;
 }
 
@@ -98,17 +99,17 @@
 }
 
 .list li strong {
-    color: #9ca3af;
+    color: #9ca3af; /* Szary kolor etykiet */
 }
 
 .list li span {
-    color: #f3f4f6;
+    color: #f3f4f6; /* Jasny kolor wartości */
     font-weight: 500;
     text-align: right;
 }
 
 
-/* --- STYLE MODALA --- */
+/* --- STYLE MODALA (SZCZEGÓŁY) --- */
 .modalTitle {
     text-align: center;
     font-size: 28px;
@@ -148,6 +149,7 @@
     color: white;
 }
 
+/* Kontener przycisków w modalu */
 .modalActions {
     display: flex;
     justify-content: center;
@@ -155,8 +157,8 @@
 }
 
 .registrationButton {
-    background-color: #2563eb;
-    color: white;
+    background-color: #facc15;
+    color: black;
     border: none;
     padding: 12px 36px;
     border-radius: 8px;
@@ -164,8 +166,9 @@
     font-weight: bold;
     cursor: pointer;
     transition: background 0.2s;
+    margin: 20px;
 }
 
 .registrationButton:hover {
-    background-color: #1d4ed8;
+    background-color: #eab308;
 }

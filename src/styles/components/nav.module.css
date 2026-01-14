@@ -1,17 +1,17 @@
 /* ==========================================================================
-   SIDEBAR (DESKTOP - DOMYŚLNY)
+   SIDEBAR (DESKTOP - DOMYŚLNY STYL)
    ========================================================================== */
 .sidebar {
   width: 250px;
-  min-height: 100vh;
+  min-height: 100vh; /* Rozciąga się na całą wysokość ekranu */
   padding: 30px 20px;
   background-color: #15171e;
   display: flex;
   flex-direction: column;
   border-right: 1px solid #2b2d3e;
-  transition: transform 0.3s ease-in-out;
+  transition: transform 0.3s ease-in-out; /* Płynna animacja wysuwania */
   
-  /* WAŻNE: Na desktopie niski index, żeby Modale mogły go przykryć */
+  /* WAŻNE: Na desktopie niski index, żeby Modale (np. TeamModal) mogły go przykryć */
   z-index: 10; 
   position: relative;
 }
@@ -36,7 +36,7 @@
   margin-bottom: 8px;
 }
 
-/* Stylizacja linków */
+/* Stylizacja linków wewnątrz paska */
 .sidebar a {
   text-decoration: none;
   color: #e0e6ed;
@@ -50,26 +50,30 @@
   font-size: 16px;
 }
 
+/* Style ikon wewnątrz linków */
 .sidebar img,
 .sidebar svg {
   width: 24px;
   height: 24px;
   object-fit: contain;
+  /* Wyszarzenie ikon w stanie spoczynku */
   filter: grayscale(100%) brightness(150%);
   transition: filter 0.2s ease;
 }
 
+/* Efekt najechania myszką (Hover) */
 .sidebar a:hover {
   background-color: #2b2d3e;
   color: #ffffff;
-  transform: translateX(5px);
+  transform: translateX(5px); /* Lekkie przesunięcie w prawo */
 }
 
 .sidebar a:hover img,
 .sidebar a:hover svg {
-  filter: none;
+  filter: none; /* Przywrócenie kolorów ikon */
 }
 
+/* Separator dla sekcji Admina */
 .adminSeparator {
   margin-top: 20px;
   border-top: 1px solid #2b2d3e;
@@ -77,14 +81,14 @@
 }
 
 /* ==========================================================================
-   BURGER BUTTON & OVERLAY (Domyślnie ukryte na Desktopie)
+   BURGER BUTTON & OVERLAY (Ukryte na Desktopie)
    ========================================================================== */
 .burgerBtn {
-  display: none;
+  display: none; /* Na dużych ekranach przycisk jest niewidoczny */
 }
 
 .overlay {
-  display: none;
+  display: none; /* Na dużych ekranach overlay jest niewidoczny */
 }
 
 /* ==========================================================================
@@ -92,19 +96,22 @@
    ========================================================================== */
 @media (max-width: 900px) {
 
-  /* 1. Przycisk Burgera - Przezroczysty i zawsze na wierzchu */
+  /* 1. Przycisk Burgera - Przezroczysty, zawsze na wierzchu */
   .burgerBtn {
     display: flex;
     align-items: center;
     justify-content: center;
     
-    position: fixed;
+    position: fixed; /* Przyklejony do ekranu */
     top: 15px;
     left: 15px;
-    z-index: 1200; /* Musi być najwyżej, żeby kliknąć nawet jak menu otwarte */
     
-    background-color: transparent; /* Brak tła */
-    border: none;                  /* Brak ramki */
+    /* Z-INDEX: 1200 -> Musi być najwyżej ze wszystkich elementów, 
+       żeby można było zamknąć menu klikając w "X" */
+    z-index: 1200; 
+    
+    background-color: transparent; /* Brak tła, sama ikona */
+    border: none;
     color: white;
     
     padding: 10px;
@@ -113,49 +120,56 @@
     transition: transform 0.2s;
   }
 
+  /* Efekt kliknięcia w burgera */
   .burgerBtn:active {
     transform: scale(0.95);
   }
 
-  /* 2. Sidebar - Zmienia się w wysuwany panel */
+  /* 2. Sidebar - Zmienia się w wysuwany panel (Drawer) */
   .sidebar {
-    position: fixed;
+    position: fixed; /* Odrywamy od layoutu, przyklejamy do okna */
     top: 0;
     left: 0;
     height: 100vh;
-    width: 280px;
+    width: 280px; /* Nieco szerszy na mobile dla wygody dotyku */
     
-    transform: translateX(-100%); /* Ukryty poza lewą krawędzią */
-    box-shadow: 4px 0 15px rgba(0,0,0,0.5);
-    padding-top: 80px; 
+    /* Ukrycie menu: przesuwamy je o 100% szerokości w lewo */
+    transform: translateX(-100%); 
     
-    /* WAŻNE: Na mobile musi być wysoko, żeby przykryć stronę po wysunięciu */
+    box-shadow: 4px 0 15px rgba(0,0,0,0.5); /* Cień rzucany na stronę */
+    padding-top: 80px; /* Odstęp od góry, żeby nie zasłaniać przycisku X */
+    
+    /* Z-INDEX: 1100 -> Wyżej niż overlay (1050), ale niżej niż burger (1200) */
     z-index: 1100; 
   }
 
-  /* Klasa dodawana gdy menu jest otwarte */
+  /* Klasa dodawana gdy menu jest otwarte (przesuwa menu z powrotem na ekran) */
   .sidebar.open {
     transform: translateX(0);
   }
 
   /* 3. Overlay - Przyciemnienie tła pod menu mobilnym */
   .overlay {
-    display: block;
+    display: block; /* Staje się elementem blokowym */
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
-    background-color: rgba(0, 0, 0, 0.7);
-    z-index: 1050; /* Pod sidebarem (1100), ale nad treścią strony */
-    opacity: 0;
-    pointer-events: none;
+    background-color: rgba(0, 0, 0, 0.7); /* Półprzezroczysta czerń */
+    
+    /* Z-INDEX: 1050 -> Przykrywa całą stronę, ale jest pod sidebarem */
+    z-index: 1050; 
+    
+    opacity: 0; /* Domyślnie niewidoczny */
+    pointer-events: none; /* Domyślnie przepuszcza kliknięcia */
     transition: opacity 0.3s ease;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(2px); /* Delikatne rozmycie tła */
   }
 
+  /* Klasa aktywująca overlay */
   .overlayVisible {
     opacity: 1;
-    pointer-events: auto;
+    pointer-events: auto; /* Teraz blokuje kliknięcia w stronę pod spodem */
   }
 }

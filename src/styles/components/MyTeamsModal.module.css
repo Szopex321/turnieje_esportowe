@@ -1,11 +1,12 @@
+/* --- TŁO (Overlay) --- */
 .overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.92);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.92); /* Mocno przyciemnione tło */
+  backdrop-filter: blur(4px);      /* Rozmycie tła strony */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -14,14 +15,11 @@
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
+/* --- GŁÓWNE OKNO MODALA --- */
 .modal {
   background: linear-gradient(145deg, #1e1e1e, #151515);
   width: 420px;
@@ -43,6 +41,7 @@
   }
 }
 
+/* --- NAGŁÓWEK --- */
 .header {
   padding: 24px;
   background: linear-gradient(90deg, #222, #1a1a1a);
@@ -54,12 +53,13 @@
 
 .header h2 {
   margin: 0;
-  color: #facc15;
+  color: #facc15; /* Złoty kolor tytułu */
   font-size: 20px;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
 
+/* Przycisk zamknięcia (X) */
 .closeBtn {
   background: transparent;
   border: none;
@@ -76,6 +76,7 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* --- ELEMENT LISTY (Pojedyncza drużyna) --- */
 .teamItem {
   display: flex;
   align-items: center;
@@ -87,11 +88,13 @@
   overflow: hidden;
 }
 
+/* Efekt najechania myszką na drużynę */
 .teamItem:hover {
   background: linear-gradient(90deg, #252525, #1f1f1f);
-  transform: translateX(4px);
+  transform: translateX(4px); /* Lekkie przesunięcie w prawo */
 }
 
+/* Złoty pasek z lewej strony po najechaniu */
 .teamItem:hover::before {
   content: "";
   position: absolute;
@@ -102,6 +105,7 @@
   background: linear-gradient(to bottom, #facc15, #f59e0b);
 }
 
+/* --- LOGO DRUŻYNY --- */
 .teamLogo {
   width: 48px;
   height: 48px;
@@ -117,9 +121,10 @@
   border-color: #facc15;
 }
 
+/* --- INFO O DRUŻYNIE (Nazwa + Rola) --- */
 .teamInfo {
   flex: 1;
-  min-width: 0;
+  min-width: 0; /* Zapobiega rozpychaniu flexa przez długi tekst */
 }
 
 .teamName {
@@ -130,7 +135,7 @@
   margin-bottom: 4px;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  text-overflow: ellipsis; /* ... jeśli nazwa za długa */
 }
 
 .roleText {
@@ -144,6 +149,7 @@
   border: 1px solid rgba(250, 204, 21, 0.2);
 }
 
+/* --- LICZNIK GRACZY --- */
 .memberCount {
   color: #888;
   font-size: 14px;
@@ -161,19 +167,16 @@
   background: rgba(250, 204, 21, 0.05);
 }
 
-/* Dla pustego stanu */
-.emptyState {
+/* --- STAN PUSTY (Brak drużyn) --- */
+/* Zmieniłem nazwę z .emptyState na .empty, aby pasowała do kodu JS */
+.empty {
   text-align: center;
   padding: 40px 20px;
   color: #666;
+  font-size: 15px;
 }
 
-.emptyState h3 {
-  color: #888;
-  margin-bottom: 8px;
-}
-
-/* Responsywność */
+/* --- RESPONSYWNOŚĆ --- */
 @media (max-width: 480px) {
   .modal {
     width: 90%;

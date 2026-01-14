@@ -8,7 +8,6 @@ const LogIn = ({ loadUser }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  // ZMIANA 1: Zmieniamy nazwę funkcji na bardziej pasującą i zwracamy DANE, a nie true/false
   const fetchUserDetails = async (token) => {
     try {
       const meResponse = await fetch("/api/Auth/me", {
@@ -20,13 +19,12 @@ const LogIn = ({ loadUser }) => {
       if (meResponse.ok) {
         const userData = await meResponse.json();
 
-        // Zapisujemy ID tak jak wcześniej
         if (userData.id) {
           localStorage.setItem("currentUserId", String(userData.id));
         }
 
         console.log("Pobrano dane użytkownika z /me:", userData);
-        return userData; // <--- ZWRACAMY CAŁY OBIEKT (tam powinien być avatar/url)
+        return userData;
       }
       return null;
     } catch (err) {
@@ -61,21 +59,22 @@ const LogIn = ({ loadUser }) => {
           token = responseData.token;
         }
 
-        // ZMIANA 2: Pobieramy szczegóły użytkownika (w tym awatar) z endpointu /me
+        // Pobranie szczegółów użytkownika (avatar, role)
         let detailedUserData = null;
         if (token) {
           detailedUserData = await fetchUserDetails(token);
         }
 
-        // ZMIANA 3: Priorytetyzujemy awatar pobrany z /me (detailedUserData)
-        // Sprawdź w konsoli czy backend zwraca pole 'avatar' czy 'url'!
+        // Ustalenie ostatecznego avatara
         const finalAvatar = detailedUserData?.avatarUrl || detailedUserData?.avatar || detailedUserData?.url || responseData.avatar || "";
-
+        
+        // Ustalenie roli
         const userRole = detailedUserData?.role || responseData.role || "user";
+
         const userToSave = {
           username: responseData.username || detailedUserData?.username || login,
           avatar: finalAvatar,
-          role: userRole, // <--- Tutaj teraz trafi poprawny "admin"
+          role: userRole,
           isLoggedIn: true,
         };
 
@@ -107,12 +106,12 @@ const LogIn = ({ loadUser }) => {
         <p className={styles.subtitle}>Log in to manage your tournaments</p>
 
         {error && (
-          <div style={{ color: "red", marginBottom: "10px", textAlign: "center" }}>
+          <div className={styles.errorBox}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <form onSubmit={handleSubmit} className={styles.form}>
           <div className={styles.inputGroup}>
             <label className={styles.label}>Login</label>
             <input

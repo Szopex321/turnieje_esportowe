@@ -1,16 +1,25 @@
-.container {
+/* Wrapper na całą stronę, żeby tło było spójne */
+.pageWrapper {
+    min-height: 100vh;
     display: flex;
-    gap: 24px;
-    float: left;
-    width: 100%;
-    flex-wrap: wrap;
+    flex-direction: column;
 }
 
-.nav {
-    display: flex;
-    float: left;
-}
-
+/* Główny układ: Nav po lewej, Treść po prawej */
 .mainContent {
     display: flex;
+    flex: 1; /* Rozciąga się na pozostałą wysokość poniżej TitleBar */
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Kontener na TournamentList i Footer */
+.container {
+    display: flex;
+    flex-direction: column; /* Układa elementy jeden pod drugim */
+    flex: 1; /* Zajmuje całą dostępną szerokość obok Nav */
+    padding: 24px;
+    gap: 24px;
+    overflow-x: hidden;
 }

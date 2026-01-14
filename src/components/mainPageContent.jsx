@@ -10,6 +10,7 @@ const API_BASE_URL = "https://projektturniej.onrender.com/api";
 function MainPageContent(props) {
   const navigate = useNavigate();
 
+  // Destrukturyzacja propsów (danych przekazanych do komponentu)
   const {
     tournamentId,
     title,
@@ -25,20 +26,20 @@ function MainPageContent(props) {
     currentParticipants,
   } = props;
 
-  // --- STANY ---
-  const [state, setState] = useState("Upcoming");
-  const [timeInfo, setTimeInfo] = useState("");
+  // --- STANY KOMPONENTU ---
+  const [state, setState] = useState("Upcoming"); // Status turnieju: Nadchodzący, Trwający, Zakończony
+  const [timeInfo, setTimeInfo] = useState("");     // Tekst wyświetlany np. "Launches in 2 days"
   
-  // Modale
+  // Stany widoczności Modali
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
 
-  // Logika
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [myTeams, setMyTeams] = useState([]);
-  const [currentUserId, setCurrentUserId] = useState(null);
+  // Logika biznesowa
+  const [isRegistering, setIsRegistering] = useState(false); // Blokada przycisku podczas zapisu
+  const [myTeams, setMyTeams] = useState([]);                // Lista drużyn użytkownika (dla turniejów drużynowych)
+  const [currentUserId, setCurrentUserId] = useState(null);  // ID zalogowanego użytkownika
 
-  // 1. Pobranie ID zalogowanego użytkownika
+  // 1. Pobranie ID zalogowanego użytkownika przy montowaniu komponentu
   useEffect(() => {
     const storedUserId = localStorage.getItem("currentUserId");
     if (storedUserId) {
@@ -46,11 +47,12 @@ function MainPageContent(props) {
     }
   }, []);
 
-  // --- HANDLERY MODALI ---
+  // --- OBSŁUGA MODALI (OTWIERANIE/ZAMYKANIE) ---
   const handleOpenDetailsModal = () => setIsDetailsModalOpen(true);
   const handleCloseDetailsModal = () => setIsDetailsModalOpen(false);
 
-  // --- FUNKCJA 1: POBIERANIE DRUŻYN ---
+  // --- FUNKCJA 1: POBIERANIE I FILTROWANIE DRUŻYN UŻYTKOWNIKA ---
+  // Uruchamiana tylko gdy turniej jest drużynowy i użytkownik klika "Rejestruj"
   const fetchAndFilterUserTeams = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/teams`);
@@ -62,8 +64,11 @@ function MainPageContent(props) {
       if(!storedUserId) return;
       const myId = parseInt(storedUserId, 10);
 
+      // Mapowanie danych z backendu na format wygodny dla frontend
       const mappedTeams = allTeamsData.map((team) => {
         const allPlayers = [];
+        
+        // Dodaj kapitana do listy graczy
         if (team.captain) {
           allPlayers.push({
             userId: team.captain.userId,
@@ -71,6 +76,8 @@ function MainPageContent(props) {
             status: "Member",
           });
         }
+        
+        // Dodaj pozostałych członków
         if (Array.isArray(team.teamMembers)) {
             team.teamMembers.forEach(member => {
                 if(member.user) {
@@ -95,12 +102,13 @@ function MainPageContent(props) {
         };
       });
 
+      // Filtrowanie: Pokaż tylko te drużyny, gdzie użytkownik jest członkiem lub kapitanem
       const userTeams = mappedTeams.filter(t => 
         t.players.some(p => p.userId === myId)
       );
 
       setMyTeams(userTeams);
-      setIsTeamModalOpen(true); 
+      setIsTeamModalOpen(true); // Otwórz modal wyboru drużyny po pobraniu danych
 
     } catch (error) {
       console.error("Error fetching teams:", error);
@@ -109,15 +117,18 @@ function MainPageContent(props) {
   };
 
   // --- FUNKCJA 2: KLIKNIĘCIE "REGISTER" ---
+  // Główny punkt wejścia przycisku rejestracji
   const handleRegisterClick = async () => {
     const token = localStorage.getItem("jwt_token");
     if (!token) {
-      alert("You need to be logged in to register!");
+      alert("Musisz być zalogowany, aby się zarejestrować!");
       return;
     }
 
     const type = String(registrationType || "").toLowerCase();
 
+    // Jeśli turniej jest drużynowy -> pobierz drużyny i otwórz modal wyboru
+    // Jeśli indywidualny -> rejestruj bezpośrednio
     if (type === "team") {
         await fetchAndFilterUserTeams();
     } else {
@@ -145,20 +156,21 @@ function MainPageContent(props) {
       const responseText = await response.text();
 
       if (response.ok) {
-        alert("Success! You have been registered.");
+        alert("Sukces! Zostałeś zarejestrowany.");
         handleCloseDetailsModal();
       } else {
-        alert(`Registration failed: ${responseText}`);
+        alert(`Błąd rejestracji: ${responseText}`);
       }
     } catch (error) {
       console.error("Network error:", error);
-      alert("Connection error.");
+      alert("Błąd połączenia.");
     } finally {
       setIsRegistering(false);
     }
   };
 
   // --- FUNKCJA 4: WYBÓR DRUŻYNY W MODALU ---
+  // Wywoływana przez komponent MyTeamsModal
   const handleTeamSelected = async (selectedTeam) => {
     if (selectedTeam.captainId !== currentUserId) {
         alert("⛔ Tylko kapitan może zapisać drużynę na turniej!");
@@ -191,6 +203,7 @@ function MainPageContent(props) {
         setIsTeamModalOpen(false);
         handleCloseDetailsModal();
       } else {
+        // Próba sparsowania błędu jako JSON, w przeciwnym razie wyświetl tekst
         let errorMsg = responseText;
         try {
             const errData = JSON.parse(responseText);
@@ -206,34 +219,38 @@ function MainPageContent(props) {
     }
   };
 
-  // --- DATY I STATUSY (Zmieniona logika) ---
+  // --- EFEKT: OBLICZANIE STATUSU TURNIEJU (Upcoming/Ongoing/Completed) ---
   useEffect(() => {
     if (!startDate) return;
     
-    // Normalizacja daty dzisiejszej (tylko rok-miesiąc-dzień)
     const today = new Date();
+    // Resetujemy godziny na 00:00:00, aby porównywać tylko dni kalendarzowe
     today.setHours(0, 0, 0, 0);
     
-    // Normalizacja daty startu turnieju
-    const tournamentStartDate = new Date(startDate);
-    tournamentStartDate.setHours(0, 0, 0, 0);
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
 
-    // LOGIKA: 
-    // Data startu > dzisiaj -> Upcoming
-    // Data startu == dzisiaj -> Ongoing
-    // Data startu < dzisiaj -> Completed (Ended)
-    // EndDate jest całkowicie ignorowany dla statusu.
-
-    if (tournamentStartDate > today) {
-      setState("Upcoming");
-    } else if (tournamentStartDate.getTime() === today.getTime()) {
-      setState("Ongoing");
+    // Ustalanie daty końca
+    let end;
+    if (endDate) {
+      end = new Date(endDate);
     } else {
-      setState("Completed");
+      // Jeśli brak daty końca, zakładamy, że to turniej jednodniowy
+      end = new Date(start); 
     }
-  }, [startDate]);
+    // Ustawiamy koniec na ostatnią milisekundę dnia (23:59:59)
+    end.setHours(23, 59, 59, 999);
 
-  // Ustawienie etykiety czasu
+    if (today < start) {
+      setState("Upcoming"); // Dziś jest przed startem
+    } else if (today >= start && today <= end) {
+      setState("Ongoing");  // Dziś jest pomiędzy startem a końcem (włącznie)
+    } else {
+      setState("Completed"); // Dziś jest po dacie końca
+    }
+  }, [startDate, endDate]);
+
+  // --- EFEKT: USTAWIENIE TEKSTU CZASOWEGO (np. "Za 2 dni") ---
   useEffect(() => {
     if (!startDate) return;
     const today = new Date();
@@ -246,7 +263,7 @@ function MainPageContent(props) {
       const diffTime = tournamentStartDate - today;
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       
-      if (diffDays <= 1) setTimeInfo("Launches Tomorrow"); // Jeśli różnica to 1 dzień
+      if (diffDays <= 1) setTimeInfo("Launches Tomorrow"); // Jeśli startuje jutro
       else if (diffDays <= 31) setTimeInfo(`Launches in ${diffDays} days`);
       else setTimeInfo(`Launches at ${new Date(startDate).toLocaleDateString()}`);
     } 
@@ -260,7 +277,7 @@ function MainPageContent(props) {
 
   return (
     <>
-      {/* TILE ON MAIN PAGE */}
+      {/* KAFELEK NA STRONIE GŁÓWNEJ */}
       <div className={styles.container} onClick={handleOpenDetailsModal}>
         <div className={styles.bannerWrapper}>
           <img
@@ -291,7 +308,7 @@ function MainPageContent(props) {
         </div>
       </div>
 
-      {/* MODAL SZCZEGÓŁÓW */}
+      {/* MODAL SZCZEGÓŁÓW TURNIEJU */}
       {isDetailsModalOpen && (
         <Modal onClose={handleCloseDetailsModal}>
           <h2 className={styles.modalTitle}>{title}</h2>
@@ -356,7 +373,7 @@ function MainPageContent(props) {
         </Modal>
       )}
 
-      {/* MODAL WYBORU DRUŻYNY */}
+      {/* MODAL WYBORU DRUŻYNY (Dla turniejów drużynowych) */}
       {isTeamModalOpen && (
           <MyTeamsModal 
             teams={myTeams}
