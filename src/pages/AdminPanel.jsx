@@ -4,12 +4,12 @@ import Nav from "../components/nav";
 import Modal from "../components/modal";
 import styles from "../styles/pages/adminPanel.module.css";
 
-// Komponenty
+// --- ZMIANA IMPORTU TUTAJ ---
+// Zamiast TournamentList, importujemy wersję admina:
 import AdminTournamentList from "../components/AdminTournamentList"; 
+
 import TournamentForm from "../components/TournamentForm";
 import TournamentDetailsModal from "../components/TournamentDetailsModal";
-
-// Helpery
 import { parseJwt, formatDateForInput } from "../components/adminHelpers"; 
 
 const API_BASE_URL = "https://projektturniej.onrender.com/api";
@@ -34,6 +34,10 @@ const AdminPanel = () => {
   const [tournamentMatches, setTournamentMatches] = useState([]); 
   const [matchesLoading, setMatchesLoading] = useState(false);
 
+  // Wyniki admina
+  const [adminScoreA, setAdminScoreA] = useState("");
+  const [adminScoreB, setAdminScoreB] = useState("");
+
   // Formularz
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -57,15 +61,12 @@ const AdminPanel = () => {
     
     let isUserAdmin = false;
     if (userJson) {
-        try {
-            const user = JSON.parse(userJson);
-            if (user.role === 'admin' || user.role === 'Admin') isUserAdmin = true;
-        } catch (e) { console.error("Error parsing user JSON", e); }
+        const user = JSON.parse(userJson);
+        if (user.role === 'admin' || user.role === 'Admin') isUserAdmin = true;
     }
 
     if (!token || !isUserAdmin) {
         window.location.href = "/"; 
-        return;
     }
 
     if (token) {
@@ -83,10 +84,12 @@ const AdminPanel = () => {
     fetchGames();
   }, [activeTab]);
 
-  // Pobieranie meczów po otwarciu modala
   useEffect(() => {
     if (selectedTournament) {
         fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
+        // Reset admin scores when opening new modal
+        setAdminScoreA("");
+        setAdminScoreB("");
     }
   }, [selectedTournament]);
 
@@ -108,7 +111,7 @@ const AdminPanel = () => {
 
   const fetchGames = async () => {
     try {
-      const response = await fetch('/api/games'); // Upewnij się, że ścieżka jest poprawna (często to jest API_BASE_URL)
+      const response = await fetch('/api/games');
       if (response.ok) setGamesList(await response.json());
     } catch (error) { console.error(error); }
   };
@@ -125,7 +128,6 @@ const AdminPanel = () => {
 
         if (response.ok) {
             const data = await response.json();
-            // Obsługa różnych struktur zwracanych przez API (tablica lub obiekt z polem matches)
             const matchesArray = Array.isArray(data) ? data : (data.matches || []);
             setTournamentMatches(matchesArray);
         } else {
@@ -142,17 +144,16 @@ const AdminPanel = () => {
   const handleGenerateBracket = async () => {
     if (!selectedTournament) return;
     const token = localStorage.getItem("jwt_token");
-    const tId = selectedTournament.tournamentId || selectedTournament.id;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/brackets/generate/${tId}`, {
+        const response = await fetch(`${API_BASE_URL}/brackets/generate/${selectedTournament.tournamentId || selectedTournament.id}`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` }
         });
 
         if (response.ok) {
             alert("Bracket generated successfully!");
-            fetchMatches(tId);
+            fetchMatches(selectedTournament.tournamentId || selectedTournament.id);
         } else {
             const txt = await response.text();
             alert(`Error: ${txt}`);
@@ -163,6 +164,15 @@ const AdminPanel = () => {
   };
 
   // --- HANDLERS ---
+  const handleAdminSubmitScore = async (match) => {
+    if (adminScoreA === "" || adminScoreB === "") {
+        alert("Please enter scores for both teams.");
+        return;
+    }
+    const token = localStorage.getItem("jwt_token");
+    console.log("Submitting admin score:", adminScoreA, adminScoreB, "for match:", match.matchId);
+    alert("Functionality pending: Paste logic from your previous file here.");
+  };
 
   const handleSaveTournament = async (e) => {
     e.preventDefault();
@@ -225,9 +235,13 @@ const AdminPanel = () => {
   };
 
   const handleDeleteTournament = async (id, e) => {
+    // 1. Zatrzymanie kliknięcia w tło (żeby nie otwierało szczegółów)
     if (e) e.stopPropagation(); 
+    
+    // 2. Potwierdzenie
     if (!window.confirm("Czy na pewno chcesz usunąć ten turniej?")) return;
     
+    // 3. Pobranie poprawnego tokenu
     const token = localStorage.getItem("jwt_token");
 
     try {
@@ -237,15 +251,19 @@ const AdminPanel = () => {
         });
 
         if (response.ok) {
-            // Aktualizacja stanu lokalnego (szybsze niż ponowny fetch)
+            alert("Usunięto pomyślnie.");
+
+            // --- TUTAJ JEST ZMIANA, KTÓRA ODŚWIEŻA LISTĘ NATYCHMIAST ---
+            // Zamiast fetchTournaments(), usuwamy element z obecnego stanu:
             setTournamentsList(currentList => 
                 currentList.filter(t => t.tournamentId !== id && t.id !== id)
             );
 
-            // Jeśli usunięty turniej był otwarty w modalu -> zamknij go
+            // Jeśli usunięty turniej był akurat wybrany/otwarty, czyścimy wybór
             if (selectedTournament && (selectedTournament.id === id || selectedTournament.tournamentId === id)) {
                 setSelectedTournament(null);
             }
+
         } else {
             alert("Nie udało się usunąć turnieju (błąd serwera).");
         }
@@ -254,6 +272,8 @@ const AdminPanel = () => {
         alert("Błąd sieci.");
     }
   };
+
+  
 
   const handleEditClick = (tournament, e) => {
     if (e) e.stopPropagation();
@@ -272,7 +292,7 @@ const AdminPanel = () => {
     setEditingId(tournament.tournamentId || tournament.id);
     setIsEditing(true);
     
-    setSelectedTournament(null);
+    setSelectedTournament(null); // Zamknij modal jeśli otwarty
     setActiveTab("create");
   };
 
@@ -315,17 +335,17 @@ const AdminPanel = () => {
             </div>
 
             {activeTab === 'tournaments' && (
-                <AdminTournamentList 
-                    tournaments={tournamentsList}
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    onSelect={setSelectedTournament}
-                    onEdit={handleEditClick}
-                    onDelete={handleDeleteTournament}
-                />
-            )}
+    <AdminTournamentList
+        tournaments={tournamentsList}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        onSelect={setSelectedTournament}
+        onEdit={handleEditClick}
+        onDelete={handleDeleteTournament}
+    />
+)}
 
             {activeTab === 'create' && (
                 <TournamentForm 
@@ -350,8 +370,12 @@ const AdminPanel = () => {
                 onGenerateBracket={handleGenerateBracket}
                 onEdit={handleEditClick}
                 onDelete={handleDeleteTournament}
-                // Nowy prop: funkcja odświeżająca mecze po interwencji admina
-                onRefresh={() => fetchMatches(selectedTournament.tournamentId || selectedTournament.id)}
+                // Propsy sporne
+                adminScoreA={adminScoreA}
+                setAdminScoreA={setAdminScoreA}
+                adminScoreB={adminScoreB}
+                setAdminScoreB={setAdminScoreB}
+                onSubmitScore={handleAdminSubmitScore}
             />
         </Modal>
       )}
