@@ -19,12 +19,13 @@ const LogIn = ({ loadUser }) => {
       if (meResponse.ok) {
         const userData = await meResponse.json();
 
+        // Zapisujemy ID
         if (userData.id) {
           localStorage.setItem("currentUserId", String(userData.id));
         }
 
         console.log("Pobrano dane użytkownika z /me:", userData);
-        return userData;
+        return userData; // <--- ZWRACAMY CAŁY OBIEKT
       }
       return null;
     } catch (err) {
@@ -59,22 +60,20 @@ const LogIn = ({ loadUser }) => {
           token = responseData.token;
         }
 
-        // Pobranie szczegółów użytkownika (avatar, role)
+        // ZMIANA 2: Pobieramy szczegóły użytkownika (w tym awatar) z endpointu /me
         let detailedUserData = null;
         if (token) {
           detailedUserData = await fetchUserDetails(token);
         }
 
-        // Ustalenie ostatecznego avatara
+        // Sprawdź w konsoli czy backend zwraca pole 'avatar' czy 'url'!
         const finalAvatar = detailedUserData?.avatarUrl || detailedUserData?.avatar || detailedUserData?.url || responseData.avatar || "";
-        
-        // Ustalenie roli
-        const userRole = detailedUserData?.role || responseData.role || "user";
 
+        const userRole = detailedUserData?.role || responseData.role || "user";
         const userToSave = {
           username: responseData.username || detailedUserData?.username || login,
           avatar: finalAvatar,
-          role: userRole,
+          role: userRole, // <--- Tutaj teraz trafi poprawny "admin"
           isLoggedIn: true,
         };
 
@@ -106,12 +105,12 @@ const LogIn = ({ loadUser }) => {
         <p className={styles.subtitle}>Log in to manage your tournaments</p>
 
         {error && (
-          <div className={styles.errorBox}>
+          <div style={{ color: "red", marginBottom: "10px", textAlign: "center" }}>
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div className={styles.inputGroup}>
             <label className={styles.label}>Login</label>
             <input

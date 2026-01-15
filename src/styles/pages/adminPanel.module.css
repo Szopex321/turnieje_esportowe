@@ -1285,3 +1285,20 @@
   -webkit-appearance: none;
   margin: 0;
 }
+
+.bannerWrapper {
+  width: 100%;
+  margin-bottom: 25px;
+  border-radius: 8px;
+  overflow: hidden; /* Ważne: przycina rogi obrazka do wrappera */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  border: 1px solid #333;
+}
+
+.bannerImage {
+  width: 100%;
+  height: 200px;       /* Ustawiamy stałą wysokość bannera */
+  object-fit: cover;   /* Obrazek wypełni przestrzeń, przycinając górę/dół */
+  object-position: center 25%; /* Ustawia środek ciężkości nieco wyżej (często tam są twarze postaci) */
+  display: block;      /* Usuwa puste miejsce pod obrazkiem */
+}
